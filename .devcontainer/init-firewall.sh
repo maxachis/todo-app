@@ -14,10 +14,50 @@ ALLOWED_DOMAINS=(
     github.com
     api.github.com
     raw.githubusercontent.com
+    objects.githubusercontent.com
     marketplace.visualstudio.com
     vscode.blob.core.windows.net
     update.code.visualstudio.com
 )
+
+# --- Phase 1: Resolve all IPs while network is still open ---
+
+echo "Resolving domain IPs (before firewall lockdown)..."
+
+# Create ipset for allowed domains
+ipset create allowed-domains hash:net -exist
+ipset flush allowed-domains
+
+# Resolve each domain and add IPs to the ipset
+for domain in "${ALLOWED_DOMAINS[@]}"; do
+    echo "Resolving $domain..."
+    ips=$(dig +short A "$domain" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)
+    for ip in $ips; do
+        if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            ipset add allowed-domains "$ip/32" -exist
+            echo "  Added $ip ($domain)"
+        fi
+    done
+done
+
+# Fetch and add GitHub IP ranges
+echo "Fetching GitHub IP ranges..."
+gh_ranges=$(curl -s https://api.github.com/meta 2>/dev/null || true)
+if echo "$gh_ranges" | jq -e '.web and .api and .git' >/dev/null 2>&1; then
+    for cidr in $(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | grep -v ':' | aggregate -q 2>/dev/null || echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | grep -v ':'); do
+        if [[ "$cidr" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$ ]]; then
+            ipset add allowed-domains "$cidr" -exist
+        fi
+    done
+    echo "  Added GitHub IP ranges"
+else
+    echo "  WARNING: Could not fetch GitHub IP ranges"
+fi
+
+# --- Phase 2: Lock down the firewall ---
+
+echo ""
+echo "Locking down firewall..."
 
 # Preserve Docker DNS NAT rules before flushing
 DOCKER_DNS_RULES=$(iptables-save -t nat | grep "127\.0\.0\.11" || true)
@@ -60,36 +100,6 @@ HOST_IP=$(ip route | grep default | cut -d" " -f3)
 HOST_NETWORK=$(echo "$HOST_IP" | sed "s/\.[0-9]*$/.0\/24/")
 iptables -A OUTPUT -d "$HOST_NETWORK" -j ACCEPT
 iptables -A INPUT -s "$HOST_NETWORK" -j ACCEPT
-
-# Create ipset for allowed domains
-ipset create allowed-domains hash:net -exist
-ipset flush allowed-domains
-
-# Resolve each domain and add IPs to the ipset
-for domain in "${ALLOWED_DOMAINS[@]}"; do
-    echo "Resolving $domain..."
-    ips=$(dig +short A "$domain" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)
-    for ip in $ips; do
-        if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-            ipset add allowed-domains "$ip/32" -exist
-            echo "  Added $ip ($domain)"
-        fi
-    done
-done
-
-# Fetch and add GitHub IP ranges
-echo "Fetching GitHub IP ranges..."
-gh_ranges=$(curl -s https://api.github.com/meta 2>/dev/null || true)
-if echo "$gh_ranges" | jq -e '.web and .api and .git' >/dev/null 2>&1; then
-    for cidr in $(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | grep -v ':' | aggregate -q 2>/dev/null || echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | grep -v ':'); do
-        if [[ "$cidr" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$ ]]; then
-            ipset add allowed-domains "$cidr" -exist
-        fi
-    done
-    echo "  Added GitHub IP ranges"
-else
-    echo "  WARNING: Could not fetch GitHub IP ranges"
-fi
 
 # Allow traffic to IPs in the allowed-domains ipset
 iptables -A OUTPUT -m set --match-set allowed-domains dst -j ACCEPT

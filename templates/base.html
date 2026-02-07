@@ -4,12 +4,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ToDo App</title>
+  <title>ToDo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <script src="{% static 'vendor/htmx.min.js' %}"></script>
   <script src="{% static 'vendor/Sortable.min.js' %}"></script>
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
       {% block sidebar %}
@@ -29,6 +32,10 @@
       {% block detail %}
         {% if selected_task %}
           {% include "tasks/partials/task_detail.html" with task=selected_task %}
+        {% else %}
+          <div class="detail-empty-state">
+            <p>Select a task to view details</p>
+          </div>
         {% endif %}
       {% endblock %}
     </aside>
