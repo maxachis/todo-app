@@ -92,9 +92,29 @@ def update_task(request, task_id):
             task.due_date = due_date
 
     task.save()
+    task.refresh_from_db()
 
     if _is_htmx(request):
-        return render(request, "tasks/partials/task_detail.html", {"task": task})
+        from django.template.loader import render_to_string
+
+        detail_html = render_to_string(
+            "tasks/partials/task_detail.html", {"task": task}, request=request
+        )
+        depth = 0
+        ancestor = task.parent
+        while ancestor:
+            depth += 1
+            ancestor = ancestor.parent
+        task_html = render_to_string(
+            "tasks/partials/task_item.html",
+            {"task": task, "depth": depth},
+            request=request,
+        )
+        oob_task = (
+            f'<div hx-swap-oob="outerHTML:#task-{task.id}">'
+            f"{task_html}</div>"
+        )
+        return HttpResponse(detail_html + oob_task)
 
     from django.shortcuts import redirect
     return redirect("task_detail", task_id=task.pk)
