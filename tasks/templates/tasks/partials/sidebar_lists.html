@@ -16,8 +16,19 @@
       hx-get="/lists/{{ list.id }}/"
       hx-target="#center-panel"
       hx-push-url="true">
-    <span class="list-emoji">{{ list.emoji }}</span>
-    <span class="list-name">{{ list.name }}</span>
+    <span class="list-nav-display">
+      <span class="list-emoji">{{ list.emoji }}</span>
+      <span class="list-name">{{ list.name }}</span>
+    </span>
+    <form class="list-nav-edit-form"
+          hx-post="/lists/{{ list.id }}/update/"
+          hx-target="#sidebar" hx-swap="innerHTML">
+      <button type="button" class="emoji-trigger" data-emoji-target="emoji">
+        {{ list.emoji|default:"+" }}
+      </button>
+      <input type="hidden" name="emoji" value="{{ list.emoji }}">
+      <input type="text" name="name" value="{{ list.name }}" required>
+    </form>
   </li>
   {% endfor %}
 </ul>

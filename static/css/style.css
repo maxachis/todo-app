@@ -297,6 +297,54 @@ body {
   min-width: 0;
 }
 
+/* Sidebar list item: display vs edit modes */
+.list-nav-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.list-nav-edit-form {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.list-nav-edit-form input[type="text"] {
+  background: var(--sidebar-surface);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--sidebar-text);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  flex: 1;
+  min-width: 0;
+}
+
+.list-nav-edit-form input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.list-nav-item.editing .list-nav-display {
+  display: none;
+}
+
+.list-nav-item.editing .list-nav-edit-form {
+  display: flex;
+}
+
+.list-nav-item.editing .emoji-trigger {
+  width: 30px;
+  height: 28px;
+  font-size: 14px;
+}
+
 .list-actions,
 .sidebar-actions {
   display: flex;

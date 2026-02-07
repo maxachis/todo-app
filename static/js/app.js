@@ -430,10 +430,19 @@ function selectEmoji(emoji) {
   if (emojiPickerTarget) {
     emojiPickerTarget.value = emoji;
   }
-  if (emojiPickerTrigger) {
-    emojiPickerTrigger.textContent = emoji;
+  var trigger = emojiPickerTrigger;
+  if (trigger) {
+    trigger.textContent = emoji;
   }
   closeEmojiPicker();
+
+  // Auto-submit sidebar list edit form after emoji selection
+  if (trigger) {
+    var editForm = trigger.closest(".list-nav-edit-form");
+    if (editForm) {
+      htmx.trigger(editForm, "submit");
+    }
+  }
 }
 
 function openEmojiPicker(triggerBtn) {
@@ -910,6 +919,86 @@ function initMarkdownEditor() {
   });
 }
 
+// ─── Sidebar List Name Edit ──────────────────
+
+function initListNameEdit() {
+  document.querySelectorAll(".list-nav-item").forEach(function(li) {
+    if (li._editBound) return;
+    li._editBound = true;
+
+    var display = li.querySelector(".list-nav-display");
+    var form = li.querySelector(".list-nav-edit-form");
+    if (!display || !form) return;
+
+    var nameInput = form.querySelector('input[name="name"]');
+
+    // Double-click on display text enters edit mode
+    display.addEventListener("dblclick", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      li.classList.add("editing");
+      if (nameInput) {
+        nameInput.focus();
+        nameInput.select();
+      }
+    });
+
+    // Prevent single-click navigation while editing, but allow form interactions
+    li.addEventListener("click", function(e) {
+      if (li.classList.contains("editing") && !form.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    li.addEventListener("htmx:confirm", function(e) {
+      if (li.classList.contains("editing") && e.detail.elt === li) {
+        e.preventDefault();
+      }
+    });
+
+    if (nameInput) {
+      // Enter submits the form
+      nameInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          htmx.trigger(form, "submit");
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancelEdit(li);
+        }
+      });
+
+      // Blur cancels edit (unless emoji picker is open or focus is in form)
+      nameInput.addEventListener("blur", function(e) {
+        setTimeout(function() {
+          var pickerOpen = emojiPickerEl && emojiPickerEl.style.display !== "none";
+          if (!form.contains(document.activeElement) && !pickerOpen) {
+            cancelEdit(li);
+          }
+        }, 150);
+      });
+    }
+  });
+}
+
+function cancelEdit(li) {
+  li.classList.remove("editing");
+  // Reset input values to original
+  var nameInput = li.querySelector('.list-nav-edit-form input[name="name"]');
+  var nameSpan = li.querySelector(".list-name");
+  if (nameInput && nameSpan) {
+    nameInput.value = nameSpan.textContent;
+  }
+  var emojiInput = li.querySelector('.list-nav-edit-form input[name="emoji"]');
+  var emojiSpan = li.querySelector(".list-emoji");
+  var emojiBtn = li.querySelector(".list-nav-edit-form .emoji-trigger");
+  if (emojiInput && emojiSpan) {
+    emojiInput.value = emojiSpan.textContent;
+    if (emojiBtn) emojiBtn.textContent = emojiSpan.textContent || "+";
+  }
+}
+
 // ─── Init & HTMX Hooks ──────────────────────
 
 function initAll() {
@@ -917,6 +1006,7 @@ function initAll() {
   setupToastDismiss();
   try { initEmojiPickers(); } catch (ex) { console.error("initEmojiPickers error:", ex); }
   try { initMarkdownEditor(); } catch (ex) { console.error("initMarkdownEditor error:", ex); }
+  try { initListNameEdit(); } catch (ex) { console.error("initListNameEdit error:", ex); }
   restoreTaskFocus();
   restoreFocus();
 }

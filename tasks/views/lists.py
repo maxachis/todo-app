@@ -69,7 +69,22 @@ def update_list(request, list_id):
 
     if _is_htmx(request):
         lists = List.objects.all()
-        return render(request, "tasks/partials/sidebar_lists.html", {"lists": lists, "active_list": task_list})
+        context = {"lists": lists, "active_list": task_list}
+        from django.template.loader import render_to_string
+
+        sidebar_html = render_to_string(
+            "tasks/partials/sidebar_lists.html", context, request=request
+        )
+        sections = task_list.sections.all()
+        context["sections"] = sections
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        oob_center = (
+            f'<div id="center-panel" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        return HttpResponse(sidebar_html + oob_center)
 
     return redirect_to_list(task_list)
 
