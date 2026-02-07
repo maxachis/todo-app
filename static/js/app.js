@@ -226,10 +226,14 @@ function initKeyboardNav() {
   console.log("[keyboard-nav] initialized");
 
   // Click on a task row → highlight + load detail (skip checkbox clicks)
+  // Click outside any task row → clear highlight
   document.addEventListener("click", function(e) {
     if (e.target.closest(".checkbox")) return;
     var row = e.target.closest(".task-row");
-    if (!row) return;
+    if (!row) {
+      setTaskFocus(null);
+      return;
+    }
     var taskItem = row.closest(".task-item");
     if (taskItem) {
       setTaskFocus(taskItem, true);

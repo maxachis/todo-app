@@ -110,3 +110,31 @@ class TestEscape:
 
         page.keyboard.press("Escape")
         expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
+
+
+class TestClickAwayClearsFocus:
+    def test_click_sidebar_clears_focus(self, page, base_url, seed_list_with_tasks):
+        """Clicking the sidebar clears the task highlight."""
+        task_list, section, tasks = seed_list_with_tasks
+        page.goto(base_url)
+
+        # Focus a task
+        page.keyboard.press("ArrowDown")
+        expect(page.locator(".task-row.keyboard-focus")).to_be_visible()
+
+        # Click the sidebar
+        page.locator("#sidebar").click()
+        expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
+
+    def test_click_detail_panel_clears_focus(self, page, base_url, seed_list_with_tasks):
+        """Clicking the detail panel clears the task highlight."""
+        task_list, section, tasks = seed_list_with_tasks
+        page.goto(base_url)
+
+        # Click a task to focus it and load its detail
+        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
+        expect(page.locator(".task-row.keyboard-focus")).to_be_visible()
+
+        # Click the detail panel area
+        page.locator("#detail-panel h2").click()
+        expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
