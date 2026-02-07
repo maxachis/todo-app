@@ -47,9 +47,15 @@
           hx-post="/tasks/{{ task.id }}/tags/"
           hx-target="#detail-panel"
           hx-swap="innerHTML">
-      <input type="text" name="name" placeholder="Add tag..." required>
+      <input type="text" name="name" placeholder="Add tag..." required
+             list="tag-suggestions" autocomplete="off">
       <button type="submit" class="btn btn-sm">Add</button>
     </form>
+    <datalist id="tag-suggestions">
+      {% for tag in available_tags %}
+      <option value="{{ tag.name }}">
+      {% endfor %}
+    </datalist>
   </div>
 
   <div class="task-actions">

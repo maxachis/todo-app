@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from tasks.models import List, Section, Task
+from tasks.models import List, Section, Tag, Task
 
 
 def _is_htmx(request):
@@ -59,12 +59,18 @@ def create_task(request, section_id):
 def task_detail(request, task_id):
     """GET task detail — right sidebar content."""
     task = get_object_or_404(Task, pk=task_id)
+    available_tags = Tag.objects.exclude(pk__in=task.tags.all())
 
     if _is_htmx(request):
-        return render(request, "tasks/partials/task_detail.html", {"task": task})
+        return render(
+            request,
+            "tasks/partials/task_detail.html",
+            {"task": task, "available_tags": available_tags},
+        )
 
     context = _render_list_context(task.section.list)
     context["selected_task"] = task
+    context["available_tags"] = available_tags
     return render(request, "tasks/index.html", context)
 
 

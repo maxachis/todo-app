@@ -9,6 +9,12 @@ def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
+def _task_detail_context(task):
+    """Build context for task detail rendering, including available tags."""
+    available_tags = Tag.objects.exclude(pk__in=task.tags.all())
+    return {"task": task, "available_tags": available_tags}
+
+
 @require_http_methods(["POST"])
 def add_tag(request, task_id):
     """Add a tag to a task."""
@@ -22,7 +28,9 @@ def add_tag(request, task_id):
     task.tags.add(tag)
 
     if _is_htmx(request):
-        return render(request, "tasks/partials/task_detail.html", {"task": task})
+        return render(
+            request, "tasks/partials/task_detail.html", _task_detail_context(task)
+        )
 
     from django.shortcuts import redirect
     return redirect("task_detail", task_id=task.pk)
@@ -36,7 +44,9 @@ def remove_tag(request, task_id, tag_id):
     task.tags.remove(tag)
 
     if _is_htmx(request):
-        return render(request, "tasks/partials/task_detail.html", {"task": task})
+        return render(
+            request, "tasks/partials/task_detail.html", _task_detail_context(task)
+        )
 
     from django.shortcuts import redirect
     return redirect("task_detail", task_id=task.pk)

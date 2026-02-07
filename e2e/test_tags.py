@@ -43,6 +43,46 @@ class TestTagAdd:
         assert tasks[0].tags.count() == 2
 
 
+class TestTagAutocomplete:
+    def test_datalist_suggests_existing_tags(self, page, base_url, seed_list_with_tasks):
+        """Previously created tags appear as datalist options on a different task."""
+        task_list, section, tasks = seed_list_with_tasks
+
+        # Create a tag on the first task via ORM
+        tag = Tag.objects.create(name="errand")
+        tasks[0].tags.add(tag)
+
+        page.goto(base_url)
+
+        # Open detail for the second task (which has no tags)
+        page.locator(f'.task-item[data-task-id="{tasks[1].id}"] > .task-row').click()
+        expect(page.locator("#detail-panel")).to_contain_text("Walk the dog")
+
+        # The datalist should contain "errand" as an option
+        options = page.locator('#tag-suggestions option[value="errand"]')
+        expect(options).to_have_count(1)
+
+    def test_datalist_excludes_applied_tags(self, page, base_url, seed_list_with_tasks):
+        """Tags already on the task should not appear in the datalist."""
+        task_list, section, tasks = seed_list_with_tasks
+
+        # Create tags and apply one to the first task
+        tag1 = Tag.objects.create(name="urgent")
+        tag2 = Tag.objects.create(name="shopping")
+        tasks[0].tags.add(tag1)
+
+        page.goto(base_url)
+
+        # Open detail for first task
+        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
+        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
+
+        # "urgent" is already applied — should NOT be in datalist
+        expect(page.locator('#tag-suggestions option[value="urgent"]')).to_have_count(0)
+        # "shopping" is not applied — should be in datalist
+        expect(page.locator('#tag-suggestions option[value="shopping"]')).to_have_count(1)
+
+
 class TestTagRemove:
     def test_remove_tag_from_task(self, page, base_url, seed_full):
         """Remove a tag by clicking the x button."""
