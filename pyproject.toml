@@ -9,5 +9,19 @@ dependencies = [
     "bleach>=6.1",
 ]
 
+[dependency-groups]
+dev = [
+    "playwright>=1.49",
+    "pytest-django>=4.8",
+    "pytest-playwright>=0.6",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "todoapp.settings"
+pythonpath = ["."]
+markers = [
+    "slow: marks tests as slow (toast timeout, drag-drop)",
+]
+
 [tool.black]
 line-length = 88
