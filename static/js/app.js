@@ -968,19 +968,18 @@ function initListNameEdit() {
           cancelEdit(li);
         }
       });
-
-      // Blur cancels edit (unless emoji picker is open or focus is in form)
-      nameInput.addEventListener("blur", function(e) {
-        setTimeout(function() {
-          var pickerOpen = emojiPickerEl && emojiPickerEl.style.display !== "none";
-          if (!form.contains(document.activeElement) && !pickerOpen) {
-            cancelEdit(li);
-          }
-        }, 150);
-      });
     }
   });
 }
+
+// Click anywhere outside an editing list item cancels the edit
+document.addEventListener("click", function(e) {
+  var editingItem = document.querySelector(".list-nav-item.editing");
+  if (!editingItem) return;
+  var pickerOpen = emojiPickerEl && emojiPickerEl.style.display !== "none";
+  if (editingItem.contains(e.target) || (pickerOpen && emojiPickerEl.contains(e.target))) return;
+  cancelEdit(editingItem);
+});
 
 function cancelEdit(li) {
   li.classList.remove("editing");
