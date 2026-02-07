@@ -1,0 +1,41 @@
+{% if active_list %}
+<div class="list-header">
+  <h1>
+    {% if active_list.emoji %}{{ active_list.emoji }} {% endif %}{{ active_list.name }}
+  </h1>
+  <div class="list-actions">
+    <a href="/lists/{{ active_list.id }}/export/json/" class="btn btn-sm">JSON</a>
+    <a href="/lists/{{ active_list.id }}/export/csv/" class="btn btn-sm">CSV</a>
+    <a href="/lists/{{ active_list.id }}/export/md/" class="btn btn-sm">MD</a>
+    <button hx-post="/lists/{{ active_list.id }}/delete/"
+            hx-target="#center-panel"
+            hx-confirm="Delete this list?"
+            class="btn btn-sm btn-danger">Delete List</button>
+  </div>
+</div>
+
+{% for section in sections %}
+  {% include "tasks/partials/section.html" with section=section %}
+{% endfor %}
+
+<form class="inline-form section-form"
+      hx-post="/lists/{{ active_list.id }}/sections/"
+      hx-target="#center-panel"
+      hx-swap="innerHTML">
+  <input type="text" name="name" placeholder="New section..." required>
+  <input type="text" name="emoji" placeholder="Emoji" maxlength="10" class="emoji-input">
+  <button type="submit" class="btn btn-sm">Add Section</button>
+</form>
+
+{% if completed_tasks %}
+<div class="completed-section">
+  <h3>Completed</h3>
+  {% for task in completed_tasks %}
+    {% include "tasks/partials/task_item.html" with task=task %}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% else %}
+<p class="empty-state">Select or create a list to get started.</p>
+{% endif %}

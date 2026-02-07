@@ -1,0 +1,5 @@
+{% include "tasks/partials/list_detail.html" %}
+
+<div id="toast-container" hx-swap-oob="innerHTML:#toast-container">
+  {% include "tasks/partials/toast.html" with task=toast_task %}
+</div>

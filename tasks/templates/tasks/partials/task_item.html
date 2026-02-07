@@ -1,0 +1,34 @@
+<div class="task-item {% if task.is_completed %}completed{% endif %}"
+     data-task-id="{{ task.id }}"
+     style="padding-left: {{ depth|default:0|add:0 }}em;">
+  <div class="task-row">
+    {% if task.is_completed %}
+    <button class="checkbox checked"
+            hx-post="/tasks/{{ task.id }}/uncomplete/"
+            hx-target="#center-panel"
+            hx-swap="innerHTML">&#9745;</button>
+    {% else %}
+    <button class="checkbox"
+            hx-post="/tasks/{{ task.id }}/complete/"
+            hx-target="#center-panel"
+            hx-swap="innerHTML">&#9744;</button>
+    {% endif %}
+
+    <span class="task-title"
+          hx-get="/tasks/{{ task.id }}/detail/"
+          hx-target="#detail-panel"
+          hx-swap="innerHTML">{{ task.title }}</span>
+
+    {% if task.due_date %}
+    <span class="task-due-date">{{ task.due_date }}</span>
+    {% endif %}
+
+    {% for tag in task.tags.all %}
+    <span class="task-tag">{{ tag.name }}</span>
+    {% endfor %}
+  </div>
+
+  {% for subtask in task.subtasks.all %}
+    {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
+  {% endfor %}
+</div>

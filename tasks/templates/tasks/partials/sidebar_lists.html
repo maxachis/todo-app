@@ -1,0 +1,25 @@
+<div class="sidebar-header">
+  <h2>Lists</h2>
+  <div class="sidebar-actions">
+    <a href="/export/json/" class="btn btn-sm">Export All</a>
+  </div>
+</div>
+
+<ul class="list-nav" id="list-nav">
+  {% for list in lists %}
+  <li class="list-nav-item {% if active_list.id == list.id %}active{% endif %}"
+      data-list-id="{{ list.id }}"
+      hx-get="/lists/{{ list.id }}/"
+      hx-target="#center-panel"
+      hx-push-url="true">
+    <span class="list-emoji">{{ list.emoji }}</span>
+    <span class="list-name">{{ list.name }}</span>
+  </li>
+  {% endfor %}
+</ul>
+
+<form class="inline-form" hx-post="/lists/" hx-target="#sidebar" hx-swap="innerHTML">
+  <input type="text" name="name" placeholder="New list name..." required>
+  <input type="text" name="emoji" placeholder="Emoji" maxlength="10" class="emoji-input">
+  <button type="submit" class="btn btn-sm">Add</button>
+</form>
