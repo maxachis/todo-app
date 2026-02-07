@@ -61,6 +61,8 @@ A multi-list task management application built with **Django** and **HTMX**. The
 - **FR-1.4:** User can delete a list (deletes all sections and tasks within it).
 - **FR-1.5:** Lists are displayed in the left sidebar, ordered by position.
 - **FR-1.6:** Selecting a list displays its sections and tasks in the central panel.
+- **FR-1.7:** User can double-click a list in the sidebar to edit its name and emoji inline. Enter or emoji selection saves; Escape cancels; clicking away saves.
+- **FR-1.8:** An emoji picker modal provides a searchable grid of emojis across categories. Click-away or Escape closes it. Available for lists and sections.
 
 ### FR-2: Section Management
 - **FR-2.1:** User can create a section within a list, with a name and optional emoji.
@@ -75,6 +77,8 @@ A multi-list task management application built with **Django** and **HTMX**. The
 - **FR-3.3:** User can edit a task's title inline.
 - **FR-3.4:** User can delete a task (deletes all subtasks recursively).
 - **FR-3.5:** Tasks are displayed in order within their section or parent task.
+- **FR-3.6:** Task tags are displayed as badges on the task row in the center panel.
+- **FR-3.7:** Task due date is displayed in abbreviated format (e.g., "Mar 15") on the task row in the center panel.
 
 ### FR-4: Task Detail Editing (Right Sidebar)
 - **FR-4.1:** Selecting a task opens its details in the right sidebar.
@@ -82,6 +86,10 @@ A multi-list task management application built with **Django** and **HTMX**. The
 - **FR-4.3:** User can set, change, or clear a due date.
 - **FR-4.4:** User can add or remove tags from a task.
 - **FR-4.5:** Links within rendered notes and task content are automatically highlighted and clickable (`<a>` tags with `target="_blank"`).
+- **FR-4.6:** A live Markdown editor replaces the plain textarea. Inactive blocks show rendered HTML; the active block shows raw Markdown. Supports headings, bold, italic, strikethrough, inline code, lists, blockquotes, code fences, and horizontal rules.
+- **FR-4.7:** Detail fields (title, due date, notes) auto-save on blur — no Save button required. The server responds with OOB swaps to update the detail heading and center panel task row without re-rendering the full detail panel.
+- **FR-4.8:** Adding or removing a tag immediately updates the center panel task row via an HTMX OOB swap.
+- **FR-4.9:** The tag input offers autocomplete suggestions via an HTML5 `<datalist>` populated with existing tags not already assigned to the current task.
 
 ### FR-5: Task Completion
 - **FR-5.1:** User can mark a task as complete.
@@ -94,6 +102,7 @@ A multi-list task management application built with **Django** and **HTMX**. The
 ### FR-6: HTMX Interactivity
 - **FR-6.1:** All CRUD operations use HTMX for partial page updates (no full-page reloads).
 - **FR-6.2:** The undo toast is rendered via HTMX swap and dismissed via client-side timer.
+- **FR-6.3:** After an HTMX swap, focus is restored to the previously focused input so the user can continue editing without re-clicking.
 
 ### FR-7: Drag-and-Drop
 - **FR-7.1:** User can drag a task to reorder it within its current section.
@@ -104,6 +113,8 @@ A multi-list task management application built with **Django** and **HTMX**. The
 - **FR-7.6:** When a task is moved, all its subtasks move with it.
 - **FR-7.7:** After a drop, the `position`, `section`, `parent`, and/or list assignment are updated on the server via an HTMX request.
 - **FR-7.8:** Drag-and-drop uses SortableJS for the client-side interaction.
+- **FR-7.9:** Drag-and-drop and keyboard indent/outdent use optimistic DOM updates — the UI moves the task immediately, and the server persists the change silently in the background.
+- **FR-7.10:** The server prevents circular nesting (a task cannot become a subtask of itself or any of its descendants).
 
 ### FR-8: Export
 - **FR-8.1:** User can export a single list or all lists.
@@ -115,12 +126,22 @@ A multi-list task management application built with **Django** and **HTMX**. The
 - **FR-8.7:** Export response sets `Content-Disposition: attachment` with a filename based on the list name (or `all-lists`) and format extension.
 - **FR-8.8:** Export of an empty list returns a valid file with only the list/section headers and no tasks.
 
+### FR-9: Keyboard Navigation
+- **FR-9.1:** User can navigate between non-completed tasks using Arrow Up/Down or j/k keys.
+- **FR-9.2:** User can indent a focused task (make it a subtask of the previous task) using Tab, and outdent using Shift+Tab.
+- **FR-9.3:** User can mark the focused task as complete using the x key.
+- **FR-9.4:** User can clear task selection using Escape.
+- **FR-9.5:** Clicking a task row highlights it and loads its detail panel. Clicking outside any task row (sidebar, detail panel, empty area) clears the highlight.
+- **FR-9.6:** The focused task scrolls into view automatically.
+
 ## 5. Non-Functional Requirements
 
 - **NFR-1:** The app runs on port 8000.
 - **NFR-2:** All task/section/list ordering uses a `position` field to allow reordering.
 - **NFR-3:** No user authentication required (single-user app).
 - **NFR-4:** Markdown rendering must sanitize HTML to prevent XSS.
+- **NFR-5:** Drag-and-drop, task creation, and detail edits use optimistic/OOB updates for a flicker-free experience.
+- **NFR-6:** Core task operations (navigate, complete, indent/outdent) are fully accessible via keyboard.
 
 ## 6. Test Requirements
 
