@@ -186,7 +186,7 @@ function getVisibleTasks() {
   );
 }
 
-function setTaskFocus(taskEl) {
+function setTaskFocus(taskEl, loadDetail) {
   // Remove old focus from task-rows
   document.querySelectorAll(".task-row.keyboard-focus").forEach(function(el) {
     el.classList.remove("keyboard-focus");
@@ -199,6 +199,13 @@ function setTaskFocus(taskEl) {
     focusedTaskId = taskEl.dataset.taskId;
     // Scroll into view if needed
     taskEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // Load task detail in right sidebar
+    if (loadDetail) {
+      htmx.ajax("GET", "/tasks/" + focusedTaskId + "/detail/", {
+        target: "#detail-panel",
+        swap: "innerHTML"
+      });
+    }
   } else {
     focusedTaskId = null;
   }
@@ -217,6 +224,18 @@ function restoreTaskFocus() {
 
 function initKeyboardNav() {
   console.log("[keyboard-nav] initialized");
+
+  // Click on a task row → highlight + load detail (skip checkbox clicks)
+  document.addEventListener("click", function(e) {
+    if (e.target.closest(".checkbox")) return;
+    var row = e.target.closest(".task-row");
+    if (!row) return;
+    var taskItem = row.closest(".task-item");
+    if (taskItem) {
+      setTaskFocus(taskItem, true);
+    }
+  });
+
   document.addEventListener("keydown", function(e) {
     // Don't intercept when input/textarea/contenteditable is focused
     var tag = e.target.tagName.toLowerCase();
@@ -225,7 +244,7 @@ function initKeyboardNav() {
     }
 
     // Only handle navigation keys
-    var navKeys = ["ArrowDown", "ArrowUp", "j", "k", "Enter", "Tab", "x", "Escape"];
+    var navKeys = ["ArrowDown", "ArrowUp", "j", "k", "Tab", "x", "Escape"];
     if (navKeys.indexOf(e.key) === -1) return;
 
     var tasks = getVisibleTasks();
@@ -248,20 +267,12 @@ function initKeyboardNav() {
       e.preventDefault();
       var nextIndex = currentIndex + 1;
       if (nextIndex >= tasks.length) nextIndex = 0;
-      setTaskFocus(tasks[nextIndex]);
+      setTaskFocus(tasks[nextIndex], true);
     } else if (e.key === "ArrowUp" || e.key === "k") {
       e.preventDefault();
       var prevIndex = currentIndex - 1;
       if (prevIndex < 0) prevIndex = tasks.length - 1;
-      setTaskFocus(tasks[prevIndex]);
-    } else if (e.key === "Enter" && focusedTaskId) {
-      e.preventDefault();
-      // Open task detail
-      var focused = document.querySelector('.task-item[data-task-id="' + focusedTaskId + '"]');
-      if (focused) {
-        var titleEl = focused.querySelector(".task-title");
-        if (titleEl) titleEl.click();
-      }
+      setTaskFocus(tasks[prevIndex], true);
     } else if (e.key === "Tab" && focusedTaskId) {
       e.preventDefault();
       var focused = document.querySelector('.task-item[data-task-id="' + focusedTaskId + '"]');
