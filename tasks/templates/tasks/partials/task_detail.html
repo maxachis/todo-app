@@ -13,7 +13,8 @@
 
     <div class="form-group">
       <label for="notes">Notes (Markdown)</label>
-      <textarea name="notes" id="notes" rows="6">{{ task.notes }}</textarea>
+      <textarea name="notes" id="notes" rows="6" style="display:none;">{{ task.notes }}</textarea>
+      <div class="md-editor" contenteditable="true" data-target="notes" id="md-editor">{{ task.notes }}</div>
     </div>
 
     <div class="form-group">

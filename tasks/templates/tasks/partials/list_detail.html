@@ -23,7 +23,8 @@
       hx-target="#center-panel"
       hx-swap="innerHTML">
   <input type="text" name="name" placeholder="New section..." required>
-  <input type="text" name="emoji" placeholder="Emoji" maxlength="10" class="emoji-input">
+  <input type="hidden" name="emoji" value="">
+  <button type="button" class="emoji-trigger" data-emoji-target="emoji" title="Pick emoji">+</button>
   <button type="submit" class="btn btn-sm">Add Section</button>
 </form>
 

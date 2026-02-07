@@ -175,7 +175,17 @@ def move_task(request, task_id):
         if parent_id == "" or parent_id == "null":
             task.parent = None
         else:
-            task.parent = get_object_or_404(Task, pk=parent_id)
+            new_parent = get_object_or_404(Task, pk=parent_id)
+            # Circular reference check: walk up from new_parent
+            ancestor = new_parent
+            while ancestor is not None:
+                if ancestor.pk == task.pk:
+                    return HttpResponse(
+                        "Cannot nest a task under its own descendant",
+                        status=400,
+                    )
+                ancestor = ancestor.parent
+            task.parent = new_parent
 
     # Set position
     if position is not None:
