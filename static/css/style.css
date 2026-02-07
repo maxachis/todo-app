@@ -229,6 +229,7 @@ body {
   font-size: 13px;
   font-family: var(--font-body);
   flex: 1;
+  min-width: 0;
   transition: border-color var(--transition-fast);
 }
 
@@ -245,6 +246,7 @@ body {
   background: rgba(251, 191, 36, 0.15);
   color: var(--sidebar-active-text);
   border: 1px solid rgba(251, 191, 36, 0.2);
+  flex-shrink: 0;
 }
 
 .sidebar .inline-form .btn:hover {
