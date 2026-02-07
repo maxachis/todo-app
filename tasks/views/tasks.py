@@ -46,8 +46,11 @@ def create_task(request, section_id):
     )
 
     if _is_htmx(request):
-        context = _render_list_context(section.list)
-        return render(request, "tasks/partials/list_detail.html", context)
+        return render(
+            request,
+            "tasks/partials/task_item.html",
+            {"task": task, "depth": 0},
+        )
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=section.list.pk)
