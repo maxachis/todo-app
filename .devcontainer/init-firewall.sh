@@ -15,6 +15,9 @@ ALLOWED_DOMAINS=(
     api.github.com
     raw.githubusercontent.com
     objects.githubusercontent.com
+    pypi.org
+    files.pythonhosted.org
+    playwright.azureedge.net
     marketplace.visualstudio.com
     vscode.blob.core.windows.net
     update.code.visualstudio.com
