@@ -13,6 +13,29 @@ function getCsrfToken() {
   return cookie ? cookie.split("=")[1] : "";
 }
 
+/**
+ * Persist a task move to the server without swapping DOM.
+ * On success: no-op (DOM already reflects the change).
+ * On failure: full GET refresh to restore correct state.
+ */
+function postMove(taskId, data) {
+  fetch("/tasks/" + taskId + "/move/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCsrfToken(),
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams(data)
+  }).then(function(resp) {
+    if (!resp.ok) {
+      htmx.ajax("GET", window.location.pathname, {
+        target: "#center-panel",
+        swap: "innerHTML"
+      });
+    }
+  });
+}
+
 // ─── Toast ───────────────────────────────────
 
 function dismissToast() {
@@ -112,17 +135,15 @@ function initSortable() {
         var newParentId = dropZone.dataset.parentTaskId || "null";
         var newIndex = evt.newIndex;
 
-        var values = {
+        // Update data attributes on the moved element
+        evt.item.dataset.parentId = newParentId === "null" ? "" : newParentId;
+        evt.item.dataset.sectionId = newSectionId;
+
+        // SortableJS already moved the DOM element — just persist silently
+        postMove(taskId, {
           section: newSectionId,
           position: newIndex * 10,
-          parent: newParentId,
-          csrfmiddlewaretoken: getCsrfToken()
-        };
-
-        htmx.ajax("POST", "/tasks/" + taskId + "/move/", {
-          values: values,
-          target: "#center-panel",
-          swap: "innerHTML"
+          parent: newParentId
         });
       }
     });
@@ -247,36 +268,57 @@ function initKeyboardNav() {
       if (!focused) return;
 
       if (e.shiftKey) {
-        // Outdent: set parent to grandparent (or null)
+        // Outdent: move task from parent's subtask zone to grandparent's container
         var currentParentId = focused.dataset.parentId;
-        var newParent = "null";
-        if (currentParentId) {
-          var parentEl = document.querySelector('.task-item[data-task-id="' + currentParentId + '"]');
-          if (parentEl && parentEl.dataset.parentId) {
-            newParent = parentEl.dataset.parentId;
-          }
+        if (!currentParentId) return; // Already top-level, nothing to outdent
+
+        var parentEl = document.querySelector('.task-item[data-task-id="' + currentParentId + '"]');
+        if (!parentEl) return;
+
+        var grandparentId = parentEl.dataset.parentId || "";
+        // Target container: the .sortable-tasks that contains the parent element
+        var targetContainer = parentEl.parentNode;
+
+        // Move focused element after the parent in the target container
+        if (parentEl.nextSibling) {
+          targetContainer.insertBefore(focused, parentEl.nextSibling);
+        } else {
+          targetContainer.appendChild(focused);
         }
-        htmx.ajax("POST", "/tasks/" + focusedTaskId + "/move/", {
-          values: {
-            parent: newParent,
-            csrfmiddlewaretoken: getCsrfToken()
-          },
-          target: "#center-panel",
-          swap: "innerHTML"
+
+        // Update data attribute and visual depth
+        focused.dataset.parentId = grandparentId;
+        var parentDepth = parseInt(parentEl.style.paddingLeft) || 0;
+        focused.style.paddingLeft = parentDepth + "em";
+
+        // Persist silently
+        postMove(focusedTaskId, {
+          parent: grandparentId || "null"
         });
       } else {
-        // Indent: set parent to previous sibling task
-        if (currentIndex > 0) {
-          var prevTask = tasks[currentIndex - 1];
-          htmx.ajax("POST", "/tasks/" + focusedTaskId + "/move/", {
-            values: {
-              parent: prevTask.dataset.taskId,
-              csrfmiddlewaretoken: getCsrfToken()
-            },
-            target: "#center-panel",
-            swap: "innerHTML"
-          });
-        }
+        // Indent: move task into previous sibling's subtask drop zone
+        if (currentIndex <= 0) return;
+
+        // Find previous visible sibling (the task right above in the flat list)
+        var prevTask = tasks[currentIndex - 1];
+        var prevTaskId = prevTask.dataset.taskId;
+
+        // Find the subtask drop zone inside the previous task
+        var dropZone = prevTask.querySelector(":scope > .subtask-drop-zone");
+        if (!dropZone) return;
+
+        // Move focused element into the drop zone
+        dropZone.appendChild(focused);
+
+        // Update data attribute and visual depth
+        focused.dataset.parentId = prevTaskId;
+        var prevDepth = parseInt(prevTask.style.paddingLeft) || 0;
+        focused.style.paddingLeft = (prevDepth + 1) + "em";
+
+        // Persist silently
+        postMove(focusedTaskId, {
+          parent: prevTaskId
+        });
       }
     } else if (e.key === "x" && focusedTaskId) {
       // Quick complete
