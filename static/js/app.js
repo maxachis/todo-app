@@ -1036,4 +1036,9 @@ document.addEventListener("DOMContentLoaded", function() {
   trackFormFocus();
   initKeyboardNav();
   initAll();
+
+  // Register service worker for PWA support
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/service-worker.js");
+  }
 });

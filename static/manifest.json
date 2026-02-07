@@ -1,0 +1,20 @@
+{
+  "name": "ToDo",
+  "short_name": "ToDo",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1C1917",
+  "background_color": "#F7F4EF",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
