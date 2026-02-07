@@ -1,11 +1,11 @@
 {% load markdown_extras %}
 
 <div class="task-detail-content">
-  <h2>{{ task.title }}</h2>
+  <h2 id="detail-title">{{ task.title }}</h2>
 
   <form hx-post="/tasks/{{ task.id }}/update/"
-        hx-target="#detail-panel"
-        hx-swap="innerHTML">
+        hx-swap="none"
+        hx-trigger="change, md-save from:.md-editor">
     <div class="form-group">
       <label for="title">Title</label>
       <input type="text" name="title" value="{{ task.title }}" id="title">
@@ -22,16 +22,14 @@
       <input type="date" name="due_date" id="due_date"
              value="{% if task.due_date %}{{ task.due_date|date:'Y-m-d' }}{% endif %}">
     </div>
-
-    <button type="submit" class="btn">Save</button>
   </form>
 
-  {% if task.notes %}
-  <div class="rendered-notes">
+  <div id="rendered-notes" class="rendered-notes">
+    {% if task.notes %}
     <h3>Preview</h3>
     {{ task.notes|render_markdown }}
+    {% endif %}
   </div>
-  {% endif %}
 
   <div class="task-tags">
     <h3>Tags</h3>

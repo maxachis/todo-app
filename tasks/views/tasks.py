@@ -96,10 +96,24 @@ def update_task(request, task_id):
 
     if _is_htmx(request):
         from django.template.loader import render_to_string
+        from tasks.templatetags.markdown_extras import render_markdown
 
-        detail_html = render_to_string(
-            "tasks/partials/task_detail.html", {"task": task}, request=request
+        # OOB swap: update heading in detail panel
+        oob_title = (
+            f'<h2 id="detail-title" hx-swap-oob="true">'
+            f"{task.title}</h2>"
         )
+
+        # OOB swap: update rendered notes preview
+        notes_html = ""
+        if task.notes:
+            notes_html = f"<h3>Preview</h3>{render_markdown(task.notes)}"
+        oob_notes = (
+            f'<div id="rendered-notes" class="rendered-notes" hx-swap-oob="true">'
+            f"{notes_html}</div>"
+        )
+
+        # OOB swap: update task row in center panel
         depth = 0
         ancestor = task.parent
         while ancestor:
@@ -114,7 +128,7 @@ def update_task(request, task_id):
             f'<div hx-swap-oob="outerHTML:#task-{task.id}">'
             f"{task_html}</div>"
         )
-        return HttpResponse(detail_html + oob_task)
+        return HttpResponse(oob_title + oob_notes + oob_task)
 
     from django.shortcuts import redirect
     return redirect("task_detail", task_id=task.pk)

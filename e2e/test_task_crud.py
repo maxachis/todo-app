@@ -54,7 +54,7 @@ class TestTaskEdit:
     def test_edit_task_title_in_detail_panel(
         self, page, base_url, seed_list_with_tasks
     ):
-        """Click a task, edit title in detail panel, save."""
+        """Click a task, edit title in detail panel, auto-saves on blur."""
         task_list, section, tasks = seed_list_with_tasks
         page.goto(base_url)
 
@@ -64,12 +64,12 @@ class TestTaskEdit:
         # Wait for detail panel to load
         expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
 
-        # Edit the title
+        # Edit the title and blur to trigger auto-save
         page.fill('#detail-panel input[name="title"]', "Buy organic groceries")
-        page.click('#detail-panel .btn:has-text("Save")')
+        page.locator('#detail-panel input[name="title"]').press("Tab")
 
-        # Detail panel should update
-        expect(page.locator("#detail-panel")).to_contain_text("Buy organic groceries")
+        # Detail panel heading should update via OOB swap
+        expect(page.locator("#detail-title")).to_contain_text("Buy organic groceries")
         # Center panel task row should also update via OOB swap
         expect(
             page.locator(f'.task-item[data-task-id="{tasks[0].id}"]')
@@ -79,7 +79,7 @@ class TestTaskEdit:
         assert tasks[0].title == "Buy organic groceries"
 
     def test_edit_task_due_date(self, page, base_url, seed_list_with_tasks):
-        """Set a due date on a task via the detail panel."""
+        """Set a due date on a task via the detail panel, auto-saves on change."""
         task_list, section, tasks = seed_list_with_tasks
         page.goto(base_url)
 
@@ -87,11 +87,11 @@ class TestTaskEdit:
         page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
         expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
 
-        # Set due date
+        # Set due date and trigger change event for auto-save
         page.fill('#detail-panel input[name="due_date"]', "2026-03-15")
-        page.click('#detail-panel .btn:has-text("Save")')
+        page.locator('#detail-panel input[name="due_date"]').dispatch_event("change")
 
-        # Due date should appear on the task row
+        # Due date should appear on the task row via OOB swap
         expect(
             page.locator(f'.task-item[data-task-id="{tasks[0].id}"]')
         ).to_contain_text("Mar 15")

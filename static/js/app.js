@@ -783,6 +783,9 @@ function initMarkdownEditor() {
 
   var currentBlocks = parseBlocks(textarea.value);
 
+  // Store original value for change detection on blur
+  textarea.setAttribute("data-original", textarea.value);
+
   // Initial render — no active block
   renderEditor(currentBlocks, -1);
 
@@ -894,7 +897,7 @@ function initMarkdownEditor() {
     }
   });
 
-  // On blur, deactivate all blocks
+  // On blur, deactivate all blocks and trigger save if changed
   editor.addEventListener("blur", function() {
     if (isRendering) return;
     // Save active block
@@ -914,6 +917,12 @@ function initMarkdownEditor() {
       if (document.activeElement !== editor && !editor.contains(document.activeElement)) {
         renderEditor(currentBlocks, -1);
         textarea.value = getEditorText();
+        // Dispatch md-save if content changed
+        var original = textarea.getAttribute("data-original") || "";
+        if (textarea.value !== original) {
+          textarea.setAttribute("data-original", textarea.value);
+          editor.dispatchEvent(new CustomEvent("md-save", { bubbles: true }));
+        }
       }
     }, 100);
   });
