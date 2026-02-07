@@ -2,7 +2,8 @@
 Shared fixtures for Playwright E2E tests.
 
 Uses a subprocess Django dev server. Both the test process and the server
-use the same production SQLite database.
+share a temporary SQLite database (via the DB_PATH env var) so that
+production data is never touched.
 
 Layered seed fixtures:
   seed_list → seed_list_with_tasks → seed_full
@@ -77,11 +78,32 @@ def _find_free_port():
 
 
 @pytest.fixture(scope="session")
-def base_url():
-    """Start a Django dev server subprocess and return its URL."""
+def base_url(tmp_path_factory):
+    """Create a temp DB, run migrations, start a Django dev server, return its URL."""
+    from django.conf import settings
+    from django.db import connection
+
+    # 1. Create a temp DB path shared by test process and server subprocess
+    db_path = str(tmp_path_factory.mktemp("db") / "test.sqlite3")
+    os.environ["DB_PATH"] = db_path
+
+    # 2. Point the test process at the temp DB and reconnect
+    settings.DATABASES["default"]["NAME"] = db_path
+    connection.close()
+
+    # 3. Run migrations so the temp DB has all tables
+    subprocess.run(
+        ["python", "manage.py", "migrate", "--run-syncdb"],
+        cwd="/workspaces/ToDo App",
+        env=os.environ,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    # 4. Start the dev server (inherits DB_PATH from env)
     port = _find_free_port()
     env = os.environ.copy()
-    env["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
     proc = subprocess.Popen(
         ["python", "manage.py", "runserver", f"0.0.0.0:{port}", "--noreload"],
@@ -113,6 +135,9 @@ def base_url():
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
         proc.kill()
+
+    # Clean up env var
+    os.environ.pop("DB_PATH", None)
 
 
 # ─── Page Configuration ────────────────────────────
