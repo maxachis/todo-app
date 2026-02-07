@@ -972,13 +972,16 @@ function initListNameEdit() {
   });
 }
 
-// Click anywhere outside an editing list item cancels the edit
-document.addEventListener("click", function(e) {
+// Click anywhere outside an editing list item saves the edit
+document.addEventListener("mousedown", function(e) {
   var editingItem = document.querySelector(".list-nav-item.editing");
   if (!editingItem) return;
   var pickerOpen = emojiPickerEl && emojiPickerEl.style.display !== "none";
   if (editingItem.contains(e.target) || (pickerOpen && emojiPickerEl.contains(e.target))) return;
-  cancelEdit(editingItem);
+  var form = editingItem.querySelector(".list-nav-edit-form");
+  if (form) {
+    htmx.trigger(form, "submit");
+  }
 });
 
 function cancelEdit(li) {
