@@ -42,6 +42,22 @@ class TestTagAdd:
         fresh_from_db(tasks[0])
         assert tasks[0].tags.count() == 2
 
+    def test_add_tag_updates_center_panel(self, page, base_url, seed_list_with_tasks):
+        """Adding a tag in the detail panel immediately shows it in the task row."""
+        task_list, section, tasks = seed_list_with_tasks
+        page.goto(base_url)
+
+        task_row = page.locator(f'#task-{tasks[0].id}')
+        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
+        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
+
+        # Add a tag
+        page.fill('#detail-panel .tag-form input[name="name"]', "urgent")
+        page.click('#detail-panel .tag-form button[type="submit"]')
+
+        # Tag should appear in the center panel task row
+        expect(task_row.locator(".task-tag")).to_contain_text("urgent")
+
 
 class TestTagAutocomplete:
     def test_datalist_suggests_existing_tags(self, page, base_url, seed_list_with_tasks):
@@ -106,3 +122,25 @@ class TestTagRemove:
 
         fresh_from_db(task)
         assert task.tags.count() == initial_count - 1
+
+    def test_remove_tag_updates_center_panel(self, page, base_url, seed_full):
+        """Removing a tag in the detail panel immediately removes it from the task row."""
+        data = seed_full
+        task = data["tasks"][0]
+        page.goto(base_url)
+
+        task_row = page.locator(f"#task-{task.id}")
+
+        # Verify tag is visible in center panel before removal
+        expect(task_row.locator(".task-tag").first).to_be_visible()
+        initial_tag_count = task.tags.count()
+
+        # Open detail panel
+        page.locator(f'.task-item[data-task-id="{task.id}"] > .task-row').click()
+        expect(page.locator("#detail-panel")).to_contain_text("urgent")
+
+        # Remove a tag
+        page.locator("#detail-panel .tag-remove").first.click()
+
+        # Center panel should reflect the removal
+        expect(task_row.locator(".task-tag")).to_have_count(initial_tag_count - 1)
