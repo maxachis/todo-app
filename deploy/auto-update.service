@@ -1,0 +1,6 @@
+[Unit]
+Description=ToDo App Auto-Update Check
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /opt/todoapp/deploy/auto-update.sh

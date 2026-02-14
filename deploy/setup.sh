@@ -109,6 +109,8 @@ info "Installing config files"
 cp "${APP_DIR}/deploy/todoapp.service" /etc/systemd/system/todoapp.service
 cp "${APP_DIR}/deploy/litestream.yml" /etc/litestream.yml
 cp "${APP_DIR}/deploy/litestream.service" /etc/systemd/system/litestream.service
+cp "${APP_DIR}/deploy/auto-update.service" /etc/systemd/system/auto-update.service
+cp "${APP_DIR}/deploy/auto-update.timer" /etc/systemd/system/auto-update.timer
 
 # Caddyfile — hostname gets filled in after Tailscale setup (see step 14)
 cp "${APP_DIR}/deploy/Caddyfile" /etc/caddy/Caddyfile
@@ -130,6 +132,7 @@ info "Enabling and starting services"
 systemctl enable --now litestream
 systemctl enable --now todoapp
 systemctl enable --now caddy
+systemctl enable --now auto-update.timer
 
 # ─── 14. Done ──────────────────────────────────────────────────────────────────
 
