@@ -1,5 +1,5 @@
-{$TAILSCALE_HOSTNAME} {
-    tls /var/lib/tailscale/certs/{$TAILSCALE_HOSTNAME}.crt /var/lib/tailscale/certs/{$TAILSCALE_HOSTNAME}.key
+HOSTNAME_PLACEHOLDER {
+    tls /etc/caddy/certs/tailscale.crt /etc/caddy/certs/tailscale.key
 
     handle_path /static/* {
         root * /opt/todoapp/staticfiles

@@ -106,10 +106,13 @@ sudo -u "${APP_USER}" bash -c "
 # ─── 11. Install config files ─────────────────────────────────────────────────
 
 info "Installing config files"
-cp "${APP_DIR}/deploy/Caddyfile" /etc/caddy/Caddyfile
 cp "${APP_DIR}/deploy/todoapp.service" /etc/systemd/system/todoapp.service
 cp "${APP_DIR}/deploy/litestream.yml" /etc/litestream.yml
 cp "${APP_DIR}/deploy/litestream.service" /etc/systemd/system/litestream.service
+
+# Caddyfile — hostname gets filled in after Tailscale setup (see step 14)
+cp "${APP_DIR}/deploy/Caddyfile" /etc/caddy/Caddyfile
+mkdir -p /etc/caddy/certs
 systemctl daemon-reload
 
 # ─── 12. Firewall (UFW) ───────────────────────────────────────────────────────
@@ -133,11 +136,9 @@ systemctl enable --now caddy
 info "Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Run 'tailscale up' to join your tailnet"
-echo "  2. Get your Tailscale hostname: tailscale status"
-echo "  3. Generate Tailscale HTTPS certs: tailscale cert <hostname>"
-echo "  4. Update ALLOWED_HOSTS in /opt/todoapp/.env with your Tailscale hostname"
-echo "  5. Set TAILSCALE_HOSTNAME env var for Caddy (e.g. in /etc/caddy/environment)"
-echo "  6. Configure R2 credentials in /opt/todoapp/.env for Litestream backups"
-echo "  7. Restart services: systemctl restart litestream todoapp caddy"
+echo "  1. Run 'tailscale up' and authorize the machine"
+echo "  2. Get your hostname: tailscale status"
+echo "  3. Run: bash /opt/todoapp/deploy/configure-caddy.sh <hostname>.your-tailnet.ts.net"
+echo "  4. Configure R2 credentials in /opt/todoapp/.env for Litestream backups"
+echo "  5. Restart Litestream: systemctl restart litestream"
 echo ""
