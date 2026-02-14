@@ -4,7 +4,7 @@ Before=todoapp.service
 
 [Service]
 EnvironmentFile=/opt/todoapp/.env
-ExecStart=/usr/local/bin/litestream replicate -config /etc/litestream.yml
+ExecStart=/usr/bin/litestream replicate -config /etc/litestream.yml
 Restart=on-failure
 RestartSec=5
 
