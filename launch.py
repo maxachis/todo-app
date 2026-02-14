@@ -10,6 +10,7 @@ First time? After the browser opens, click the install icon in the address bar
 """
 
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -19,6 +20,13 @@ import webbrowser
 
 URL = "http://localhost:8000"
 MANAGE_PY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "manage.py")
+
+
+def server_command():
+    """Build the command to start Django, preferring uv if available."""
+    if shutil.which("uv"):
+        return ["uv", "run", "python", MANAGE_PY, "runserver", "0.0.0.0:8000"]
+    return [sys.executable, MANAGE_PY, "runserver", "0.0.0.0:8000"]
 
 
 def wait_for_server(url, timeout=10):
@@ -35,11 +43,8 @@ def wait_for_server(url, timeout=10):
 
 def main():
     print("Starting ToDo app...")
-    server = subprocess.Popen(
-        [sys.executable, MANAGE_PY, "runserver", "0.0.0.0:8000"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
+    cmd = server_command()
+    server = subprocess.Popen(cmd)
 
     try:
         if wait_for_server(URL):

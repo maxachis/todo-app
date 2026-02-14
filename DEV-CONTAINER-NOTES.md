@@ -6,7 +6,6 @@ Setup notes and gotchas for running Claude Code with `--dangerously-skip-permiss
 
 - **Docker Desktop** must be running on the host
 - **VS Code** with the **Dev Containers** extension (`ms-vscode-remote.remote-containers`)
-- **`ANTHROPIC_API_KEY`** set as a host environment variable (see Authentication below)
 
 ## Building & Opening
 
@@ -15,20 +14,6 @@ Open the Command Palette (`Ctrl+Shift+P`) and run:
 ```
 Dev Containers: Rebuild and Reopen in Container
 ```
-
-## Authentication
-
-OAuth does not carry into the container. Use an API key instead:
-
-1. Create an API key at https://console.anthropic.com/ (needs the "Claude Code" role)
-2. Set it on your host machine:
-   ```powershell
-   [System.Environment]::SetEnvironmentVariable('ANTHROPIC_API_KEY', 'sk-ant-...', 'User')
-   ```
-3. Restart VS Code so it picks up the new env var
-4. The `containerEnv` entry in `devcontainer.json` forwards it into the container automatically
-
-**Note:** API keys use Console billing (pay-per-token), not Claude.ai subscription billing. Never commit the key to git.
 
 ## Gotchas
 
@@ -42,14 +27,7 @@ The `mcr.microsoft.com/devcontainers/python` image ships without npm/Node.js. Cl
 }
 ```
 
-Claude Code is then installed in `postCreateCommand` (not in the Dockerfile) because features are layered *after* the Dockerfile build. This also means `npx` is unavailable during the Dockerfile build — anything that needs Node.js must go in `postCreateCommand`.
-
-### `sudo` cannot find Node.js commands
-
-`sudo` strips the user's PATH due to `secure_path` in sudoers. Commands like `sudo npx ...` or `sudo node ...` will fail with "command not found". Workarounds:
-
-- **Preferred:** Install system dependencies directly via `apt-get` in the Dockerfile (where you're already root)
-- If you must use sudo at runtime: `sudo $(which npx) ...` — but this still fails if the command internally calls `node` (which is also not on sudo's PATH)
+Claude Code is then installed in `postCreateCommand` (not in the Dockerfile) because features are layered *after* the Dockerfile build.
 
 ### `uv sync` fails without `pyproject.toml`
 
@@ -58,39 +36,6 @@ If the project doesn't have a `pyproject.toml` yet, `uv sync` will exit with cod
 ```
 if [ -f pyproject.toml ]; then uv sync; fi
 ```
-
-### `uv run` needed for project-installed CLI tools
-
-Tools installed by `uv sync` (like `playwright`) live in the project's virtual environment, not on the system PATH. Use `uv run <command>` to invoke them:
-
-```
-uv run playwright install chromium
-```
-
-Plain `playwright install chromium` will fail with "command not found".
-
-### Playwright system deps go in the Dockerfile, browser binary in `postCreateCommand`
-
-Playwright's Chromium needs OS shared libraries (libnss3, libgbm1, etc.) and needs to download a browser binary. These are split across two locations:
-
-- **Dockerfile** — `apt-get install` the shared libraries (runs as root, no Node.js needed)
-- **postCreateCommand** — `uv run playwright install chromium` downloads the browser binary (needs the `playwright` Python package installed first via `uv sync`)
-
-You cannot use `npx playwright install-deps` in the Dockerfile because Node.js isn't available yet.
-
-### Playwright must be in `pyproject.toml`
-
-`uv run playwright install chromium` requires `playwright` to be a dependency. Add it as a dev dependency:
-
-```toml
-[dependency-groups]
-dev = [
-    "playwright>=1.49",
-    "pytest-playwright>=0.6",
-]
-```
-
-Without this, `uv sync` won't install it and `uv run playwright` fails with "Failed to spawn".
 
 ### Firewall must resolve IPs before locking down
 
@@ -144,7 +89,7 @@ sudo /usr/local/bin/init-firewall.sh
 | File | Purpose |
 |------|---------|
 | `devcontainer.json` | Container config, features, env vars, lifecycle commands |
-| `Dockerfile` | System packages (iptables, ipset, Playwright libs) and firewall script setup |
+| `Dockerfile` | System packages (iptables, ipset, etc.) and firewall script setup |
 | `init-firewall.sh` | Default-deny firewall allowing only whitelisted domains |
 
 ## Whitelisted Domains
@@ -157,8 +102,6 @@ The firewall allows outbound traffic to:
 | `statsig.anthropic.com`, `statsig.com` | Telemetry |
 | `sentry.io` | Error reporting |
 | `registry.npmjs.org` | npm packages |
-| `pypi.org`, `files.pythonhosted.org` | Python packages |
-| `playwright.azureedge.net` | Playwright browser downloads |
 | `github.com`, `api.github.com` | Git operations, GitHub API |
 | `raw.githubusercontent.com`, `objects.githubusercontent.com` | GitHub raw content and git objects |
 | `marketplace.visualstudio.com`, `vscode.blob.core.windows.net`, `update.code.visualstudio.com` | VS Code extensions and updates |

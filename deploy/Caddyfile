@@ -1,0 +1,12 @@
+{$TAILSCALE_HOSTNAME} {
+    tls /var/lib/tailscale/certs/{$TAILSCALE_HOSTNAME}.crt /var/lib/tailscale/certs/{$TAILSCALE_HOSTNAME}.key
+
+    handle_path /static/* {
+        root * /opt/todoapp/staticfiles
+        file_server
+    }
+
+    handle {
+        reverse_proxy localhost:8000
+    }
+}

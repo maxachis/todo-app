@@ -209,3 +209,46 @@
 - [x] Test edge cases: empty lists, deeply nested subtasks, deleting a list with many tasks
 - [x] Run full test suite one final time
 - [x] Confirm app starts cleanly on port 8000
+
+## Phase 12: Deployment & Remote Access
+
+Goal: host the app on a VPS, accessible from any personal device (including mobile via PWA), with secure access and automated backups.
+
+**Stack:** Hetzner VPS + Django + SQLite + Caddy + Tailscale + Litestream + Cloudflare R2
+
+### 12a: VPS Setup
+
+- [ ] Provision a Hetzner cloud server (~$4/mo, 2GB RAM, Ashburn VA region)
+- [ ] Install Python 3.13+, pip, and project dependencies
+- [ ] Clone the repo and run migrations
+- [ ] Verify `python manage.py runserver 0.0.0.0:8000` works on the VPS
+
+### 12b: Production Server (Caddy + Gunicorn)
+
+- [ ] Add `gunicorn` to dependencies (replace Django dev server for production)
+- [ ] Create a `Caddyfile` — reverse proxy to Gunicorn, automatic HTTPS via Tailscale cert
+- [ ] Create a systemd service for Gunicorn (auto-start on boot, auto-restart on crash)
+- [ ] Configure Django for production: `DEBUG=False`, `ALLOWED_HOSTS`, `SECRET_KEY` from env var, `STATIC_ROOT` + `collectstatic`
+- [ ] Verify the app serves correctly through Caddy
+
+### 12c: Tailscale (Secure Access)
+
+- [ ] Install Tailscale on the VPS, join to personal tailnet
+- [ ] Install Tailscale on personal devices (phone, laptop, etc.)
+- [ ] Configure Caddy to serve on the Tailscale hostname (`<vps>.tailnet-name.ts.net`)
+- [ ] Enable Tailscale HTTPS (`tailscale cert`) for valid TLS on the tailnet hostname
+- [ ] Verify the app is accessible only from tailnet devices, not the public internet
+
+### 12d: Automated Backups (Litestream)
+
+- [ ] Install Litestream on the VPS
+- [ ] Create a Cloudflare R2 bucket (free tier — 10GB storage, free egress)
+- [ ] Configure Litestream to continuously replicate `db.sqlite3` to the R2 bucket
+- [ ] Create a systemd service for Litestream (runs alongside the app)
+- [ ] Test restore: pull the backup, confirm data integrity
+
+### 12e: Mobile / PWA
+
+- [ ] Confirm PWA installs correctly over HTTPS on the Tailscale hostname
+- [ ] Test "Add to Home Screen" on iOS and Android
+- [ ] Verify offline behavior (service worker caching for static assets)

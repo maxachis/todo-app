@@ -1,0 +1,12 @@
+[Unit]
+Description=Litestream SQLite Replication
+Before=todoapp.service
+
+[Service]
+EnvironmentFile=/opt/todoapp/.env
+ExecStart=/usr/local/bin/litestream replicate -config /etc/litestream.yml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
