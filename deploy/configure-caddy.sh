@@ -19,6 +19,7 @@ tailscale cert \
     --cert-file /etc/caddy/certs/tailscale.crt \
     --key-file /etc/caddy/certs/tailscale.key \
     "${HOSTNAME}"
+chown caddy:caddy /etc/caddy/certs/tailscale.crt /etc/caddy/certs/tailscale.key
 
 info "Writing Caddyfile"
 sed "s|HOSTNAME_PLACEHOLDER|${HOSTNAME}|" "${APP_DIR}/deploy/Caddyfile" > /etc/caddy/Caddyfile
