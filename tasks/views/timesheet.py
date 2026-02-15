@@ -62,12 +62,19 @@ def _build_timesheet_context(request):
     }
 
 
+def _needs_layout_wrapper(request):
+    """True when HTMX navbar swaps into #page-body (needs single-column wrapper)."""
+    return _is_htmx(request) and request.headers.get("HX-Target") == "page-body"
+
+
 def timesheet_index(request):
     """Timesheet page with weekly view."""
     context = _build_timesheet_context(request)
 
     if _is_htmx(request):
-        return render(request, "tasks/partials/timesheet_content.html", context)
+        template = "tasks/partials/timesheet_content.html"
+        context["wrap_layout"] = _needs_layout_wrapper(request)
+        return render(request, template, context)
 
     return render(request, "tasks/timesheet.html", context)
 

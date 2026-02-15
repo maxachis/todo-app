@@ -11,6 +11,11 @@ def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
+def _needs_layout_wrapper(request):
+    """True when HTMX navbar swaps into #page-body (needs single-column wrapper)."""
+    return _is_htmx(request) and request.headers.get("HX-Target") == "page-body"
+
+
 def projects_index(request):
     """Projects listing page."""
     projects = Project.objects.annotate(
@@ -26,6 +31,7 @@ def projects_index(request):
     context = {"projects": projects}
 
     if _is_htmx(request):
+        context["wrap_layout"] = _needs_layout_wrapper(request)
         return render(request, "tasks/partials/projects_content.html", context)
 
     return render(request, "tasks/projects.html", context)

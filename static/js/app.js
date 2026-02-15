@@ -645,6 +645,29 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
+// ─── Title Textarea Auto-resize ─────────────
+
+function initTitleInput() {
+  var el = document.getElementById("title");
+  if (!el || el.tagName !== "TEXTAREA") return;
+
+  function resize() {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
+  el.addEventListener("input", resize);
+  resize();
+
+  // Enter submits (triggers change), Shift+Enter does nothing extra
+  el.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      el.blur();
+    }
+  });
+}
+
 // ─── Markdown Live Editor ────────────────────
 
 function initMarkdownEditor() {
@@ -1149,6 +1172,7 @@ function initAll() {
   try { initSortable(); } catch (ex) { console.error("initSortable error:", ex); }
   setupToastDismiss();
   try { initEmojiPickers(); } catch (ex) { console.error("initEmojiPickers error:", ex); }
+  try { initTitleInput(); } catch (ex) { console.error("initTitleInput error:", ex); }
   try { initMarkdownEditor(); } catch (ex) { console.error("initMarkdownEditor error:", ex); }
   try { initListNameEdit(); } catch (ex) { console.error("initListNameEdit error:", ex); }
   try { initMobilePanels(); } catch (ex) { console.error("initMobilePanels error:", ex); }
