@@ -190,6 +190,31 @@ class HTMXIntegrationTests(IntegrationTestBase):
         re_parsed = json.loads(re_serialized)
         self.assertEqual(data, re_parsed)
 
+    def test_ti_list_order_persists_after_reorder(self):
+        """Reordering lists via move_list is reflected in subsequent page renders."""
+        list_b = List.objects.create(name="B List", position=20)
+        Section.objects.create(list=list_b, name="B Section", position=10)
+        list_c = List.objects.create(name="C List", position=30)
+        Section.objects.create(list=list_c, name="C Section", position=10)
+
+        # Move list_c to the front (position 0 → index 0)
+        self.client.post(
+            reverse("move_list", args=[list_c.pk]),
+            {"position": "0"},
+        )
+
+        # Fetch the index page and check sidebar order
+        response = self.client.get(reverse("index"))
+        content = response.content.decode()
+        pos_c = content.find("C List")
+        pos_work = content.find("Work")
+        pos_b = content.find("B List")
+        self.assertGreater(pos_c, -1)
+        self.assertGreater(pos_work, -1)
+        self.assertGreater(pos_b, -1)
+        self.assertLess(pos_c, pos_work, "C List should appear before Work after reorder")
+        self.assertLess(pos_work, pos_b, "Work should appear before B List")
+
     def test_ti11_markdown_export_completed_checkbox(self):
         """T-I-11: Markdown export of completed tasks uses [x] checkbox syntax."""
         self.task.complete()

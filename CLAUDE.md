@@ -135,6 +135,7 @@ templates/
 - **Completing a parent does not cascade** to subtasks.
 - **Undo toast** is a server-rendered HTMX partial dismissed client-side via `setTimeout`.
 - **Export** serves file downloads (not HTMX partials). JSON preserves full nested hierarchy. CSV flattens to one row per task with `parent_task` and `depth` columns. Markdown uses `#`/`##` headings and `- [ ]`/`- [x]` checkboxes. All responses set `Content-Disposition: attachment`.
+- **Annotated querysets need explicit ordering** — `annotate()` can drop `Meta.ordering`. Always chain `.order_by()` on querysets used for rendering.
 
 ## Testing Conventions
 

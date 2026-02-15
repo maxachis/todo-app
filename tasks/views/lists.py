@@ -19,7 +19,7 @@ def _get_lists_with_counts():
             "sections__tasks",
             filter=Q(sections__tasks__is_completed=False),
         )
-    )
+    ).order_by("position")
 
 
 def _get_pinned_tasks(task_list):

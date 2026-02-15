@@ -60,47 +60,6 @@ function initSortable() {
     });
   });
 
-  // Sidebar list drop targets for cross-list moves.
-  // filter + preventOnFilter: false lets the parent #list-nav Sortable
-  // claim mousedown events on .list-drag-handle for list reordering,
-  // while this child Sortable still accepts task drops on the rest of the item.
-  document.querySelectorAll(".list-nav-item").forEach(function(el) {
-    ensureSortable(el, {
-      group: {
-        name: "tasks",
-        put: function(to, from, dragEl) {
-          // Only accept actual task items, not list nav items being reordered
-          return !!dragEl.dataset.taskId;
-        },
-        pull: false
-      },
-      sort: false,
-      filter: ".list-drag-handle",
-      preventOnFilter: false,
-      onAdd: function(evt) {
-        var taskId = evt.item.dataset.taskId;
-        var listId = evt.to.dataset.listId;
-
-        if (!taskId) {
-          // Not a task drop — a list nav item was moved here by mistake.
-          // Return it to its original container.
-          if (evt.from && evt.from !== evt.to) {
-            evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
-          }
-          return;
-        }
-
-        htmx.ajax("POST", "/tasks/" + taskId + "/move/", {
-          values: {
-            list: listId,
-            csrfmiddlewaretoken: getCsrfToken()
-          },
-          swap: "none"
-        });
-      }
-    });
-  });
-
   // Section reordering within a list
   document.querySelectorAll(".sortable-sections").forEach(function(el) {
     var sectionDragClickBlocker = null;
@@ -145,32 +104,59 @@ function initSortable() {
     });
   });
 
-  // List reordering in the sidebar
+  // List reordering + cross-list task drops in the sidebar.
   var listNav = document.getElementById("list-nav");
   if (listNav) {
     var listDragClickBlocker = null;
 
     ensureSortable(listNav, {
+      group: {
+        name: "tasks",
+        put: function(to, from, dragEl) {
+          return !!dragEl.dataset.taskId;
+        },
+        pull: false
+      },
       animation: 150,
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
       handle: ".list-drag-handle",
       draggable: ".list-nav-item",
       onStart: function(evt) {
-        // Block clicks during drag to prevent HTMX hx-get from firing
-        // on the list-nav-item when the drag ends. Without this, the
-        // click triggers a sidebar OOB swap that can overwrite the new
-        // order before the move POST completes.
         listDragClickBlocker = function(e) {
           e.preventDefault();
           e.stopPropagation();
         };
         evt.item.addEventListener("click", listDragClickBlocker, true);
       },
+      onAdd: function(evt) {
+        // A task was dropped onto the sidebar list area.
+        var taskId = evt.item.dataset.taskId;
+        if (!taskId) return;
+
+        // Determine target list from neighboring list items
+        var nextItem = evt.item.nextElementSibling;
+        var prevItem = evt.item.previousElementSibling;
+        var targetListItem = nextItem || prevItem;
+        var listId = targetListItem ? targetListItem.dataset.listId : null;
+
+        // Remove the task element from the sidebar — it doesn't belong here
+        evt.item.remove();
+
+        if (listId) {
+          htmx.ajax("POST", "/tasks/" + taskId + "/move/", {
+            values: {
+              list: listId,
+              csrfmiddlewaretoken: getCsrfToken()
+            },
+            swap: "none"
+          });
+        }
+      },
       onEnd: function(evt) {
         var item = evt.item;
-        // Remove click blocker after the drop animation finishes (150ms)
-        // so interactions are unblocked as soon as the list settles.
+        if (!item.classList.contains("list-nav-item")) return;
+
         setTimeout(function() {
           if (listDragClickBlocker) {
             item.removeEventListener("click", listDragClickBlocker, true);
@@ -195,7 +181,7 @@ document.addEventListener("htmx:beforeSwap", function(e) {
   var target = e.detail.target;
   if (!target) return;
   // Destroy sortables on all sortable elements within the swap target
-  target.querySelectorAll(".sortable-tasks, .sortable-sections, .list-nav-item").forEach(function(el) {
+  target.querySelectorAll(".sortable-tasks, .sortable-sections").forEach(function(el) {
     destroySortableOn(el);
   });
   // Also check if the target itself is sortable
