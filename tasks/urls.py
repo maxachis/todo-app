@@ -53,6 +53,7 @@ urlpatterns = [
         name="uncomplete_task",
     ),
     path("tasks/<int:task_id>/move/", tasks.move_task, name="move_task"),
+    path("tasks/<int:task_id>/pin/", tasks.pin_task, name="pin_task"),
     # Tags
     path("tasks/<int:task_id>/tags/", tags.add_tag, name="add_tag"),
     path(

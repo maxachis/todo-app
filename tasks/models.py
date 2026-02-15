@@ -87,6 +87,7 @@ class Task(models.Model):
     position = models.IntegerField(default=0)
     external_id = models.CharField(max_length=100, null=True, blank=True, unique=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name="tasks")
+    is_pinned = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["position"]
@@ -94,11 +95,18 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
+    @property
+    def open_subtask_count(self):
+        """Return the number of non-completed direct subtasks."""
+        return self.subtasks.filter(is_completed=False).count()
+
     def complete(self):
-        """Mark this task as completed."""
+        """Mark this task and all descendant subtasks as completed."""
         self.is_completed = True
         self.completed_at = timezone.now()
         self.save()
+        for subtask in self.subtasks.filter(is_completed=False):
+            subtask.complete()
 
     def uncomplete(self):
         """Mark this task as not completed."""

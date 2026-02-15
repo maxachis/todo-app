@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 
 from tasks.models import List, Project, Section
-from tasks.views.lists import _get_lists_with_counts
+from tasks.views.lists import _get_lists_with_counts, _get_pinned_tasks
 from tasks.views.reorder import reorder_siblings
 
 
@@ -20,6 +20,7 @@ def _oob_response(request, task_list):
         "sections": task_list.sections.all(),
         "lists": _get_lists_with_counts(),
         "projects": Project.objects.filter(is_active=True),
+        "pinned_tasks": _get_pinned_tasks(task_list),
     }
     center_html = render_to_string(
         "tasks/partials/list_detail.html", context, request=request

@@ -2809,6 +2809,11 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
   border: none;
 }
 
+/* Hide the collapsible when there are no subtask items at all */
+.subtask-collapsible:not(:has(.task-item)) {
+  display: none;
+}
+
 .subtask-collapse-toggle {
   display: flex;
   align-items: center;
@@ -3117,18 +3122,19 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
 
 /* === Task Completion Transitions === */
 
-/* Optimistic fade-out when completing a task */
+/* Optimistic fade-out when completing a task.
+   Duration must match COMPLETION_TRANSITION_MS in completion.js. */
 .task-item.completing {
   opacity: 0.4;
   transform: translateX(8px);
-  transition: opacity 0.15s var(--ease-out), transform 0.15s var(--ease-out);
+  transition: opacity 0.18s var(--ease-out), transform 0.18s var(--ease-out);
 }
 
 .task-item.completing .task-title {
   text-decoration: line-through;
   text-decoration-color: var(--text-muted);
   color: var(--text-muted);
-  transition: color 0.15s var(--ease-out);
+  transition: color 0.18s var(--ease-out);
 }
 
 .task-item.completing .checkbox {
@@ -3137,9 +3143,100 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
   transition: background 0.1s var(--ease-out), border-color 0.1s var(--ease-out);
 }
 
-/* Optimistic fade-in when uncompleting a task */
+/* Optimistic fade-out when uncompleting a task */
 .task-item.uncompleting {
   opacity: 0.4;
-  transition: opacity 0.15s var(--ease-out);
+  transition: opacity 0.18s var(--ease-out);
+}
+
+/* === Pinned Section === */
+.pinned-section {
+  background: var(--accent-lighter);
+  border: 1px solid var(--accent-light);
+  border-radius: var(--radius-lg);
+  padding: 16px 24px 12px;
+  margin-bottom: 20px;
+}
+
+.pinned-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--accent-light);
+  margin-bottom: 8px;
+}
+
+.pinned-header-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.pinned-header h3 {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-text);
+  margin: 0;
+}
+
+.pinned-section .task-item:hover {
+  background: var(--accent-light);
+}
+
+/* === Pin Button === */
+.pin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  flex-shrink: 0;
+  padding: 0;
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.task-item:hover .pin-btn {
+  opacity: 1;
+}
+
+.pin-btn:hover {
+  color: var(--accent);
+  background: var(--accent-lighter);
+}
+
+.pin-btn.pinned {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.pin-btn.pinned:hover {
+  color: var(--accent-hover);
+  background: var(--accent-lighter);
+}
+
+/* Always show pin button on touch devices */
+@media (max-width: 1023px) {
+  .pin-btn {
+    opacity: 1;
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Hide pin button on small phones to save space */
+@media (max-width: 767px) {
+  .pinned-section {
+    padding: 12px 16px 8px;
+    margin-bottom: 14px;
+  }
 }
 

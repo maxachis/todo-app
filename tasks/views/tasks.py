@@ -1,3 +1,5 @@
+import json
+
 from django.db import models
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -5,12 +7,15 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from tasks.models import List, Section, Tag, Task
-from tasks.views.lists import _get_lists_with_counts
+from tasks.models import List, Project, Section, Tag, Task
+from tasks.views.lists import _get_lists_with_counts, _get_pinned_tasks
 
 
 def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
+
+
+MAX_PINNED_PER_LIST = 3
 
 
 def _render_list_context(task_list):
@@ -19,6 +24,7 @@ def _render_list_context(task_list):
         "active_list": task_list,
         "sections": task_list.sections.all(),
         "lists": _get_lists_with_counts(),
+        "pinned_tasks": _get_pinned_tasks(task_list),
     }
 
 
@@ -178,38 +184,33 @@ def delete_task(request, task_id):
 def complete_task(request, task_id):
     """Mark a task as completed.
 
-    Uses hx-swap="none" on the client — OOB swaps update only the
-    affected section (not the whole center panel) to avoid flicker.
+    Uses hx-swap="none" on the client. Instead of replacing the whole
+    section via OOB swap (which causes flicker), the server returns only
+    the toast and sidebar OOB fragments. The client handles DOM changes
+    (moving the task to the completed group, updating checkbox state)
+    via a custom HX-Trigger event, allowing CSS transitions to finish
+    before any DOM mutation.
     """
     task = get_object_or_404(Task, pk=task_id)
     section = task.section
     task.complete()
 
     if _is_htmx(request):
-        # Refresh the section from DB so the template sees updated state
-        section.refresh_from_db()
-        section_html = render_to_string(
-            "tasks/partials/section.html",
-            {"section": section},
-            request=request,
-        )
         sidebar_html = _sidebar_oob_html(request, section.list)
         toast_html = render_to_string(
             "tasks/partials/toast.html",
             {"task": task},
             request=request,
         )
-        # OOB swap for just the affected section
-        oob_section = (
-            f'<div hx-swap-oob="outerHTML:#section-{section.pk}">'
-            f"{section_html}</div>"
-        )
-        # OOB swap for toast
         oob_toast = (
-            f'<div id="toast-container" hx-swap-oob="innerHTML:#toast-container">'
+            '<div id="toast-container" hx-swap-oob="innerHTML:#toast-container">'
             f"{toast_html}</div>"
         )
-        return HttpResponse(oob_section + sidebar_html + oob_toast)
+        response = HttpResponse(sidebar_html + oob_toast)
+        response["HX-Trigger"] = json.dumps(
+            {"taskCompleted": {"taskId": task.pk, "parentId": task.parent_id}}
+        )
+        return response
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=section.list.pk)
@@ -219,32 +220,25 @@ def complete_task(request, task_id):
 def uncomplete_task(request, task_id):
     """Mark a task as not completed.
 
-    Uses hx-swap="none" on the client — OOB swaps update only the
-    affected section (not the whole center panel) to avoid flicker.
+    Uses hx-swap="none" on the client. The server returns only
+    sidebar and toast-clear OOB fragments. The client handles DOM
+    changes (moving the task back to the active list, updating
+    checkbox state) via a custom HX-Trigger event.
     """
     task = get_object_or_404(Task, pk=task_id)
     section = task.section
     task.uncomplete()
 
     if _is_htmx(request):
-        # Refresh the section from DB so the template sees updated state
-        section.refresh_from_db()
-        section_html = render_to_string(
-            "tasks/partials/section.html",
-            {"section": section},
-            request=request,
-        )
         sidebar_html = _sidebar_oob_html(request, section.list)
-        # OOB swap for just the affected section
-        oob_section = (
-            f'<div hx-swap-oob="outerHTML:#section-{section.pk}">'
-            f"{section_html}</div>"
-        )
-        # Clear the toast container via OOB swap
         toast_clear = (
             '<div id="toast-container" hx-swap-oob="innerHTML:#toast-container"></div>'
         )
-        return HttpResponse(oob_section + sidebar_html + toast_clear)
+        response = HttpResponse(sidebar_html + toast_clear)
+        response["HX-Trigger"] = json.dumps(
+            {"taskUncompleted": {"taskId": task.pk, "parentId": task.parent_id}}
+        )
+        return response
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=section.list.pk)
@@ -323,3 +317,47 @@ def _update_subtask_sections(task, section):
         sub.section = section
         sub.save()
         _update_subtask_sections(sub, section)
+
+
+@require_http_methods(["POST"])
+def pin_task(request, task_id):
+    """Toggle pin status on a task.
+
+    If pinning, enforce a per-list limit of MAX_PINNED_PER_LIST.
+    Returns OOB swap to refresh the center panel so the pinned
+    section updates accordingly.
+    """
+    task = get_object_or_404(Task, pk=task_id)
+    task_list = task.section.list
+
+    if task.is_pinned:
+        task.is_pinned = False
+        task.save()
+    else:
+        pinned_count = Task.objects.filter(
+            section__list=task_list, is_pinned=True, is_completed=False
+        ).count()
+        if pinned_count >= MAX_PINNED_PER_LIST:
+            return HttpResponse(
+                f"Cannot pin more than {MAX_PINNED_PER_LIST} tasks per list.",
+                status=400,
+            )
+        task.is_pinned = True
+        task.save()
+
+    if _is_htmx(request):
+        context = _render_list_context(task_list)
+        context["projects"] = Project.objects.filter(is_active=True)
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = _sidebar_oob_html(request, task_list)
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        return HttpResponse(oob_center + sidebar_html)
+
+    from django.shortcuts import redirect
+
+    return redirect("list_detail", list_id=task_list.pk)

@@ -145,17 +145,24 @@ class TaskModelTests(ModelTestBase):
         self.assertFalse(self.task.is_completed)
         self.assertIsNone(self.task.completed_at)
 
-    def test_tm12_complete_parent_no_cascade(self):
-        """T-M-12: Completing a parent does not cascade completion to subtasks."""
+    def test_tm12_complete_parent_cascades_to_subtasks(self):
+        """T-M-12: Completing a parent cascades completion to all subtasks."""
         sub = Task.objects.create(
             section=self.section, title="Sub", parent=self.task, position=20
+        )
+        subsub = Task.objects.create(
+            section=self.section, title="SubSub", parent=sub, position=30
         )
 
         self.task.complete()
         sub.refresh_from_db()
+        subsub.refresh_from_db()
 
         self.assertTrue(self.task.is_completed)
-        self.assertFalse(sub.is_completed)
+        self.assertTrue(sub.is_completed)
+        self.assertIsNotNone(sub.completed_at)
+        self.assertTrue(subsub.is_completed)
+        self.assertIsNotNone(subsub.completed_at)
 
     def test_tm13_move_task_to_different_section(self):
         """T-M-13: Moving a task to a different section updates its section FK."""

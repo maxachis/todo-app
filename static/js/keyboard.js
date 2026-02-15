@@ -94,6 +94,7 @@ function initKeyboardNav() {
       }
       if (lastTaskInSection) {
         lastFocusedInputSelector = null;
+        suppressRestoreFocus();
         target.blur();
         setTaskFocus(lastTaskInSection, true);
       } else {
@@ -130,6 +131,7 @@ function initKeyboardNav() {
         }
         if (firstTask) {
           lastFocusedInputSelector = null;
+          suppressRestoreFocus();
           target.blur();
           setTaskFocus(firstTask, true);
           return;

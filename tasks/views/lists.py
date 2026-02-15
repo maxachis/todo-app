@@ -22,6 +22,13 @@ def _get_lists_with_counts():
     )
 
 
+def _get_pinned_tasks(task_list):
+    """Return pinned, non-completed tasks for a list."""
+    return Task.objects.filter(
+        section__list=task_list, is_pinned=True, is_completed=False
+    )
+
+
 def index(request):
     """Main page — renders base with sidebar + default list."""
     lists = _get_lists_with_counts()
@@ -30,6 +37,7 @@ def index(request):
     if first_list:
         context["sections"] = first_list.sections.all()
         context["projects"] = Project.objects.filter(is_active=True)
+        context["pinned_tasks"] = _get_pinned_tasks(first_list)
 
     if _is_htmx(request):
         # If targeted at #page-body (navbar click), return the full 3-panel layout
@@ -59,6 +67,7 @@ def create_list(request):
             "lists": lists,
             "active_list": task_list,
             "sections": task_list.sections.all(),
+            "pinned_tasks": _get_pinned_tasks(task_list),
         }
         center_html = render_to_string(
             "tasks/partials/list_detail.html", context, request=request
@@ -84,6 +93,7 @@ def list_detail(request, list_id):
         "sections": sections,
         "lists": _get_lists_with_counts(),
         "projects": Project.objects.filter(is_active=True),
+        "pinned_tasks": _get_pinned_tasks(task_list),
     }
 
     if _is_htmx(request):
@@ -132,6 +142,7 @@ def update_list(request, list_id):
             "active_list": task_list,
             "sections": task_list.sections.all(),
             "projects": Project.objects.filter(is_active=True),
+            "pinned_tasks": _get_pinned_tasks(task_list),
         }
         center_html = render_to_string(
             "tasks/partials/list_detail.html", context, request=request
@@ -163,6 +174,7 @@ def delete_list(request, list_id):
         if first_list:
             context["sections"] = first_list.sections.all()
             context["projects"] = Project.objects.filter(is_active=True)
+            context["pinned_tasks"] = _get_pinned_tasks(first_list)
         center_html = render_to_string(
             "tasks/partials/list_detail.html", context, request=request
         )

@@ -172,6 +172,27 @@ function cancelEdit(li) {
   }
 }
 
+// ─── Toggle All Sections ────────────────────
+
+function toggleAllSections() {
+  var sections = document.querySelectorAll("#center-panel .section");
+  var btn = document.getElementById("toggle-all-sections");
+  var anyOpen = false;
+  sections.forEach(function(s) { if (s.open) anyOpen = true; });
+
+  sections.forEach(function(s) {
+    if (anyOpen) {
+      s.removeAttribute("open");
+    } else {
+      s.setAttribute("open", "");
+    }
+  });
+
+  if (btn) {
+    btn.textContent = anyOpen ? "Expand All" : "Collapse All";
+  }
+}
+
 // ─── Section Name Edit ──────────────────────
 
 function initSectionNameEdit() {

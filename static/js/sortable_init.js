@@ -60,7 +60,10 @@ function initSortable() {
     });
   });
 
-  // Sidebar list drop targets for cross-list moves
+  // Sidebar list drop targets for cross-list moves.
+  // filter + preventOnFilter: false lets the parent #list-nav Sortable
+  // claim mousedown events on .list-drag-handle for list reordering,
+  // while this child Sortable still accepts task drops on the rest of the item.
   document.querySelectorAll(".list-nav-item").forEach(function(el) {
     ensureSortable(el, {
       group: {
@@ -72,6 +75,8 @@ function initSortable() {
         pull: false
       },
       sort: false,
+      filter: ".list-drag-handle",
+      preventOnFilter: false,
       onAdd: function(evt) {
         var taskId = evt.item.dataset.taskId;
         var listId = evt.to.dataset.listId;
@@ -101,23 +106,32 @@ function initSortable() {
     var sectionDragClickBlocker = null;
 
     ensureSortable(el, {
-      animation: 150,
+      animation: 100,
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
       handle: ".section-header",
       draggable: ".section",
       onStart: function(evt) {
-        sectionDragClickBlocker = function(e) { e.preventDefault(); };
+        // Block clicks during drag to prevent <details> toggle on drop.
+        // Both preventDefault (stops toggle) and stopPropagation (stops
+        // bubbling to other handlers) are needed to fully suppress the
+        // spurious click that fires after mouseup ends the drag.
+        sectionDragClickBlocker = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        };
         evt.item.addEventListener("click", sectionDragClickBlocker, true);
       },
       onEnd: function(evt) {
         var item = evt.item;
+        // Remove click blocker after the drop animation finishes (100ms)
+        // so interactions are unblocked as soon as the section settles.
         setTimeout(function() {
           if (sectionDragClickBlocker) {
             item.removeEventListener("click", sectionDragClickBlocker, true);
             sectionDragClickBlocker = null;
           }
-        }, 50);
+        }, 120);
 
         var sectionEl = evt.item;
         var sectionId = sectionEl.dataset.sectionId;
@@ -134,15 +148,37 @@ function initSortable() {
   // List reordering in the sidebar
   var listNav = document.getElementById("list-nav");
   if (listNav) {
+    var listDragClickBlocker = null;
+
     ensureSortable(listNav, {
       animation: 150,
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
       handle: ".list-drag-handle",
       draggable: ".list-nav-item",
+      onStart: function(evt) {
+        // Block clicks during drag to prevent HTMX hx-get from firing
+        // on the list-nav-item when the drag ends. Without this, the
+        // click triggers a sidebar OOB swap that can overwrite the new
+        // order before the move POST completes.
+        listDragClickBlocker = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        };
+        evt.item.addEventListener("click", listDragClickBlocker, true);
+      },
       onEnd: function(evt) {
-        var listItem = evt.item;
-        var listId = listItem.dataset.listId;
+        var item = evt.item;
+        // Remove click blocker after the drop animation finishes (150ms)
+        // so interactions are unblocked as soon as the list settles.
+        setTimeout(function() {
+          if (listDragClickBlocker) {
+            item.removeEventListener("click", listDragClickBlocker, true);
+            listDragClickBlocker = null;
+          }
+        }, 170);
+
+        var listId = item.dataset.listId;
         var newIndex = typeof evt.newDraggableIndex === "number"
           ? evt.newDraggableIndex : evt.newIndex;
 

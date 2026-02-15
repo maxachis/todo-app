@@ -97,7 +97,7 @@ function postListMove(listId, data) {
  * Update subtask count labels on all parent tasks that have a
  * .subtask-collapse-toggle. Re-counts active and completed
  * subtask items in the DOM and refreshes the label text to show
- * both total and completed counts (e.g. "3 subtasks (1 done)").
+ * total and open counts (e.g. "3 subtasks — 2 open").
  */
 function updateSubtaskCounts() {
   document.querySelectorAll(".subtask-collapsible").forEach(function(details) {
@@ -117,10 +117,8 @@ function updateSubtaskCounts() {
     }
 
     var total = activeCount + completedCount;
-    var label = total + " subtask" + (total !== 1 ? "s" : "");
-    if (completedCount > 0) {
-      label += " (" + completedCount + " done)";
-    }
+    var openCount = activeCount;
+    var label = total + " subtask" + (total !== 1 ? "s" : "") + " \u2014 " + openCount + " open";
     countSpan.textContent = label;
   });
 }

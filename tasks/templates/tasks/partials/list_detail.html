@@ -19,6 +19,7 @@
     {% endif %}
   </div>
   <div class="list-actions">
+    <button type="button" class="btn btn-sm btn-ghost" id="toggle-all-sections" onclick="toggleAllSections()">Collapse All</button>
     <a href="/lists/{{ active_list.id }}/export/json/" class="btn btn-sm">JSON</a>
     <a href="/lists/{{ active_list.id }}/export/csv/" class="btn btn-sm">CSV</a>
     <a href="/lists/{{ active_list.id }}/export/md/" class="btn btn-sm">MD</a>
@@ -28,6 +29,18 @@
             class="btn btn-sm btn-danger">Delete List</button>
   </div>
 </div>
+
+{% if pinned_tasks %}
+<div class="pinned-section">
+  <div class="pinned-header">
+    <svg class="pinned-header-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 2h6l-1.5 5H15a3 3 0 0 1 3 3v2H6v-2a3 3 0 0 1 3-3h.5L8 2z"/></svg>
+    <h3>Pinned</h3>
+  </div>
+  {% for task in pinned_tasks %}
+    {% include "tasks/partials/task_item.html" with task=task depth=0 %}
+  {% endfor %}
+</div>
+{% endif %}
 
 <div class="sortable-sections" data-list-id="{{ active_list.id }}">
 {% for section in sections %}

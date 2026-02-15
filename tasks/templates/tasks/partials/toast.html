@@ -1,5 +1,5 @@
 <div class="toast" id="undo-toast" data-auto-dismiss="5000">
-  <span>Task "{{ task.title }}" completed.</span>
+  <span>Completed "{{ task.title }}"</span>
   <button hx-post="/tasks/{{ task.id }}/uncomplete/"
           hx-swap="none"
           class="btn btn-sm btn-undo">Undo</button>
