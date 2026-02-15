@@ -1,5 +1,6 @@
-<div class="section" data-section-id="{{ section.id }}">
-  <div class="section-header">
+<details class="section" data-section-id="{{ section.id }}" open>
+  <summary class="section-header">
+    <span class="section-toggle-icon"></span>
     <h2>
       {% if section.emoji %}{{ section.emoji }} {% endif %}{{ section.name }}
     </h2>
@@ -7,9 +8,10 @@
       <button hx-post="/sections/{{ section.id }}/delete/"
               hx-target="#center-panel"
               hx-confirm="Delete this section?"
-              class="btn btn-sm btn-danger">Delete</button>
+              class="btn btn-sm btn-danger"
+              onclick="event.stopPropagation()">Delete</button>
     </div>
-  </div>
+  </summary>
 
   <div class="task-list sortable-tasks" data-section-id="{{ section.id }}">
     {% for task in section.tasks.all %}
@@ -28,18 +30,17 @@
     <button type="submit" class="btn btn-sm">Add</button>
   </form>
 
-  {% with completed=section.tasks.all %}
-  {% for task in completed %}
-    {% if task.is_completed and not task.parent %}
-    {% if forloop.first %}
-    <div class="completed-group">
-      <h3>Completed</h3>
-    {% endif %}
-      {% include "tasks/partials/task_item.html" with task=task depth=0 %}
-    {% if forloop.last %}
+  <details class="completed-group">
+    <summary class="completed-toggle">
+      <span class="completed-toggle-icon"></span>
+      Completed
+    </summary>
+    <div class="completed-group-items">
+      {% for task in section.tasks.all %}
+        {% if task.is_completed and not task.parent %}
+          {% include "tasks/partials/task_item.html" with task=task depth=0 %}
+        {% endif %}
+      {% endfor %}
     </div>
-    {% endif %}
-    {% endif %}
-  {% endfor %}
-  {% endwith %}
-</div>
+  </details>
+</details>

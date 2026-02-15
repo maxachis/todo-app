@@ -30,7 +30,22 @@
 
   <div class="subtask-drop-zone sortable-tasks" data-section-id="{{ task.section_id }}" data-parent-task-id="{{ task.id }}">
     {% for subtask in task.subtasks.all %}
-      {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
+      {% if not subtask.is_completed %}
+        {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
+      {% endif %}
     {% endfor %}
   </div>
+  <details class="subtask-completed-group">
+    <summary class="subtask-completed-toggle">
+      <span class="completed-toggle-icon"></span>
+      Done
+    </summary>
+    <div class="subtask-completed-items">
+      {% for subtask in task.subtasks.all %}
+        {% if subtask.is_completed %}
+          {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </details>
 </div>

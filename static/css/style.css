@@ -371,11 +371,67 @@ body {
 
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 8px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.section-header::-webkit-details-marker {
+  display: none;
+}
+
+.section-header::marker {
+  content: '';
+}
+
+.section[open] > .section-header {
+  margin-bottom: 16px;
+}
+
+.section:not([open]) > .section-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.section-toggle-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  position: relative;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.section-toggle-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 5.5px;
+  border-color: transparent transparent transparent var(--text-muted);
+  transform: translate(-35%, -50%);
+  transition: transform var(--transition-fast);
+}
+
+.section[open] .section-toggle-icon::after {
+  transform: translate(-50%, -35%) rotate(90deg);
+}
+
+.section-header:hover .section-toggle-icon {
+  background: var(--accent-lighter);
+}
+
+.section-header:hover .section-toggle-icon::after {
+  border-left-color: var(--accent);
 }
 
 .section-header h2 {
@@ -388,6 +444,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  flex: 1;
 }
 
 .section-actions {
@@ -526,14 +583,124 @@ body {
   border-top: 1px dashed var(--border);
 }
 
-.completed-group h3 {
+.completed-group:not(:has(.task-item)) {
+  display: none;
+}
+
+.completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  cursor: pointer;
+  list-style: none;
+  padding: 4px 0;
+  transition: color var(--transition-fast);
+  user-select: none;
+}
+
+.completed-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.completed-toggle::marker {
+  content: '';
+}
+
+.completed-toggle:hover {
+  color: var(--text-secondary);
+}
+
+.completed-toggle-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--bg-subtle);
+  position: relative;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.completed-toggle-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 3.5px 0 3.5px 5px;
+  border-color: transparent transparent transparent var(--text-muted);
+  transform: translate(-35%, -50%);
+  transition: transform var(--transition-fast);
+}
+
+.completed-group[open] .completed-toggle-icon::after {
+  transform: translate(-50%, -35%) rotate(90deg);
+}
+
+.completed-group-items {
+  padding-top: 4px;
+}
+
+/* === Subtask Completed Group === */
+.subtask-completed-group {
+  margin-left: 30px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.subtask-completed-group:not(:has(.task-item)) {
+  display: none;
+}
+
+.subtask-completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  cursor: pointer;
+  list-style: none;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.subtask-completed-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.subtask-completed-toggle::marker {
+  content: '';
+}
+
+.subtask-completed-toggle:hover {
+  color: var(--text-muted);
+}
+
+.subtask-completed-toggle .completed-toggle-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.subtask-completed-toggle .completed-toggle-icon::after {
+  border-width: 3px 0 3px 4px;
+}
+
+.subtask-completed-items {
+  padding-top: 2px;
 }
 
 .completed-section {

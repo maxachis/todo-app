@@ -183,7 +183,17 @@ var focusedTaskId = null;
 function getVisibleTasks() {
   return Array.from(
     document.querySelectorAll("#center-panel .task-item:not(.completed)")
-  );
+  ).filter(function(el) {
+    // Exclude tasks inside collapsed <details> elements
+    var node = el.parentElement;
+    while (node && node.id !== "center-panel") {
+      if (node.tagName === "DETAILS" && !node.open) {
+        return false;
+      }
+      node = node.parentElement;
+    }
+    return true;
+  });
 }
 
 function setTaskFocus(taskEl, loadDetail) {
@@ -265,6 +275,59 @@ function initKeyboardNav() {
           break;
         }
       }
+    }
+
+    // Ctrl+Arrow: jump to next/previous section
+    if (e.ctrlKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      var currentTask = currentIndex >= 0 ? tasks[currentIndex] : null;
+      var currentSection = currentTask ? currentTask.closest(".section") : null;
+
+      if (e.key === "ArrowDown") {
+        // Find first task in the next section
+        var startIdx = currentIndex >= 0 ? currentIndex + 1 : 0;
+        for (var i = startIdx; i < tasks.length; i++) {
+          var section = tasks[i].closest(".section");
+          if (section !== currentSection) {
+            setTaskFocus(tasks[i], true);
+            return;
+          }
+        }
+        // Wrap to first task
+        if (tasks.length > 0) setTaskFocus(tasks[0], true);
+      } else {
+        // Find first task in the previous section
+        var searchIdx = currentIndex >= 0 ? currentIndex - 1 : tasks.length - 1;
+        // First, find any task in a previous section
+        var prevSection = null;
+        for (var i = searchIdx; i >= 0; i--) {
+          var section = tasks[i].closest(".section");
+          if (section !== currentSection) {
+            prevSection = section;
+            break;
+          }
+        }
+        if (prevSection) {
+          // Jump to the first task in that section
+          for (var i = 0; i < tasks.length; i++) {
+            if (tasks[i].closest(".section") === prevSection) {
+              setTaskFocus(tasks[i], true);
+              return;
+            }
+          }
+        }
+        // Wrap to last section's first task
+        if (tasks.length > 0) {
+          var lastSection = tasks[tasks.length - 1].closest(".section");
+          for (var i = 0; i < tasks.length; i++) {
+            if (tasks[i].closest(".section") === lastSection) {
+              setTaskFocus(tasks[i], true);
+              return;
+            }
+          }
+        }
+      }
+      return;
     }
 
     if (e.key === "ArrowDown" || e.key === "j") {
