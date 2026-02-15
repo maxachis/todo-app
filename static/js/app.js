@@ -128,6 +128,8 @@ function initSortable() {
       handle: ".task-row",
       fallbackOnBody: true,
       swapThreshold: 0.65,
+      delay: 150,
+      delayOnTouchOnly: true,
       onEnd: function(evt) {
         var taskId = evt.item.dataset.taskId;
         var dropZone = evt.to;
@@ -214,6 +216,8 @@ function setTaskFocus(taskEl, loadDetail) {
       htmx.ajax("GET", "/tasks/" + focusedTaskId + "/detail/", {
         target: "#detail-panel",
         swap: "innerHTML"
+      }).then(function() {
+        openDetailPanel();
       });
     }
   } else {
@@ -1077,6 +1081,68 @@ function cancelEdit(li) {
   }
 }
 
+// ─── Mobile Panel Toggles ───────────────────
+
+function isMobileOrTablet() {
+  return window.innerWidth < 1024;
+}
+
+function openSidebar() {
+  document.body.classList.add("sidebar-open");
+}
+
+function closeSidebar() {
+  document.body.classList.remove("sidebar-open");
+}
+
+function openDetailPanel() {
+  if (isMobileOrTablet()) {
+    document.body.classList.add("detail-open");
+  }
+}
+
+function closeDetailPanel() {
+  document.body.classList.remove("detail-open");
+}
+
+function initMobilePanels() {
+  var hamburger = document.getElementById("sidebar-toggle");
+  if (hamburger) {
+    hamburger.addEventListener("click", function() {
+      if (document.body.classList.contains("sidebar-open")) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  var sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", closeSidebar);
+  }
+
+  var detailBackdrop = document.getElementById("detail-backdrop");
+  if (detailBackdrop) {
+    detailBackdrop.addEventListener("click", closeDetailPanel);
+  }
+
+  // Bind close button(s) — may exist in detail content or empty state
+  document.querySelectorAll(".detail-close-btn").forEach(function(btn) {
+    if (btn._closeBound) return;
+    btn._closeBound = true;
+    btn.addEventListener("click", closeDetailPanel);
+  });
+
+  // Close panels on window resize to desktop
+  window.addEventListener("resize", function() {
+    if (!isMobileOrTablet()) {
+      closeSidebar();
+      closeDetailPanel();
+    }
+  });
+}
+
 // ─── Init & HTMX Hooks ──────────────────────
 
 function initAll() {
@@ -1085,13 +1151,23 @@ function initAll() {
   try { initEmojiPickers(); } catch (ex) { console.error("initEmojiPickers error:", ex); }
   try { initMarkdownEditor(); } catch (ex) { console.error("initMarkdownEditor error:", ex); }
   try { initListNameEdit(); } catch (ex) { console.error("initListNameEdit error:", ex); }
+  try { initMobilePanels(); } catch (ex) { console.error("initMobilePanels error:", ex); }
   restoreTaskFocus();
   restoreFocus();
 }
 
 // Re-init after HTMX swaps
-document.addEventListener("htmx:afterSwap", function() {
+document.addEventListener("htmx:afterSwap", function(e) {
   initAll();
+  // Close sidebar when center panel swaps (user selected a list)
+  if (e.detail.target && e.detail.target.id === "center-panel") {
+    closeSidebar();
+  }
+  // Close both panels when page-body swaps (navbar navigation)
+  if (e.detail.target && e.detail.target.id === "page-body") {
+    closeSidebar();
+    closeDetailPanel();
+  }
 });
 
 // Init on page load

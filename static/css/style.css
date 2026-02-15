@@ -2261,3 +2261,356 @@ body {
   color: var(--text);
   border-color: var(--text-muted);
 }
+
+/* ============================================
+   Responsive — Mobile & Tablet
+   ============================================ */
+
+/* === Desktop defaults for responsive elements === */
+.navbar-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.navbar-hamburger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--sidebar-text);
+  border-radius: 1px;
+  transition: all 0.3s var(--ease-out);
+  transform-origin: center;
+}
+
+body.sidebar-open .navbar-hamburger span:nth-child(1) {
+  transform: rotate(45deg) translate(3.5px, 3.5px);
+}
+
+body.sidebar-open .navbar-hamburger span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+body.sidebar-open .navbar-hamburger span:nth-child(3) {
+  transform: rotate(-45deg) translate(3.5px, -3.5px);
+}
+
+.detail-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  line-height: 1;
+}
+
+.detail-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.sidebar-backdrop,
+.detail-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-out);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* === Tablet & below — max-width: 1023px === */
+@media (max-width: 1023px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sidebar overlay */
+  .sidebar {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  /* Detail panel overlay */
+  .detail-panel {
+    position: fixed;
+    top: 52px;
+    right: 0;
+    bottom: 0;
+    width: min(380px, 100vw);
+    z-index: 100;
+    transform: translateX(100%);
+    transition: transform 0.3s var(--ease-out);
+    box-shadow: var(--shadow-lg);
+  }
+
+  body.detail-open .detail-panel {
+    transform: translateX(0);
+  }
+
+  .detail-panel .task-detail-content,
+  .detail-panel .detail-empty-state {
+    position: relative;
+  }
+
+  /* Backdrops */
+  body.sidebar-open .sidebar-backdrop,
+  body.detail-open .detail-backdrop {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Hamburger visible */
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  /* Close button visible */
+  .detail-close-btn {
+    display: flex;
+  }
+
+  /* Touch target enlargements */
+  .checkbox {
+    width: 28px;
+    height: 28px;
+  }
+
+  .checkbox.checked::after {
+    width: 7px;
+    height: 12px;
+  }
+
+  .btn-sm {
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    opacity: 1;
+  }
+
+  .navbar-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .task-row {
+    min-height: 48px;
+    gap: 12px;
+  }
+
+  .list-nav-item {
+    min-height: 44px;
+    padding: 12px 14px;
+  }
+
+  /* Always show actions (no hover-only on touch) */
+  .section-actions {
+    opacity: 1;
+  }
+
+  .project-card-actions {
+    opacity: 1;
+  }
+
+  .ts-entry .btn-icon {
+    opacity: 1;
+  }
+}
+
+/* === Phone — max-width: 767px === */
+@media (max-width: 767px) {
+  .top-navbar {
+    padding: 0 12px;
+    gap: 12px;
+  }
+
+  .navbar-links {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .navbar-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navbar-brand {
+    font-size: 20px;
+    padding-right: 8px;
+  }
+
+  .navbar-link {
+    padding: 8px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .center-panel {
+    padding: 20px 16px;
+  }
+
+  .detail-panel {
+    width: 100vw;
+  }
+
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+  }
+
+  .list-header h1 {
+    font-size: 24px;
+  }
+
+  .list-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .single-column-layout {
+    padding: 24px 16px 32px;
+  }
+
+  .page-title {
+    font-size: 28px;
+  }
+
+  .ts-add-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ts-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .ts-summary-total {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    width: 100%;
+  }
+
+  .project-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-due-date,
+  .task-tag {
+    display: none;
+  }
+
+  .checkbox {
+    width: 32px;
+    height: 32px;
+  }
+
+  .checkbox.checked::after {
+    width: 8px;
+    height: 14px;
+  }
+
+  #toast-container {
+    left: 8px;
+    right: 8px;
+    bottom: 12px;
+  }
+
+  .toast {
+    width: 100%;
+  }
+
+  .section {
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .section-header h2 {
+    font-size: 16px;
+  }
+
+  .task-title {
+    font-size: 15px;
+  }
+
+  .detail-panel {
+    padding: 24px 20px;
+  }
+
+  .task-detail-content h2 {
+    font-size: 20px;
+    padding-right: 48px;
+  }
+}
+
+/* === PWA safe area insets === */
+@supports (padding: env(safe-area-inset-top)) {
+  .top-navbar {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  #toast-container {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}

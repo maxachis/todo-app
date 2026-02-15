@@ -1,4 +1,6 @@
 <div class="app-layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <div class="detail-backdrop" id="detail-backdrop"></div>
   <aside class="sidebar" id="sidebar">
     {% include "tasks/partials/sidebar_lists.html" %}
   </aside>
@@ -14,6 +16,7 @@
       {% include "tasks/partials/task_detail.html" with task=selected_task %}
     {% else %}
       <div class="detail-empty-state">
+        <button class="detail-close-btn" id="detail-close">&times;</button>
         <p>Select a task to view details</p>
       </div>
     {% endif %}
