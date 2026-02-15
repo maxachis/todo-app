@@ -12,9 +12,13 @@
       hx-get="/lists/{{ list.id }}/"
       hx-target="#center-panel"
       hx-push-url="true">
+    <span class="list-drag-handle" title="Drag to reorder">&#x2630;</span>
     <span class="list-nav-display">
       <span class="list-emoji">{{ list.emoji }}</span>
       <span class="list-name">{{ list.name }}</span>
+      {% if list.incomplete_task_count > 0 %}
+        <span class="list-count-badge">{{ list.incomplete_task_count }}</span>
+      {% endif %}
     </span>
     <form class="list-nav-edit-form"
           hx-post="/lists/{{ list.id }}/update/"

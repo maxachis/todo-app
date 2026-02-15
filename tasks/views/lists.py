@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
@@ -9,9 +10,19 @@ def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
+def _get_lists_with_counts():
+    """Return all lists annotated with their incomplete task count."""
+    return List.objects.annotate(
+        incomplete_task_count=Count(
+            "sections__tasks",
+            filter=Q(sections__tasks__is_completed=False),
+        )
+    )
+
+
 def index(request):
     """Main page — renders base with sidebar + default list."""
-    lists = List.objects.all()
+    lists = _get_lists_with_counts()
     first_list = lists.first()
     context = {"lists": lists, "active_list": first_list}
     if first_list:
@@ -39,7 +50,7 @@ def create_list(request):
     task_list = List.objects.create(name=name, emoji=emoji, position=max_pos + 10)
 
     if _is_htmx(request):
-        lists = List.objects.all()
+        lists = _get_lists_with_counts()
         return render(request, "tasks/partials/sidebar_lists.html", {"lists": lists, "active_list": task_list})
 
     return redirect_to_list(task_list)
@@ -52,12 +63,20 @@ def list_detail(request, list_id):
     context = {
         "active_list": task_list,
         "sections": sections,
-        "lists": List.objects.all(),
+        "lists": _get_lists_with_counts(),
         "projects": Project.objects.filter(is_active=True),
     }
 
     if _is_htmx(request):
-        return render(request, "tasks/partials/list_detail.html", context)
+        from django.template.loader import render_to_string
+
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = render_to_string(
+            "tasks/partials/sidebar_oob.html", context, request=request
+        )
+        return HttpResponse(center_html + sidebar_html)
 
     return render(request, "tasks/index.html", context)
 
@@ -86,7 +105,7 @@ def update_list(request, list_id):
     task_list.save()
 
     if _is_htmx(request):
-        lists = List.objects.all()
+        lists = _get_lists_with_counts()
         context = {"lists": lists, "active_list": task_list}
         from django.template.loader import render_to_string
 
@@ -115,7 +134,7 @@ def delete_list(request, list_id):
     task_list.delete()
 
     if _is_htmx(request):
-        lists = List.objects.all()
+        lists = _get_lists_with_counts()
         first_list = lists.first()
         context = {"lists": lists, "active_list": first_list}
         if first_list:
@@ -125,6 +144,31 @@ def delete_list(request, list_id):
 
     from django.shortcuts import redirect
     return redirect("index")
+
+
+@require_http_methods(["POST"])
+def move_list(request, list_id):
+    """Reorder a list in the sidebar via drag-and-drop."""
+    task_list = get_object_or_404(List, pk=list_id)
+    position = request.POST.get("position")
+
+    if position is None:
+        return HttpResponse("Position is required", status=400)
+
+    # position is newIndex * 10 from the JS client
+    new_index = int(position) // 10
+
+    # Get all other lists in order, then insert the moved list at the target index
+    siblings = list(List.objects.exclude(pk=task_list.pk).order_by("position"))
+    new_index = max(0, min(len(siblings), new_index))
+    siblings.insert(new_index, task_list)
+
+    # Renumber all with gap-based numbering (10, 20, 30...)
+    for i, s in enumerate(siblings):
+        s.position = (i + 1) * 10
+        s.save()
+
+    return HttpResponse(status=204)
 
 
 def redirect_to_list(task_list):

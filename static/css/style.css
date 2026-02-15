@@ -362,7 +362,6 @@ body {
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
   transition: box-shadow var(--transition-normal);
-  animation: fadeInUp 0.3s var(--ease-out) both;
 }
 
 .section:hover {
@@ -497,13 +496,14 @@ body {
   box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.1);
 }
 
-/* Stagger section fade-in */
-.section:nth-child(1) { animation-delay: 0s; }
-.section:nth-child(2) { animation-delay: 0.05s; }
-.section:nth-child(3) { animation-delay: 0.1s; }
-.section:nth-child(4) { animation-delay: 0.15s; }
-.section:nth-child(5) { animation-delay: 0.2s; }
-.section:nth-child(6) { animation-delay: 0.25s; }
+/* Stagger section fade-in — only on initial page load via .section-intro */
+.section.section-intro { animation: fadeInUp 0.3s var(--ease-out) both; }
+.section.section-intro:nth-child(1) { animation-delay: 0s; }
+.section.section-intro:nth-child(2) { animation-delay: 0.05s; }
+.section.section-intro:nth-child(3) { animation-delay: 0.1s; }
+.section.section-intro:nth-child(4) { animation-delay: 0.15s; }
+.section.section-intro:nth-child(5) { animation-delay: 0.2s; }
+.section.section-intro:nth-child(6) { animation-delay: 0.25s; }
 
 /* === Tasks === */
 .task-list {
@@ -2533,6 +2533,11 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
     padding: 12px 14px;
   }
 
+  /* Always show drag handle on touch devices */
+  .list-drag-handle {
+    opacity: 0.6;
+  }
+
   /* Always show actions (no hover-only on touch) */
   .section-actions {
     opacity: 1;
@@ -2749,3 +2754,392 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
     height: calc(56px + env(safe-area-inset-bottom));
   }
 }
+
+/* === Timesheet Entry Timestamp === */
+.ts-entry-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* === Due Date Highlighting === */
+.task-due-date.due-overdue {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.task-due-date.due-today {
+  background: rgba(217, 119, 6, 0.1);
+  color: #B45309;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.task-due-date.due-upcoming {
+  /* Keep existing subtle gray styling */
+}
+
+/* === Sidebar Task Count Badge === */
+.list-count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--sidebar-muted);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.list-nav-item.active .list-count-badge {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--sidebar-active-text);
+}
+
+/* === Collapsible Subtasks === */
+.subtask-collapsible {
+  margin-left: 30px;
+  border: none;
+}
+
+.subtask-collapse-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.subtask-collapse-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.subtask-collapse-toggle::marker {
+  content: '';
+}
+
+.subtask-collapse-toggle:hover {
+  color: var(--text-secondary);
+}
+
+.subtask-collapse-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--bg-subtle);
+  position: relative;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.subtask-collapse-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 3px 0 3px 4px;
+  border-color: transparent transparent transparent var(--text-muted);
+  transform: translate(-35%, -50%);
+  transition: transform var(--transition-fast);
+}
+
+.subtask-collapsible[open] .subtask-collapse-icon::after {
+  transform: translate(-50%, -35%) rotate(90deg);
+}
+
+.subtask-collapse-toggle:hover .subtask-collapse-icon {
+  background: var(--accent-lighter);
+}
+
+.subtask-collapse-toggle:hover .subtask-collapse-icon::after {
+  border-left-color: var(--accent);
+}
+
+.subtask-collapse-count {
+  font-family: var(--font-body);
+  letter-spacing: 0.02em;
+}
+
+.subtask-collapsible > :not(summary) {
+  display: none;
+}
+
+.subtask-collapsible[open] > :not(summary) {
+  display: block;
+}
+
+/* When collapsed, override the margin-left on nested subtask-drop-zone since the details wrapper already has it */
+.subtask-collapsible .subtask-drop-zone {
+  margin-left: 0;
+}
+
+.subtask-collapsible .subtask-completed-group {
+  margin-left: 0;
+}
+
+/* === Search === */
+.navbar-search {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--sidebar-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.navbar-search-input {
+  background: var(--sidebar-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--sidebar-text);
+  border-radius: var(--radius-md);
+  padding: 7px 12px 7px 32px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  width: 220px;
+  transition: all var(--transition-fast);
+}
+
+.navbar-search-input:focus {
+  outline: none;
+  border-color: rgba(251, 191, 36, 0.4);
+  width: 300px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-search-input::placeholder {
+  color: var(--sidebar-muted);
+}
+
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 400px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 2000;
+  border: 1px solid var(--border);
+}
+
+.search-results-dropdown:empty {
+  display: none;
+}
+
+.search-results-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-results-count {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.search-group {
+  padding: 4px 0;
+}
+
+.search-group + .search-group {
+  border-top: 1px solid var(--border);
+}
+
+.search-group-header {
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  transition: background var(--transition-fast);
+}
+
+.search-result-item:hover {
+  background: var(--bg-hover);
+}
+
+.search-result-title {
+  flex: 1;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.search-result-title.completed {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.search-result-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.search-no-results {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+  font-family: var(--font-heading);
+}
+
+/* === Sidebar List Drag Handle === */
+.list-drag-handle {
+  cursor: grab;
+  color: var(--sidebar-muted);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  user-select: none;
+  line-height: 1;
+}
+
+.list-nav-item:hover .list-drag-handle {
+  opacity: 0.6;
+}
+
+.list-drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--sidebar-text);
+}
+
+/* === Sortable Sections Container === */
+.sortable-sections {
+  min-height: 4px;
+}
+
+.sortable-sections > .sortable-ghost {
+  opacity: 0.3;
+}
+
+.sortable-sections > .sortable-chosen {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Sidebar list sortable ghost styling */
+.list-nav > .sortable-ghost {
+  opacity: 0.3;
+}
+
+.list-nav > .sortable-chosen {
+  background: var(--sidebar-active-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* === Search Responsive === */
+@media (max-width: 1023px) {
+  .navbar-search-input {
+    width: 160px;
+  }
+
+  .navbar-search-input:focus {
+    width: 220px;
+  }
+
+  .search-results-dropdown {
+    width: 340px;
+  }
+}
+
+@media (max-width: 767px) {
+  .navbar-search {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .navbar-search-input {
+    width: 100%;
+  }
+
+  .navbar-search-input:focus {
+    width: 100%;
+  }
+
+  .search-results-dropdown {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: calc(100vh - 52px - 56px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+/* === Task Completion Transitions === */
+
+/* Optimistic fade-out when completing a task */
+.task-item.completing {
+  opacity: 0.4;
+  transform: translateX(8px);
+  transition: opacity 0.15s var(--ease-out), transform 0.15s var(--ease-out);
+}
+
+.task-item.completing .task-title {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+  color: var(--text-muted);
+  transition: color 0.15s var(--ease-out);
+}
+
+.task-item.completing .checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+  transition: background 0.1s var(--ease-out), border-color 0.1s var(--ease-out);
+}
+
+/* Optimistic fade-in when uncompleting a task */
+.task-item.uncompleting {
+  opacity: 0.4;
+  transition: opacity 0.15s var(--ease-out);
+}
+

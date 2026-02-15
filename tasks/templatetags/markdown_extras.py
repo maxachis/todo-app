@@ -1,6 +1,9 @@
+import datetime
+
 import bleach
 import markdown as md
 from django import template
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 register = template.Library()
@@ -53,3 +56,18 @@ def render_markdown(value):
     linked_html = bleach.linkify(clean_html, callbacks=[_add_target_blank])
 
     return mark_safe(linked_html)
+
+
+@register.filter(name="due_date_status")
+def due_date_status(due_date):
+    """Return 'overdue', 'today', or 'upcoming' based on due_date vs today."""
+    if not due_date:
+        return ""
+    today = timezone.localdate()
+    if isinstance(due_date, datetime.datetime):
+        due_date = due_date.date()
+    if due_date < today:
+        return "overdue"
+    elif due_date == today:
+        return "today"
+    return "upcoming"

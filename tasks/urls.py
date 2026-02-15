@@ -1,6 +1,6 @@
 from django.urls import path
 
-from tasks.views import export, import_tasks, lists, projects, sections, tags, tasks, timesheet
+from tasks.views import export, import_tasks, lists, projects, search, sections, tags, tasks, timesheet
 
 urlpatterns = [
     # Main page
@@ -10,6 +10,7 @@ urlpatterns = [
     path("lists/<int:list_id>/", lists.list_detail, name="list_detail"),
     path("lists/<int:list_id>/update/", lists.update_list, name="update_list"),
     path("lists/<int:list_id>/delete/", lists.delete_list, name="delete_list"),
+    path("lists/<int:list_id>/move/", lists.move_list, name="move_list"),
     # Sections
     path(
         "lists/<int:list_id>/sections/",
@@ -25,6 +26,11 @@ urlpatterns = [
         "sections/<int:section_id>/delete/",
         sections.delete_section,
         name="delete_section",
+    ),
+    path(
+        "sections/<int:section_id>/move/",
+        sections.move_section,
+        name="move_section",
     ),
     # Tasks
     path(
@@ -61,6 +67,8 @@ urlpatterns = [
         name="export_list",
     ),
     path("export/<str:fmt>/", export.export_all_view, name="export_all"),
+    # Search
+    path("search/", search.search_tasks, name="search_tasks"),
     # Import
     path("import/", import_tasks.import_page, name="import_page"),
     # Projects

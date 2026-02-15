@@ -1,5 +1,5 @@
 from django.db import models
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
@@ -80,3 +80,28 @@ def delete_section(request, section_id):
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task_list.pk)
+
+
+@require_http_methods(["POST"])
+def move_section(request, section_id):
+    """Reorder a section within its list via drag-and-drop."""
+    section = get_object_or_404(Section, pk=section_id)
+    position = request.POST.get("position")
+
+    if position is None:
+        return HttpResponse("Position is required", status=400)
+
+    # position is newIndex * 10 from the JS client
+    new_index = int(position) // 10
+
+    # Get all other sections in order, then insert the moved section at the target index
+    siblings = list(section.list.sections.exclude(pk=section.pk).order_by("position"))
+    new_index = max(0, min(len(siblings), new_index))
+    siblings.insert(new_index, section)
+
+    # Renumber all with gap-based numbering (10, 20, 30...)
+    for i, s in enumerate(siblings):
+        s.position = (i + 1) * 10
+        s.save()
+
+    return HttpResponse(status=204)

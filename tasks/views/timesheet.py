@@ -13,10 +13,10 @@ def _is_htmx(request):
 
 
 def _week_bounds(date):
-    """Return (monday, sunday) for the week containing `date`."""
-    monday = date - datetime.timedelta(days=date.weekday())
-    sunday = monday + datetime.timedelta(days=6)
-    return monday, sunday
+    """Return (sunday, saturday) for the week containing `date`."""
+    sunday = date - datetime.timedelta(days=(date.weekday() + 1) % 7)
+    saturday = sunday + datetime.timedelta(days=6)
+    return sunday, saturday
 
 
 def _build_timesheet_context(request):
@@ -25,10 +25,10 @@ def _build_timesheet_context(request):
 
     week_offset = int(request.GET.get("week", 0))
     ref_date = today + datetime.timedelta(weeks=week_offset)
-    monday, sunday = _week_bounds(ref_date)
+    week_start, week_end = _week_bounds(ref_date)
 
     entries = (
-        TimeEntry.objects.filter(date__gte=monday, date__lte=sunday)
+        TimeEntry.objects.filter(date__gte=week_start, date__lte=week_end)
         .select_related("project")
         .prefetch_related("tasks")
     )
@@ -52,8 +52,8 @@ def _build_timesheet_context(request):
         "entries_by_date": entries_by_date,
         "total_hours": total_hours,
         "project_hours": project_hours,
-        "monday": monday,
-        "sunday": sunday,
+        "monday": week_start,
+        "sunday": week_end,
         "week_offset": week_offset,
         "prev_week": week_offset - 1,
         "next_week": week_offset + 1,

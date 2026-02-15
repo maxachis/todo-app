@@ -1,10 +1,12 @@
 from django.db import models
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from tasks.models import List, Section, Tag, Task
+from tasks.views.lists import _get_lists_with_counts
 
 
 def _is_htmx(request):
@@ -16,8 +18,16 @@ def _render_list_context(task_list):
     return {
         "active_list": task_list,
         "sections": task_list.sections.all(),
-        "lists": List.objects.all(),
+        "lists": _get_lists_with_counts(),
     }
+
+
+def _sidebar_oob_html(request, active_list):
+    """Render the sidebar as an OOB swap fragment."""
+    ctx = {"lists": _get_lists_with_counts(), "active_list": active_list}
+    return render_to_string(
+        "tasks/partials/sidebar_oob.html", ctx, request=request
+    )
 
 
 @require_http_methods(["POST"])
@@ -46,11 +56,13 @@ def create_task(request, section_id):
     )
 
     if _is_htmx(request):
-        return render(
-            request,
+        task_html = render_to_string(
             "tasks/partials/task_item.html",
             {"task": task, "depth": 0},
+            request=request,
         )
+        sidebar_html = _sidebar_oob_html(request, section.list)
+        return HttpResponse(task_html + sidebar_html)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=section.list.pk)
@@ -101,7 +113,6 @@ def update_task(request, task_id):
     task.refresh_from_db()
 
     if _is_htmx(request):
-        from django.template.loader import render_to_string
         from tasks.templatetags.markdown_extras import render_markdown
 
         # OOB swap: update heading in detail panel
@@ -149,7 +160,11 @@ def delete_task(request, task_id):
 
     if _is_htmx(request):
         context = _render_list_context(task_list)
-        return render(request, "tasks/partials/list_detail.html", context)
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = _sidebar_oob_html(request, task_list)
+        return HttpResponse(center_html + sidebar_html)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task_list.pk)
@@ -157,15 +172,36 @@ def delete_task(request, task_id):
 
 @require_http_methods(["POST"])
 def complete_task(request, task_id):
-    """Mark a task as completed."""
+    """Mark a task as completed.
+
+    Uses hx-swap="none" on the client — all DOM updates are OOB swaps
+    so the center panel is updated without a visible flash.
+    """
     task = get_object_or_404(Task, pk=task_id)
     task.complete()
 
     if _is_htmx(request):
         context = _render_list_context(task.section.list)
-        context["toast_task"] = task
-        response = render(request, "tasks/partials/list_detail_with_toast.html", context)
-        return response
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = _sidebar_oob_html(request, task.section.list)
+        toast_html = render_to_string(
+            "tasks/partials/toast.html",
+            {"task": task},
+            request=request,
+        )
+        # OOB swap for center panel content
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        # OOB swap for toast
+        oob_toast = (
+            f'<div id="toast-container" hx-swap-oob="innerHTML:#toast-container">'
+            f"{toast_html}</div>"
+        )
+        return HttpResponse(oob_center + sidebar_html + oob_toast)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task.section.list.pk)
@@ -173,13 +209,30 @@ def complete_task(request, task_id):
 
 @require_http_methods(["POST"])
 def uncomplete_task(request, task_id):
-    """Mark a task as not completed."""
+    """Mark a task as not completed.
+
+    Uses hx-swap="none" on the client — all DOM updates are OOB swaps
+    so the center panel is updated without a visible flash.
+    """
     task = get_object_or_404(Task, pk=task_id)
     task.uncomplete()
 
     if _is_htmx(request):
         context = _render_list_context(task.section.list)
-        return render(request, "tasks/partials/list_detail.html", context)
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = _sidebar_oob_html(request, task.section.list)
+        # OOB swap for center panel content
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        # Clear the toast container via OOB swap
+        toast_clear = (
+            '<div id="toast-container" hx-swap-oob="innerHTML:#toast-container"></div>'
+        )
+        return HttpResponse(oob_center + sidebar_html + toast_clear)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task.section.list.pk)
@@ -238,7 +291,11 @@ def move_task(request, task_id):
 
     if _is_htmx(request):
         context = _render_list_context(task.section.list)
-        return render(request, "tasks/partials/list_detail.html", context)
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = _sidebar_oob_html(request, task.section.list)
+        return HttpResponse(center_html + sidebar_html)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task.section.list.pk)

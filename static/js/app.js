@@ -17,9 +17,10 @@ function getCsrfToken() {
  * Persist a task move to the server without swapping DOM.
  * On success: no-op (DOM already reflects the change).
  * On failure: full GET refresh to restore correct state.
+ * Returns a promise that resolves when the server responds.
  */
 function postMove(taskId, data) {
-  fetch("/tasks/" + taskId + "/move/", {
+  return fetch("/tasks/" + taskId + "/move/", {
     method: "POST",
     headers: {
       "X-CSRFToken": getCsrfToken(),
@@ -36,12 +37,109 @@ function postMove(taskId, data) {
   });
 }
 
+/**
+ * Persist a section reorder to the server without swapping DOM.
+ * On success: no-op (DOM already reflects the change).
+ * On failure: full GET refresh to restore correct state.
+ */
+function postSectionMove(sectionId, data) {
+  return fetch("/sections/" + sectionId + "/move/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCsrfToken(),
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams(data)
+  }).then(function(resp) {
+    if (!resp.ok) {
+      console.error("[section-move] server returned " + resp.status);
+      htmx.ajax("GET", window.location.pathname, {
+        target: "#center-panel",
+        swap: "innerHTML"
+      });
+    }
+  }).catch(function(err) {
+    console.error("[section-move] fetch failed:", err);
+    htmx.ajax("GET", window.location.pathname, {
+      target: "#center-panel",
+      swap: "innerHTML"
+    });
+  });
+}
+
+/**
+ * Persist a list reorder to the server without swapping DOM.
+ * On success: no-op (DOM already reflects the change).
+ * On failure: full GET refresh of the sidebar to restore correct state.
+ */
+function postListMove(listId, data) {
+  return fetch("/lists/" + listId + "/move/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCsrfToken(),
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams(data)
+  }).then(function(resp) {
+    if (!resp.ok) {
+      console.error("[list-move] server returned " + resp.status);
+      htmx.ajax("GET", window.location.pathname, {
+        target: "#center-panel",
+        swap: "innerHTML"
+      });
+    }
+  }).catch(function(err) {
+    console.error("[list-move] fetch failed:", err);
+    htmx.ajax("GET", window.location.pathname, {
+      target: "#center-panel",
+      swap: "innerHTML"
+    });
+  });
+}
+
+/**
+ * Update subtask count labels on all parent tasks that have a
+ * .subtask-collapse-toggle. Re-counts active and completed
+ * subtask items in the DOM and refreshes the label text to show
+ * both total and completed counts (e.g. "3 subtasks (1 done)").
+ */
+function updateSubtaskCounts() {
+  document.querySelectorAll(".subtask-collapsible").forEach(function(details) {
+    var toggle = details.querySelector(":scope > .subtask-collapse-toggle");
+    if (!toggle) return;
+    var countSpan = toggle.querySelector(".subtask-collapse-count");
+    if (!countSpan) return;
+
+    var dropZone = details.querySelector(":scope > .subtask-collapsible-content > .subtask-drop-zone");
+    if (!dropZone) return;
+
+    // Count direct children that are .task-item and not .completed
+    var activeCount = dropZone.querySelectorAll(":scope > .task-item:not(.completed)").length;
+    // Count completed subtasks
+    var completedCount = 0;
+    var completedGroup = details.querySelector(":scope > .subtask-collapsible-content > .subtask-completed-group");
+    if (completedGroup) {
+      completedCount = completedGroup.querySelectorAll(".subtask-completed-items > .task-item.completed").length;
+    }
+
+    var total = activeCount + completedCount;
+    var label = total + " subtask" + (total !== 1 ? "s" : "");
+    if (completedCount > 0) {
+      label += " (" + completedCount + " done)";
+    }
+    countSpan.textContent = label;
+  });
+}
+
 // ─── Toast ───────────────────────────────────
 
 function dismissToast() {
   var toast = document.getElementById("undo-toast");
   if (toast) {
-    toast.remove();
+    toast.style.animation = "toastOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards";
+    toast.addEventListener("animationend", function() {
+      if (toast.parentNode) toast.remove();
+    });
   }
 }
 
@@ -152,7 +250,11 @@ function initSortable() {
     sortableInstances.push(instance);
   });
 
-  // Sidebar list drop targets for cross-list moves
+  // Sidebar list drop targets for cross-list moves.
+  // Use a non-existent handle so these child Sortable instances never
+  // initiate drags (they only receive task drops via group.put).  This
+  // prevents them from intercepting mousedown events that should reach
+  // the parent #list-nav Sortable for list reordering.
   document.querySelectorAll(".list-nav-item").forEach(function(el) {
     var instance = new Sortable(el, {
       group: {
@@ -160,6 +262,10 @@ function initSortable() {
         put: true,
         pull: false
       },
+      sort: false,
+      handle: ".task-drop-handle-none",
+      filter: ".list-drag-handle",
+      preventOnFilter: false,
       onAdd: function(evt) {
         var taskId = evt.item.dataset.taskId;
         var listId = evt.to.dataset.listId;
@@ -176,6 +282,76 @@ function initSortable() {
     });
     sortableInstances.push(instance);
   });
+
+  // Section reordering within a list.
+  // The draggable element is a <details> whose <summary> is the
+  // drag handle.  On mouseup the browser fires a "click" on the
+  // <summary> which toggles the <details> open/close state.
+  // We suppress that toggle during the drag to prevent a visual
+  // snap-back or collapsed section after reordering.
+  document.querySelectorAll(".sortable-sections").forEach(function(el) {
+    var sectionDragClickBlocker = null;
+
+    var instance = new Sortable(el, {
+      animation: 150,
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      handle: ".section-header",
+      draggable: ".section",
+      onStart: function(evt) {
+        // Block the <summary> click that would toggle <details>
+        sectionDragClickBlocker = function(e) { e.preventDefault(); };
+        evt.item.addEventListener("click", sectionDragClickBlocker, true);
+      },
+      onEnd: function(evt) {
+        // Remove the click blocker after a short delay so the
+        // browser's pending click event is consumed first.
+        var item = evt.item;
+        setTimeout(function() {
+          if (sectionDragClickBlocker) {
+            item.removeEventListener("click", sectionDragClickBlocker, true);
+            sectionDragClickBlocker = null;
+          }
+        }, 50);
+
+        var sectionEl = evt.item;
+        var sectionId = sectionEl.dataset.sectionId;
+        // Prefer newDraggableIndex (counts only draggable children)
+        // over newIndex (counts all element children) for accuracy
+        var newIndex = typeof evt.newDraggableIndex === "number"
+          ? evt.newDraggableIndex : evt.newIndex;
+
+        postSectionMove(sectionId, {
+          position: newIndex * 10
+        });
+      }
+    });
+    sortableInstances.push(instance);
+  });
+
+  // List reordering in the sidebar
+  var listNav = document.getElementById("list-nav");
+  if (listNav) {
+    var instance = new Sortable(listNav, {
+      animation: 150,
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      handle: ".list-drag-handle",
+      draggable: ".list-nav-item",
+      onEnd: function(evt) {
+        var listItem = evt.item;
+        var listId = listItem.dataset.listId;
+        // Prefer newDraggableIndex (counts only draggable children)
+        var newIndex = typeof evt.newDraggableIndex === "number"
+          ? evt.newDraggableIndex : evt.newIndex;
+
+        postListMove(listId, {
+          position: newIndex * 10
+        });
+      }
+    });
+    sortableInstances.push(instance);
+  }
 }
 
 // ─── Keyboard Navigation ─────────────────────
@@ -255,6 +431,117 @@ function initKeyboardNav() {
     }
   });
 
+  // Arrow keys in add-task inputs: navigate between tasks and inputs fluidly
+  document.addEventListener("keydown", function(e) {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    var target = e.target;
+    if (!target.matches(".task-form input[type='text'], .task-form input[name='title']")) return;
+
+    e.preventDefault();
+
+    // Find the section this input belongs to
+    var inputSection = target.closest(".section");
+    if (!inputSection) return;
+
+    if (e.key === "ArrowUp") {
+      // Up from input: focus the last visible task in this section (or earlier sections)
+      var tasks = getVisibleTasks();
+      var lastTaskInSection = null;
+      for (var i = tasks.length - 1; i >= 0; i--) {
+        if (tasks[i].closest(".section") === inputSection) {
+          lastTaskInSection = tasks[i];
+          break;
+        }
+      }
+      if (lastTaskInSection) {
+        target.blur();
+        setTaskFocus(lastTaskInSection, true);
+      } else {
+        // No tasks in this section; find the previous section's input
+        var allInputs = Array.from(
+          document.querySelectorAll(".task-form input[name='title']")
+        ).filter(function(inp) {
+          var node = inp.parentElement;
+          while (node && node.id !== "center-panel") {
+            if (node.tagName === "DETAILS" && !node.open) return false;
+            node = node.parentElement;
+          }
+          return true;
+        });
+        var currentIdx = allInputs.indexOf(target);
+        if (currentIdx > 0) {
+          allInputs[currentIdx - 1].focus();
+        }
+      }
+    } else {
+      // Down from input: focus the first task in the next section or next section's input
+      var allSections = Array.from(document.querySelectorAll("#center-panel .section"));
+      var currentSectionIdx = allSections.indexOf(inputSection);
+      var tasks = getVisibleTasks();
+
+      // Look for next section
+      for (var si = currentSectionIdx + 1; si < allSections.length; si++) {
+        var nextSection = allSections[si];
+        // Check if section is open (it's a <details> element)
+        if (!nextSection.open) continue;
+
+        // Find first task in this section
+        var firstTask = null;
+        for (var ti = 0; ti < tasks.length; ti++) {
+          if (tasks[ti].closest(".section") === nextSection) {
+            firstTask = tasks[ti];
+            break;
+          }
+        }
+        if (firstTask) {
+          target.blur();
+          setTaskFocus(firstTask, true);
+          return;
+        }
+
+        // No tasks in next section -- focus its input
+        var nextInput = nextSection.querySelector(".task-form input[name='title']");
+        if (nextInput) {
+          nextInput.focus();
+          return;
+        }
+      }
+    }
+  });
+
+  // Ctrl+Left/Right to tab between navigation panels
+  document.addEventListener("keydown", function(e) {
+    if (!e.ctrlKey) return;
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+    // Don't intercept when input/textarea/contenteditable is focused
+    var tag = e.target.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea" || e.target.isContentEditable) {
+      return;
+    }
+
+    e.preventDefault();
+    var navLinks = Array.from(document.querySelectorAll(".navbar-link"));
+    if (navLinks.length === 0) return;
+
+    var activeIdx = -1;
+    for (var i = 0; i < navLinks.length; i++) {
+      if (navLinks[i].classList.contains("active")) {
+        activeIdx = i;
+        break;
+      }
+    }
+
+    var nextIdx;
+    if (e.key === "ArrowLeft") {
+      nextIdx = activeIdx <= 0 ? navLinks.length - 1 : activeIdx - 1;
+    } else {
+      nextIdx = activeIdx >= navLinks.length - 1 ? 0 : activeIdx + 1;
+    }
+
+    navLinks[nextIdx].click();
+  });
+
   document.addEventListener("keydown", function(e) {
     // Don't intercept when input/textarea/contenteditable is focused
     var tag = e.target.tagName.toLowerCase();
@@ -263,7 +550,7 @@ function initKeyboardNav() {
     }
 
     // Only handle navigation keys
-    var navKeys = ["ArrowDown", "ArrowUp", "j", "k", "Tab", "x", "Escape"];
+    var navKeys = ["ArrowDown", "ArrowUp", "j", "k", "Tab", "x", "Escape", "Delete"];
     if (navKeys.indexOf(e.key) === -1) return;
 
     var tasks = getVisibleTasks();
@@ -338,8 +625,37 @@ function initKeyboardNav() {
     if (e.key === "ArrowDown" || e.key === "j") {
       e.preventDefault();
       var nextIndex = currentIndex + 1;
-      if (nextIndex >= tasks.length) nextIndex = 0;
-      setTaskFocus(tasks[nextIndex], true);
+      if (nextIndex < tasks.length) {
+        // Check if next task is in a different section — if so, go to current section's input first
+        var currentTask = currentIndex >= 0 ? tasks[currentIndex] : null;
+        var currentSec = currentTask ? currentTask.closest(".section") : null;
+        var nextTask = tasks[nextIndex];
+        var nextSec = nextTask ? nextTask.closest(".section") : null;
+
+        if (currentSec && nextSec && currentSec !== nextSec) {
+          // Focus the add-task input of the current section before moving to next section
+          var sectionInput = currentSec.querySelector(".task-form input[name='title']");
+          if (sectionInput) {
+            setTaskFocus(null);
+            sectionInput.focus();
+            return;
+          }
+        }
+        setTaskFocus(tasks[nextIndex], true);
+      } else {
+        // Past the last task — focus the add-task input of the current section
+        var currentTask = currentIndex >= 0 ? tasks[currentIndex] : null;
+        var currentSec = currentTask ? currentTask.closest(".section") : null;
+        if (currentSec) {
+          var sectionInput = currentSec.querySelector(".task-form input[name='title']");
+          if (sectionInput) {
+            setTaskFocus(null);
+            sectionInput.focus();
+            return;
+          }
+        }
+        setTaskFocus(tasks[0], true);
+      }
     } else if (e.key === "ArrowUp" || e.key === "k") {
       e.preventDefault();
       var prevIndex = currentIndex - 1;
@@ -374,34 +690,57 @@ function initKeyboardNav() {
         var parentDepth = parseInt(parentEl.style.paddingLeft) || 0;
         focused.style.paddingLeft = parentDepth + "em";
 
-        // Persist silently
+        // Persist silently and update subtask counts
         postMove(focusedTaskId, {
           parent: grandparentId || "null"
         });
+        updateSubtaskCounts();
       } else {
         // Indent: move task into previous sibling's subtask drop zone
-        if (currentIndex <= 0) return;
+        // Only indent one level: find the previous sibling at the SAME depth
+        // (same parent), not the previous task in the flat list which may be
+        // at a deeper level.
+        var currentParentId = focused.dataset.parentId || "";
 
-        // Find previous visible sibling (the task right above in the flat list)
-        var prevTask = tasks[currentIndex - 1];
-        var prevTaskId = prevTask.dataset.taskId;
+        // Walk backwards through the flat task list to find the previous
+        // sibling that shares the same parent (same nesting level).
+        var prevSibling = null;
+        for (var si = currentIndex - 1; si >= 0; si--) {
+          var candidate = tasks[si];
+          var candidateParent = candidate.dataset.parentId || "";
+          if (candidateParent === currentParentId) {
+            prevSibling = candidate;
+            break;
+          }
+        }
+        if (!prevSibling) return;
 
-        // Find the subtask drop zone inside the previous task
-        var dropZone = prevTask.querySelector(":scope > .subtask-drop-zone");
+        var prevSiblingId = prevSibling.dataset.taskId;
+
+        // Find the subtask drop zone inside the previous sibling
+        var dropZone = prevSibling.querySelector(":scope > .subtask-drop-zone");
+        if (!dropZone) {
+          // Try inside a details/subtask-collapsible-content wrapper
+          var details = prevSibling.querySelector(":scope > .subtask-collapsible");
+          if (details) {
+            dropZone = details.querySelector(".subtask-drop-zone");
+          }
+        }
         if (!dropZone) return;
 
         // Move focused element into the drop zone
         dropZone.appendChild(focused);
 
         // Update data attribute and visual depth
-        focused.dataset.parentId = prevTaskId;
-        var prevDepth = parseInt(prevTask.style.paddingLeft) || 0;
+        focused.dataset.parentId = prevSiblingId;
+        var prevDepth = parseInt(prevSibling.style.paddingLeft) || 0;
         focused.style.paddingLeft = (prevDepth + 1) + "em";
 
-        // Persist silently
+        // Persist silently and update subtask counts
         postMove(focusedTaskId, {
-          parent: prevTaskId
+          parent: prevSiblingId
         });
+        updateSubtaskCounts();
       }
     } else if (e.key === "x" && focusedTaskId) {
       // Quick complete
@@ -410,6 +749,24 @@ function initKeyboardNav() {
         var checkbox = focused.querySelector(".checkbox");
         if (checkbox) checkbox.click();
       }
+    } else if (e.key === "Delete" && focusedTaskId) {
+      // Delete focused task with confirmation
+      e.preventDefault();
+      if (!confirm("Delete this task?")) return;
+
+      var taskIdToDelete = focusedTaskId;
+      // Move focus to next or previous task before deleting
+      var nextIndex = currentIndex + 1 < tasks.length ? currentIndex + 1 : currentIndex - 1;
+      if (nextIndex >= 0 && nextIndex < tasks.length && nextIndex !== currentIndex) {
+        setTaskFocus(tasks[nextIndex], true);
+      } else {
+        setTaskFocus(null);
+      }
+
+      htmx.ajax("POST", "/tasks/" + taskIdToDelete + "/delete/", {
+        target: "#center-panel",
+        swap: "innerHTML"
+      });
     } else if (e.key === "Escape") {
       setTaskFocus(null);
     }
@@ -1251,6 +1608,42 @@ function updateActiveNav() {
   });
 }
 
+// ─── Task Completion Transitions ─────────────
+
+/**
+ * Apply optimistic CSS classes when a checkbox is clicked, providing
+ * immediate visual feedback (fade-out) before the server responds.
+ * The server returns OOB swaps (hx-swap="none" on the checkbox), so
+ * no full center-panel replacement occurs — eliminating the flash.
+ */
+function initCompletionTransitions() {
+  document.body.addEventListener("htmx:beforeRequest", function(e) {
+    var elt = e.detail.elt;
+    if (!elt || !elt.classList.contains("checkbox")) return;
+
+    var taskItem = elt.closest(".task-item");
+    if (!taskItem) return;
+
+    var isCompleting = !elt.classList.contains("checked");
+    if (isCompleting) {
+      taskItem.classList.add("completing");
+    } else {
+      taskItem.classList.add("uncompleting");
+    }
+  });
+}
+
+/**
+ * Add the intro animation class to sections on initial page load only.
+ * Sections inserted later via HTMX swaps won't have this class,
+ * so they appear instantly without a fadeInUp flash.
+ */
+function addSectionIntroAnimation() {
+  document.querySelectorAll(".section").forEach(function(el) {
+    el.classList.add("section-intro");
+  });
+}
+
 // ─── Init & HTMX Hooks ──────────────────────
 
 function initAll() {
@@ -1262,11 +1655,21 @@ function initAll() {
   try { initListNameEdit(); } catch (ex) { console.error("initListNameEdit error:", ex); }
   try { initSectionNameEdit(); } catch (ex) { console.error("initSectionNameEdit error:", ex); }
   try { initMobilePanels(); } catch (ex) { console.error("initMobilePanels error:", ex); }
+  updateSubtaskCounts();
   restoreTaskFocus();
   restoreFocus();
 }
 
-// Re-init after HTMX swaps
+// Re-init after HTMX swaps.
+// We listen on both htmx:afterSwap AND htmx:afterSettle.
+//   - afterSwap catches the main swap and fires initAll() immediately.
+//   - afterSettle fires once the settle phase completes (after OOB
+//     swaps have been applied), so we re-run initAll() to pick up
+//     any sidebar DOM that was replaced out-of-band.
+// The double call is harmless because initAll() calls
+// destroySortables() first, and the second pass simply re-binds on
+// the final DOM.  This ensures Sortable instances are never left on
+// stale (replaced) elements.
 document.addEventListener("htmx:afterSwap", function(e) {
   initAll();
   // Close sidebar when center panel swaps (user selected a list)
@@ -1280,11 +1683,16 @@ document.addEventListener("htmx:afterSwap", function(e) {
     updateActiveNav();
   }
 });
+document.addEventListener("htmx:afterSettle", function(e) {
+  initAll();
+});
 
 // Init on page load
 document.addEventListener("DOMContentLoaded", function() {
   trackFormFocus();
   initKeyboardNav();
+  initCompletionTransitions();
+  addSectionIntroAnimation();
   initAll();
 
   // Register service worker for PWA support

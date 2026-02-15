@@ -9,19 +9,17 @@
     {% if task.is_completed %}
     <button class="checkbox checked"
             hx-post="/tasks/{{ task.id }}/uncomplete/"
-            hx-target="#center-panel"
-            hx-swap="innerHTML">&#9745;</button>
+            hx-swap="none">&#9745;</button>
     {% else %}
     <button class="checkbox"
             hx-post="/tasks/{{ task.id }}/complete/"
-            hx-target="#center-panel"
-            hx-swap="innerHTML">&#9744;</button>
+            hx-swap="none">&#9744;</button>
     {% endif %}
 
     <span class="task-title">{{ task.title|linkify }}</span>
 
     {% if task.due_date %}
-    <span class="task-due-date">{{ task.due_date|date:"M j" }}</span>
+    <span class="task-due-date{% if not task.is_completed %} due-{{ task.due_date|due_date_status }}{% endif %}">{{ task.due_date|date:"M j" }}</span>
     {% endif %}
 
     {% for tag in task.tags.all %}
@@ -29,24 +27,39 @@
     {% endfor %}
   </div>
 
-  <div class="subtask-drop-zone sortable-tasks" data-section-id="{{ task.section_id }}" data-parent-task-id="{{ task.id }}">
-    {% for subtask in task.subtasks.all %}
-      {% if not subtask.is_completed %}
-        {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
-      {% endif %}
-    {% endfor %}
-  </div>
-  <details class="subtask-completed-group">
-    <summary class="subtask-completed-toggle">
-      <span class="completed-toggle-icon"></span>
-      Done
+  {% with subtask_list=task.subtasks.all %}
+  {% if subtask_list %}
+  <details open class="subtask-collapsible">
+    <summary class="subtask-collapse-toggle" onclick="event.stopPropagation();">
+      <span class="subtask-collapse-icon"></span>
+      <span class="subtask-collapse-count">{{ subtask_list|length }} subtask{{ subtask_list|length|pluralize }}</span>
     </summary>
-    <div class="subtask-completed-items">
-      {% for subtask in task.subtasks.all %}
-        {% if subtask.is_completed %}
-          {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
-        {% endif %}
-      {% endfor %}
+    <div class="subtask-collapsible-content">
+      <div class="subtask-drop-zone sortable-tasks" data-section-id="{{ task.section_id }}" data-parent-task-id="{{ task.id }}">
+        {% for subtask in subtask_list %}
+          {% if not subtask.is_completed %}
+            {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
+          {% endif %}
+        {% endfor %}
+      </div>
+      <details class="subtask-completed-group">
+        <summary class="subtask-completed-toggle">
+          <span class="completed-toggle-icon"></span>
+          Done
+        </summary>
+        <div class="subtask-completed-items">
+          {% for subtask in subtask_list %}
+            {% if subtask.is_completed %}
+              {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      </details>
     </div>
   </details>
+  {% else %}
+  <div class="subtask-drop-zone sortable-tasks" data-section-id="{{ task.section_id }}" data-parent-task-id="{{ task.id }}">
+  </div>
+  {% endif %}
+  {% endwith %}
 </div>

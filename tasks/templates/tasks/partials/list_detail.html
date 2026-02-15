@@ -30,9 +30,11 @@
   </div>
 </div>
 
+<div class="sortable-sections" data-list-id="{{ active_list.id }}">
 {% for section in sections %}
   {% include "tasks/partials/section.html" with section=section %}
 {% endfor %}
+</div>
 
 <form class="inline-form section-form"
       hx-post="/lists/{{ active_list.id }}/sections/"
