@@ -243,6 +243,7 @@ function initKeyboardNav() {
   // Click outside any task row → clear highlight
   document.addEventListener("click", function(e) {
     if (e.target.closest(".checkbox")) return;
+    if (e.target.tagName === "A" && e.target.closest(".task-title")) return;
     var row = e.target.closest(".task-row");
     if (!row) {
       setTaskFocus(null);

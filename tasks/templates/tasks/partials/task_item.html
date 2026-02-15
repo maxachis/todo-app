@@ -1,3 +1,4 @@
+{% load markdown_extras %}
 <div class="task-item {% if task.is_completed %}completed{% endif %}"
      id="task-{{ task.id }}"
      data-task-id="{{ task.id }}"
@@ -17,7 +18,7 @@
             hx-swap="innerHTML">&#9744;</button>
     {% endif %}
 
-    <span class="task-title">{{ task.title }}</span>
+    <span class="task-title">{{ task.title|linkify }}</span>
 
     {% if task.due_date %}
     <span class="task-due-date">{{ task.due_date|date:"M j" }}</span>

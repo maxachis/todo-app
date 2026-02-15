@@ -2,7 +2,7 @@
 
 <div class="task-detail-content">
   <button class="detail-close-btn" id="detail-close">&times;</button>
-  <h2 id="detail-title">{{ task.title }}</h2>
+  <h2 id="detail-title">{{ task.title|linkify }}</h2>
 
   <form hx-post="/tasks/{{ task.id }}/update/"
         hx-swap="none"

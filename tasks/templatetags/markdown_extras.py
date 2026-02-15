@@ -29,6 +29,17 @@ def _add_target_blank(attrs, new=False):
     return attrs
 
 
+@register.filter(name="linkify")
+def linkify_text(value):
+    """Auto-link URLs in plain text, escaping HTML first."""
+    if not value:
+        return ""
+
+    escaped = bleach.clean(value, tags=[], attributes={})
+    linked = bleach.linkify(escaped, callbacks=[_add_target_blank])
+    return mark_safe(linked)
+
+
 @register.filter(name="render_markdown")
 def render_markdown(value):
     """Render Markdown to sanitized HTML with auto-linked URLs."""
