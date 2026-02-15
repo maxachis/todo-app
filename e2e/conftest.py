@@ -94,7 +94,7 @@ def base_url(tmp_path_factory):
     # 3. Run migrations so the temp DB has all tables
     subprocess.run(
         ["python", "manage.py", "migrate", "--run-syncdb"],
-        cwd="/workspaces/ToDo App",
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         env=os.environ,
         check=True,
         stdout=subprocess.PIPE,
@@ -107,7 +107,7 @@ def base_url(tmp_path_factory):
 
     proc = subprocess.Popen(
         ["python", "manage.py", "runserver", f"0.0.0.0:{port}", "--noreload"],
-        cwd="/workspaces/ToDo App",
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

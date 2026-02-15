@@ -7,8 +7,7 @@
     {% if projects %}
     <select class="list-project-select"
             hx-post="/lists/{{ active_list.id }}/update/"
-            hx-target="#center-panel"
-            hx-swap="innerHTML"
+            hx-swap="none"
             name="project">
       <option value="">No project</option>
       {% for project in projects %}
@@ -24,7 +23,7 @@
     <a href="/lists/{{ active_list.id }}/export/csv/" class="btn btn-sm">CSV</a>
     <a href="/lists/{{ active_list.id }}/export/md/" class="btn btn-sm">MD</a>
     <button hx-post="/lists/{{ active_list.id }}/delete/"
-            hx-target="#center-panel"
+            hx-swap="none"
             hx-confirm="Delete this list?"
             class="btn btn-sm btn-danger">Delete List</button>
   </div>
@@ -38,8 +37,7 @@
 
 <form class="inline-form section-form"
       hx-post="/lists/{{ active_list.id }}/sections/"
-      hx-target="#center-panel"
-      hx-swap="innerHTML">
+      hx-swap="none">
   <input type="text" name="name" placeholder="New section..." required>
   <input type="hidden" name="emoji" value="">
   <button type="button" class="emoji-trigger" data-emoji-target="emoji" title="Pick emoji">+</button>

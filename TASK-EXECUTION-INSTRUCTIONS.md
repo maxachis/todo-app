@@ -105,3 +105,15 @@ After all subagents complete and the human has validated:
 - **Test isolation:** If multiple code subagents run in parallel and both need to run tests, they may collide on the test database. Either run tests sequentially after all code changes are done, or ensure each subagent only runs tests related to their changes.
 - **Migration ordering:** Only one subagent at a time should create migrations. If two code tasks both require model changes, run them sequentially or have the second subagent create its migration after the first's is applied.
 - **Git:** Subagents should not commit. The human reviews all changes and commits after validation.
+
+## Lessons Learned — Stricter Conflict Rules
+
+The following rules were added after observing repeated failures in practice:
+
+1. **Never parallelize agents that write to the same file**, regardless of which section they edit. Even "different sections" of a single file (e.g., `app.js`) cause merge conflicts and stale reads when agents work concurrently.
+
+2. **Require a test-suite run between sequential agents that share files.** When agent B follows agent A on the same file, run `python manage.py test tasks` after A completes and before B starts. This catches conflicts early rather than at the end of a batch.
+
+3. **For JS changes, require a browser smoke test** (manual or Playwright) in addition to Django tests. Django tests cannot verify JS → fetch → Django → DOM update pipelines. Mark JS-touching tasks as requiring browser validation in the tracking table.
+
+4. **For recurring failures (3+ rounds on the same task), escalate.** Have the agent read all previous failure notes and propose a fundamentally different approach — not an incremental fix to the same strategy. If a view has been rewritten twice due to position bugs, the approach itself is wrong, not just the details.

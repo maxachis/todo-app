@@ -6,8 +6,7 @@
     </h2>
     <form class="section-edit-form"
           hx-post="/sections/{{ section.id }}/update/"
-          hx-target="#center-panel"
-          hx-swap="innerHTML"
+          hx-swap="none"
           onclick="event.stopPropagation()">
       <input type="text" name="name" value="{{ section.name }}" class="section-edit-input">
       <button type="submit" class="btn btn-sm">Save</button>
@@ -17,7 +16,7 @@
       <button type="button" class="btn btn-sm btn-ghost section-edit-btn"
               onclick="event.stopPropagation()">Edit</button>
       <button hx-post="/sections/{{ section.id }}/delete/"
-              hx-target="#center-panel"
+              hx-swap="none"
               hx-confirm="Delete this section?"
               class="btn btn-sm btn-danger"
               onclick="event.stopPropagation()">Delete</button>

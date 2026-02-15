@@ -1,9 +1,11 @@
+from django.db import models
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
 from tasks.models import List, Project, Section, Task
+from tasks.views.reorder import reorder_siblings
 
 
 def _is_htmx(request):
@@ -50,8 +52,25 @@ def create_list(request):
     task_list = List.objects.create(name=name, emoji=emoji, position=max_pos + 10)
 
     if _is_htmx(request):
+        from django.template.loader import render_to_string
+
         lists = _get_lists_with_counts()
-        return render(request, "tasks/partials/sidebar_lists.html", {"lists": lists, "active_list": task_list})
+        context = {
+            "lists": lists,
+            "active_list": task_list,
+            "sections": task_list.sections.all(),
+        }
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = render_to_string(
+            "tasks/partials/sidebar_oob.html", context, request=request
+        )
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        return HttpResponse(oob_center + sidebar_html)
 
     return redirect_to_list(task_list)
 
@@ -105,24 +124,26 @@ def update_list(request, list_id):
     task_list.save()
 
     if _is_htmx(request):
-        lists = _get_lists_with_counts()
-        context = {"lists": lists, "active_list": task_list}
         from django.template.loader import render_to_string
 
-        sidebar_html = render_to_string(
-            "tasks/partials/sidebar_lists.html", context, request=request
-        )
-        sections = task_list.sections.all()
-        context["sections"] = sections
-        context["projects"] = Project.objects.filter(is_active=True)
+        lists = _get_lists_with_counts()
+        context = {
+            "lists": lists,
+            "active_list": task_list,
+            "sections": task_list.sections.all(),
+            "projects": Project.objects.filter(is_active=True),
+        }
         center_html = render_to_string(
             "tasks/partials/list_detail.html", context, request=request
         )
+        sidebar_html = render_to_string(
+            "tasks/partials/sidebar_oob.html", context, request=request
+        )
         oob_center = (
-            f'<div id="center-panel" hx-swap-oob="innerHTML:#center-panel">'
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
             f"{center_html}</div>"
         )
-        return HttpResponse(sidebar_html + oob_center)
+        return HttpResponse(oob_center + sidebar_html)
 
     return redirect_to_list(task_list)
 
@@ -134,13 +155,25 @@ def delete_list(request, list_id):
     task_list.delete()
 
     if _is_htmx(request):
+        from django.template.loader import render_to_string
+
         lists = _get_lists_with_counts()
         first_list = lists.first()
         context = {"lists": lists, "active_list": first_list}
         if first_list:
             context["sections"] = first_list.sections.all()
             context["projects"] = Project.objects.filter(is_active=True)
-        return render(request, "tasks/partials/full_content.html", context)
+        center_html = render_to_string(
+            "tasks/partials/list_detail.html", context, request=request
+        )
+        sidebar_html = render_to_string(
+            "tasks/partials/sidebar_oob.html", context, request=request
+        )
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        return HttpResponse(oob_center + sidebar_html)
 
     from django.shortcuts import redirect
     return redirect("index")
@@ -155,18 +188,8 @@ def move_list(request, list_id):
     if position is None:
         return HttpResponse("Position is required", status=400)
 
-    # position is newIndex * 10 from the JS client
     new_index = int(position) // 10
-
-    # Get all other lists in order, then insert the moved list at the target index
-    siblings = list(List.objects.exclude(pk=task_list.pk).order_by("position"))
-    new_index = max(0, min(len(siblings), new_index))
-    siblings.insert(new_index, task_list)
-
-    # Renumber all with gap-based numbering (10, 20, 30...)
-    for i, s in enumerate(siblings):
-        s.position = (i + 1) * 10
-        s.save()
+    reorder_siblings(task_list, List.objects.all(), new_index)
 
     return HttpResponse(status=204)
 
@@ -174,7 +197,3 @@ def move_list(request, list_id):
 def redirect_to_list(task_list):
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task_list.pk)
-
-
-# Need the import for Max
-from django.db import models

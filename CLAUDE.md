@@ -20,6 +20,12 @@ python manage.py test tasks.tests.test_models
 python manage.py test tasks.tests.test_views
 python manage.py test tasks.tests.test_integration
 
+# Run E2E tests (Playwright — requires dev server)
+pytest e2e/ -x -v
+
+# Run specific E2E test file
+pytest e2e/test_keyboard.py -x -v
+
 # Migrations
 python manage.py makemigrations && python manage.py migrate
 
@@ -38,6 +44,7 @@ tasks/                  # Main Django app
     tasks.py            # Task CRUD, complete/uncomplete, move
     tags.py             # Tag add/remove on tasks
     export.py           # Export views (JSON, CSV, Markdown)
+    reorder.py          # Shared reorder_siblings() utility
   urls.py               # All URL patterns
   forms.py              # Django forms for validation
   tests/
@@ -48,8 +55,31 @@ tasks/                  # Main Django app
   templatetags/         # Custom filters (markdown rendering)
 static/
   css/                  # App styles
-  js/                   # App JS (SortableJS init, toast dismiss)
+  js/                   # Modular JS (see below)
+    app.js              # Thin orchestrator — calls init from each module
+    utils.js            # Shared: getCsrfToken, postMove, updateSubtaskCounts
+    sortable_init.js    # SortableJS init with targeted WeakMap tracking
+    keyboard.js         # Keyboard navigation and shortcuts
+    toast.js            # Toast display, dismiss, auto-timeout
+    emoji_picker.js     # Emoji picker modal
+    markdown_editor.js  # Live markdown block editor
+    completion.js       # Check-off transitions and optimistic UI
+    focus.js            # Focus tracking and restoration after HTMX swaps
+    panels.js           # Mobile panels, nav highlight, sidebar/section editing
   vendor/               # htmx.min.js, Sortable.min.js (vendored, no CDN)
+e2e/                    # Playwright E2E tests
+  conftest.py           # Fixtures: dev server, seed data, DB reset
+  test_task_crud.py     # Task create/update/delete
+  test_task_completion.py # Complete, undo toast, uncomplete
+  test_keyboard.py      # Arrow keys, j/k, Tab indent, Delete, Escape
+  test_drag_drop.py     # SortableJS reorder within/across sections
+  test_search.py        # Search bar results and navigation
+  test_navigation.py    # Sidebar, detail panel, empty states
+  test_list_crud.py     # List create/rename/delete
+  test_section_crud.py  # Section create/rename/delete
+  test_tags.py          # Tag add/remove on tasks
+  test_export.py        # JSON/CSV/MD export
+  test_markdown.py      # Markdown editor
 templates/
   base.html             # Three-panel shell: sidebar, center, right detail
 ```

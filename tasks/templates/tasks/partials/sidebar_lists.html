@@ -22,7 +22,7 @@
     </span>
     <form class="list-nav-edit-form"
           hx-post="/lists/{{ list.id }}/update/"
-          hx-target="#sidebar" hx-swap="innerHTML">
+          hx-swap="none">
       <button type="button" class="emoji-trigger" data-emoji-target="emoji">
         {{ list.emoji|default:"+" }}
       </button>
@@ -33,7 +33,7 @@
   {% endfor %}
 </ul>
 
-<form class="inline-form" hx-post="/lists/" hx-target="#sidebar" hx-swap="innerHTML">
+<form class="inline-form" hx-post="/lists/" hx-swap="none">
   <input type="text" name="name" placeholder="New list..." required>
   <input type="hidden" name="emoji" value="">
   <button type="button" class="emoji-trigger" data-emoji-target="emoji" title="Pick emoji">+</button>

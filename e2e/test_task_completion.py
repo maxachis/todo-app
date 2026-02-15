@@ -59,8 +59,7 @@ class TestComplete:
         page.evaluate(
             """(taskId) => {
                 htmx.ajax("POST", `/tasks/${taskId}/uncomplete/`, {
-                    target: "#center-panel",
-                    swap: "innerHTML"
+                    swap: "none"
                 });
                 dismissToast();
             }""",

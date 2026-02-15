@@ -164,7 +164,11 @@ def delete_task(request, task_id):
             "tasks/partials/list_detail.html", context, request=request
         )
         sidebar_html = _sidebar_oob_html(request, task_list)
-        return HttpResponse(center_html + sidebar_html)
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        return HttpResponse(oob_center + sidebar_html)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task_list.pk)
@@ -295,7 +299,11 @@ def move_task(request, task_id):
             "tasks/partials/list_detail.html", context, request=request
         )
         sidebar_html = _sidebar_oob_html(request, task.section.list)
-        return HttpResponse(center_html + sidebar_html)
+        oob_center = (
+            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+            f"{center_html}</div>"
+        )
+        return HttpResponse(oob_center + sidebar_html)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task.section.list.pk)

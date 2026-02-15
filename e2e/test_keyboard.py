@@ -2,6 +2,9 @@
 
 from playwright.sync_api import expect
 
+from e2e.conftest import fresh_from_db
+from tasks.models import Task
+
 
 class TestArrowNavigation:
     def test_arrow_down_focuses_first_task(self, page, base_url, seed_list_with_tasks):
@@ -138,3 +141,53 @@ class TestClickAwayClearsFocus:
         # Click the detail panel area
         page.locator("#detail-panel h2").click()
         expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
+
+
+class TestTabIndent:
+    def test_tab_indents_task(self, page, base_url, seed_list_with_tasks):
+        """Pressing Tab indents the focused task under its previous sibling."""
+        task_list, section, tasks = seed_list_with_tasks
+        page.goto(base_url)
+
+        # Focus second task ("Walk the dog")
+        page.keyboard.press("ArrowDown")
+        page.keyboard.press("ArrowDown")
+        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
+            "Walk the dog"
+        )
+
+        # Press Tab to indent under "Buy groceries"
+        page.keyboard.press("Tab")
+
+        # Wait for persist
+        page.wait_for_timeout(500)
+
+        # Verify in DB
+        fresh_from_db(tasks[1])
+        assert tasks[1].parent_id == tasks[0].id
+
+
+class TestDeleteKey:
+    def test_delete_removes_focused_task(self, page, base_url, seed_list_with_tasks):
+        """Pressing Delete on a focused task removes it after confirmation."""
+        task_list, section, tasks = seed_list_with_tasks
+        task_id = tasks[0].id
+        page.goto(base_url)
+
+        # Focus first task
+        page.keyboard.press("ArrowDown")
+        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
+            "Buy groceries"
+        )
+
+        # Handle confirm dialog
+        page.on("dialog", lambda dialog: dialog.accept())
+
+        # Press Delete
+        page.keyboard.press("Delete")
+
+        # Wait for OOB response
+        page.wait_for_timeout(500)
+
+        # Task should be gone from DB
+        assert not Task.objects.filter(pk=task_id).exists()

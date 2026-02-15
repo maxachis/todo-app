@@ -1,13 +1,38 @@
 from django.db import models
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 
-from tasks.models import List, Section
+from tasks.models import List, Project, Section
+from tasks.views.lists import _get_lists_with_counts
+from tasks.views.reorder import reorder_siblings
 
 
 def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
+
+
+def _oob_response(request, task_list):
+    """Build OOB swap fragments for center panel + sidebar."""
+    context = {
+        "active_list": task_list,
+        "sections": task_list.sections.all(),
+        "lists": _get_lists_with_counts(),
+        "projects": Project.objects.filter(is_active=True),
+    }
+    center_html = render_to_string(
+        "tasks/partials/list_detail.html", context, request=request
+    )
+    sidebar_ctx = {"lists": context["lists"], "active_list": task_list}
+    sidebar_html = render_to_string(
+        "tasks/partials/sidebar_oob.html", sidebar_ctx, request=request
+    )
+    oob_center = (
+        f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
+        f"{center_html}</div>"
+    )
+    return HttpResponse(oob_center + sidebar_html)
 
 
 @require_http_methods(["POST"])
@@ -26,12 +51,7 @@ def create_section(request, list_id):
     )
 
     if _is_htmx(request):
-        context = {
-            "active_list": task_list,
-            "sections": task_list.sections.all(),
-            "lists": List.objects.all(),
-        }
-        return render(request, "tasks/partials/list_detail.html", context)
+        return _oob_response(request, task_list)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task_list.pk)
@@ -52,12 +72,7 @@ def update_section(request, section_id):
     section.save()
 
     if _is_htmx(request):
-        context = {
-            "active_list": section.list,
-            "sections": section.list.sections.all(),
-            "lists": List.objects.all(),
-        }
-        return render(request, "tasks/partials/list_detail.html", context)
+        return _oob_response(request, section.list)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=section.list.pk)
@@ -71,12 +86,7 @@ def delete_section(request, section_id):
     section.delete()
 
     if _is_htmx(request):
-        context = {
-            "active_list": task_list,
-            "sections": task_list.sections.all(),
-            "lists": List.objects.all(),
-        }
-        return render(request, "tasks/partials/list_detail.html", context)
+        return _oob_response(request, task_list)
 
     from django.shortcuts import redirect
     return redirect("list_detail", list_id=task_list.pk)
@@ -91,17 +101,7 @@ def move_section(request, section_id):
     if position is None:
         return HttpResponse("Position is required", status=400)
 
-    # position is newIndex * 10 from the JS client
     new_index = int(position) // 10
-
-    # Get all other sections in order, then insert the moved section at the target index
-    siblings = list(section.list.sections.exclude(pk=section.pk).order_by("position"))
-    new_index = max(0, min(len(siblings), new_index))
-    siblings.insert(new_index, section)
-
-    # Renumber all with gap-based numbering (10, 20, 30...)
-    for i, s in enumerate(siblings):
-        s.position = (i + 1) * 10
-        s.save()
+    reorder_siblings(section, section.list.sections, new_index)
 
     return HttpResponse(status=204)

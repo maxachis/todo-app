@@ -61,8 +61,7 @@
 
   <div class="task-actions">
     <button hx-post="/tasks/{{ task.id }}/delete/"
-            hx-target="#center-panel"
-            hx-swap="innerHTML"
+            hx-swap="none"
             hx-confirm="Delete this task?"
             class="btn btn-danger">Delete Task</button>
   </div>
