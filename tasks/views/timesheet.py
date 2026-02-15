@@ -100,6 +100,7 @@ def create_time_entry(request):
         entry.tasks.set(tasks)
 
     context = _build_timesheet_context(request)
+    context["last_project_id"] = project.id
     return render(request, "tasks/partials/timesheet_content.html", context)
 
 

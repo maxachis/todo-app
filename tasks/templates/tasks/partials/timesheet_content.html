@@ -52,7 +52,7 @@
               onchange="if(this.value) this.setAttribute('hx-get', '/timesheet/tasks-for-project/' + this.value + '/'); else this.setAttribute('hx-get', ''); htmx.process(this); htmx.trigger(this, 'change');">
         <option value="">Select project...</option>
         {% for project in active_projects %}
-        <option value="{{ project.id }}">{{ project.name }}</option>
+        <option value="{{ project.id }}" {% if project.id == last_project_id %}selected{% endif %}>{{ project.name }}</option>
         {% endfor %}
       </select>
       <input type="text" name="description" placeholder="What did you work on?" class="form-input form-input-wide">
