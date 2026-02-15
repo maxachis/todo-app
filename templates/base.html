@@ -108,7 +108,7 @@
     </a>
   </nav>
 
-  <script src="{% static 'js/emoji_data.js' %}"></script>
-  <script src="{% static 'js/app.js' %}"></script>
+  <script src="{% static 'js/emoji_data.js' %}?v={% now 'U' %}"></script>
+  <script src="{% static 'js/app.js' %}?v={% now 'U' %}"></script>
 </body>
 </html>
