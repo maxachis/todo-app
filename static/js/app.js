@@ -1104,6 +1104,55 @@ function cancelEdit(li) {
   }
 }
 
+// ─── Section Name Edit ──────────────────────
+
+function initSectionNameEdit() {
+  document.querySelectorAll(".section-edit-btn").forEach(function(btn) {
+    if (btn._editBound) return;
+    btn._editBound = true;
+
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      var header = btn.closest(".section-header");
+      if (!header) return;
+      header.classList.add("editing");
+      var input = header.querySelector(".section-edit-input");
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+  });
+
+  document.querySelectorAll(".section-edit-cancel").forEach(function(btn) {
+    if (btn._cancelBound) return;
+    btn._cancelBound = true;
+
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      var header = btn.closest(".section-header");
+      if (header) header.classList.remove("editing");
+    });
+  });
+
+  document.querySelectorAll(".section-edit-input").forEach(function(input) {
+    if (input._keyBound) return;
+    input._keyBound = true;
+
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        var form = input.closest(".section-edit-form");
+        if (form) htmx.trigger(form, "submit");
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        var header = input.closest(".section-header");
+        if (header) header.classList.remove("editing");
+      }
+    });
+  });
+}
+
 // ─── Mobile Panel Toggles ───────────────────
 
 function isMobileOrTablet() {
@@ -1210,6 +1259,7 @@ function initAll() {
   try { initTitleInput(); } catch (ex) { console.error("initTitleInput error:", ex); }
   try { initMarkdownEditor(); } catch (ex) { console.error("initMarkdownEditor error:", ex); }
   try { initListNameEdit(); } catch (ex) { console.error("initListNameEdit error:", ex); }
+  try { initSectionNameEdit(); } catch (ex) { console.error("initSectionNameEdit error:", ex); }
   try { initMobilePanels(); } catch (ex) { console.error("initMobilePanels error:", ex); }
   restoreTaskFocus();
   restoreFocus();

@@ -456,6 +456,47 @@ body {
   opacity: 1;
 }
 
+/* Section name editing */
+.section-edit-form {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.section-header.editing .section-name-display {
+  display: none;
+}
+
+.section-header.editing .section-edit-form {
+  display: flex;
+}
+
+.section-header.editing .section-actions {
+  display: none;
+}
+
+.section-edit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+  transition: border-color var(--transition-fast);
+}
+
+.section-edit-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.1);
+}
+
 /* Stagger section fade-in */
 .section:nth-child(1) { animation-delay: 0s; }
 .section:nth-child(2) { animation-delay: 0.05s; }

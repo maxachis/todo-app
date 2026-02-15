@@ -1,10 +1,21 @@
 <details class="section" data-section-id="{{ section.id }}" open>
-  <summary class="section-header">
+  <summary class="section-header" data-section-id="{{ section.id }}">
     <span class="section-toggle-icon"></span>
-    <h2>
+    <h2 class="section-name-display">
       {% if section.emoji %}{{ section.emoji }} {% endif %}{{ section.name }}
     </h2>
+    <form class="section-edit-form"
+          hx-post="/sections/{{ section.id }}/update/"
+          hx-target="#center-panel"
+          hx-swap="innerHTML"
+          onclick="event.stopPropagation()">
+      <input type="text" name="name" value="{{ section.name }}" class="section-edit-input">
+      <button type="submit" class="btn btn-sm">Save</button>
+      <button type="button" class="btn btn-sm btn-ghost section-edit-cancel">Cancel</button>
+    </form>
     <div class="section-actions">
+      <button type="button" class="btn btn-sm btn-ghost section-edit-btn"
+              onclick="event.stopPropagation()">Edit</button>
       <button hx-post="/sections/{{ section.id }}/delete/"
               hx-target="#center-panel"
               hx-confirm="Delete this section?"
