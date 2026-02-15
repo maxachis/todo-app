@@ -1,10 +1,12 @@
 """Run on server: /opt/todoapp/venv/bin/python /opt/todoapp/deploy/debug500.py"""
 import os
 import sys
-import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "todoapp.settings")
+os.environ["DEBUG"] = "False"
+os.environ["DJANGO_SETTINGS_MODULE"] = "todoapp.settings"
 sys.path.insert(0, "/opt/todoapp")
+
+import django
 django.setup()
 
 from django.test import Client
