@@ -2337,6 +2337,11 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
   border-color: var(--border-strong);
 }
 
+/* === Bottom Tab Bar (hidden on desktop) === */
+.bottom-tabs {
+  display: none;
+}
+
 .sidebar-backdrop,
 .detail-backdrop {
   display: none;
@@ -2465,33 +2470,87 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
 
 /* === Phone — max-width: 767px === */
 @media (max-width: 767px) {
+  /* Hide top navbar links, show bottom tabs instead */
+  .navbar-links {
+    display: none;
+  }
+
   .top-navbar {
     padding: 0 12px;
     gap: 12px;
   }
 
-  .navbar-links {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .navbar-links::-webkit-scrollbar {
-    display: none;
-  }
-
   .navbar-brand {
     font-size: 20px;
     padding-right: 8px;
+    border-right: none;
   }
 
-  .navbar-link {
-    padding: 8px 14px;
-    font-size: 12px;
-    white-space: nowrap;
+  /* Bottom tab bar */
+  .bottom-tabs {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--sidebar-bg);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 200;
+    align-items: stretch;
+  }
+
+  .bottom-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--sidebar-muted);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color var(--transition-fast);
+    position: relative;
+  }
+
+  .bottom-tab:hover {
+    color: var(--sidebar-text);
+  }
+
+  .bottom-tab.active {
+    color: var(--sidebar-active-text);
+  }
+
+  .bottom-tab.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 2px;
+    background: var(--sidebar-active-text);
+    border-radius: 0 0 1px 1px;
+  }
+
+  .bottom-tab svg {
     flex-shrink: 0;
+  }
+
+  /* Add bottom padding so content doesn't hide behind tab bar */
+  .app-layout {
+    height: calc(100vh - 52px - 56px);
+  }
+
+  .single-column-layout {
+    height: calc(100vh - 52px - 56px);
+  }
+
+  #toast-container {
+    bottom: 64px;
   }
 
   .center-panel {
@@ -2567,14 +2626,10 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
     height: 14px;
   }
 
-  #toast-container {
+  .toast {
     left: 8px;
     right: 8px;
-    bottom: 12px;
-  }
-
-  .toast {
-    width: 100%;
+    width: auto;
   }
 
   .section {
@@ -2610,7 +2665,8 @@ body.sidebar-open .navbar-hamburger span:nth-child(3) {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  #toast-container {
-    bottom: calc(12px + env(safe-area-inset-bottom));
+  .bottom-tabs {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(56px + env(safe-area-inset-bottom));
   }
 }
