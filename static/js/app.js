@@ -1166,6 +1166,41 @@ function initMobilePanels() {
   });
 }
 
+// ─── Active Nav Highlight ───────────────────
+
+function updateActiveNav() {
+  var path = window.location.pathname;
+  var navMap = {
+    "/": "todo",
+    "/projects/": "projects",
+    "/timesheet/": "timesheet",
+    "/import/": "import"
+  };
+
+  // Match longest prefix (e.g. /timesheet/?week=-1 → timesheet)
+  var active = "";
+  for (var prefix in navMap) {
+    if (path === prefix || (prefix !== "/" && path.startsWith(prefix))) {
+      active = navMap[prefix];
+    }
+  }
+  if (!active && path === "/") active = "todo";
+
+  // Update top navbar links
+  document.querySelectorAll(".navbar-link").forEach(function(link) {
+    link.classList.remove("active");
+    var href = link.getAttribute("href");
+    if (navMap[href] === active) link.classList.add("active");
+  });
+
+  // Update bottom tab bar
+  document.querySelectorAll(".bottom-tab").forEach(function(tab) {
+    tab.classList.remove("active");
+    var href = tab.getAttribute("href");
+    if (navMap[href] === active) tab.classList.add("active");
+  });
+}
+
 // ─── Init & HTMX Hooks ──────────────────────
 
 function initAll() {
@@ -1191,6 +1226,7 @@ document.addEventListener("htmx:afterSwap", function(e) {
   if (e.detail.target && e.detail.target.id === "page-body") {
     closeSidebar();
     closeDetailPanel();
+    updateActiveNav();
   }
 });
 
