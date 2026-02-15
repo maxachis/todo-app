@@ -18,13 +18,17 @@ info "Installing dependencies"
 "${APP_DIR}/venv/bin/pip" install --quiet django markdown bleach gunicorn
 
 info "Running migrations"
-sudo -u "${APP_USER}" bash -c "
-    set -a
-    source ${APP_DIR}/.env
-    set +a
-    ${APP_DIR}/venv/bin/python ${APP_DIR}/manage.py migrate --noinput
-    ${APP_DIR}/venv/bin/python ${APP_DIR}/manage.py collectstatic --noinput
-"
+# Load .env line-by-line to handle special chars (parens, $, etc.) in values
+ENV_ARGS=()
+while IFS='=' read -r key value; do
+    [[ -z "$key" || "$key" == \#* ]] && continue
+    ENV_ARGS+=("${key}=${value}")
+done < "${APP_DIR}/.env"
+
+sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
+    "${APP_DIR}/venv/bin/python" "${APP_DIR}/manage.py" migrate --noinput
+sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
+    "${APP_DIR}/venv/bin/python" "${APP_DIR}/manage.py" collectstatic --noinput
 
 info "Restarting app"
 systemctl restart todoapp
