@@ -70,6 +70,7 @@ else
     git clone "${REPO_URL}" "${APP_DIR}"
 fi
 chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
+git config --global --add safe.directory "${APP_DIR}"
 
 # ─── 8. Python venv ───────────────────────────────────────────────────────────
 
