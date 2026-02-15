@@ -5,7 +5,7 @@ import json
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from tasks.models import List, Section, Tag, Task
+from tasks.models import List, Project, Section, Tag, Task, TimeEntry
 
 
 class ViewTestBase(TestCase):
@@ -447,3 +447,211 @@ class ExportViewTests(ViewTestBase):
             reverse("export_list", args=[self.task_list.pk, "xml"])
         )
         self.assertEqual(response.status_code, 400)
+
+
+class ProjectViewTests(TestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+
+    def test_projects_index(self):
+        """GET /projects/ returns 200 with projects page."""
+        response = self.client.get(reverse("projects_index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Projects")
+
+    def test_projects_index_htmx(self):
+        """HTMX GET /projects/ returns partial."""
+        response = self.client.get(
+            reverse("projects_index"), HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "projects-content")
+
+    def test_create_project(self):
+        """POST /projects/create/ creates a project."""
+        response = self.client.post(
+            reverse("create_project"),
+            {"name": "Client Work", "description": "Big project"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Project.objects.filter(name="Client Work").exists())
+        project = Project.objects.get(name="Client Work")
+        self.assertEqual(project.description, "Big project")
+
+    def test_create_project_no_name(self):
+        """POST /projects/create/ without name returns 400."""
+        response = self.client.post(
+            reverse("create_project"), {"name": ""}, HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_update_project(self):
+        """POST /projects/<id>/update/ updates name and description."""
+        project = Project.objects.create(name="Old", position=10)
+        response = self.client.post(
+            reverse("update_project", args=[project.pk]),
+            {"name": "New", "description": "Updated"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        project.refresh_from_db()
+        self.assertEqual(project.name, "New")
+        self.assertEqual(project.description, "Updated")
+
+    def test_delete_project(self):
+        """POST /projects/<id>/delete/ removes the project."""
+        project = Project.objects.create(name="Delete me", position=10)
+        pk = project.pk
+        response = self.client.post(
+            reverse("delete_project", args=[pk]), HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Project.objects.filter(pk=pk).exists())
+
+    def test_toggle_project_active(self):
+        """POST /projects/<id>/toggle/ flips is_active."""
+        project = Project.objects.create(name="Toggle", position=10, is_active=True)
+        self.client.post(
+            reverse("toggle_project_active", args=[project.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        project.refresh_from_db()
+        self.assertFalse(project.is_active)
+
+        self.client.post(
+            reverse("toggle_project_active", args=[project.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        project.refresh_from_db()
+        self.assertTrue(project.is_active)
+
+
+class TimesheetViewTests(TestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self.project = Project.objects.create(name="Proj", position=10)
+        self.task_list = List.objects.create(
+            name="Work", position=10, project=self.project
+        )
+        self.section = Section.objects.create(
+            list=self.task_list, name="To Do", position=10
+        )
+        self.task = Task.objects.create(
+            section=self.section, title="Do stuff", position=10
+        )
+
+    def test_timesheet_index(self):
+        """GET /timesheet/ returns 200."""
+        response = self.client.get(reverse("timesheet_index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Timesheet")
+
+    def test_timesheet_index_htmx(self):
+        """HTMX GET /timesheet/ returns partial."""
+        response = self.client.get(
+            reverse("timesheet_index"), HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "timesheet-content")
+
+    def test_create_time_entry(self):
+        """POST /timesheet/add/ creates a time entry."""
+        response = self.client.post(
+            reverse("create_time_entry"),
+            {
+                "project": self.project.pk,
+                "description": "Worked on frontend",
+                "date": "2026-02-14",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(TimeEntry.objects.count(), 1)
+        entry = TimeEntry.objects.first()
+        self.assertEqual(entry.project, self.project)
+        self.assertEqual(entry.description, "Worked on frontend")
+
+    def test_create_time_entry_no_project(self):
+        """POST /timesheet/add/ without project returns 400."""
+        response = self.client.post(
+            reverse("create_time_entry"),
+            {"description": "No project", "date": "2026-02-14"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_time_entry_with_tasks(self):
+        """POST /timesheet/add/ can link tasks via M2M."""
+        response = self.client.post(
+            reverse("create_time_entry"),
+            {
+                "project": self.project.pk,
+                "date": "2026-02-14",
+                "tasks": [self.task.pk],
+            },
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        entry = TimeEntry.objects.first()
+        self.assertIn(self.task, entry.tasks.all())
+
+    def test_delete_time_entry(self):
+        """POST /timesheet/<id>/delete/ removes the entry."""
+        import datetime
+
+        entry = TimeEntry.objects.create(
+            project=self.project, date=datetime.date.today()
+        )
+        pk = entry.pk
+        response = self.client.post(
+            reverse("delete_time_entry", args=[pk]), HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(TimeEntry.objects.filter(pk=pk).exists())
+
+    def test_tasks_for_project(self):
+        """GET /timesheet/tasks-for-project/<id>/ returns task checkboxes."""
+        response = self.client.get(
+            reverse("tasks_for_project", args=[self.project.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Do stuff")
+
+    def test_timesheet_week_navigation(self):
+        """GET /timesheet/?week=-1 shows previous week."""
+        response = self.client.get(
+            reverse("timesheet_index") + "?week=-1", HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "timesheet-content")
+
+
+class ListProjectLinkViewTests(ViewTestBase):
+    def test_update_list_with_project(self):
+        """POST to update_list with project field links the list to a project."""
+        project = Project.objects.create(name="Proj", position=10)
+        response = self.client.post(
+            reverse("update_list", args=[self.task_list.pk]),
+            {"project": str(project.pk)},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.task_list.refresh_from_db()
+        self.assertEqual(self.task_list.project, project)
+
+    def test_update_list_clear_project(self):
+        """POST to update_list with empty project unlinks the list."""
+        project = Project.objects.create(name="Proj", position=10)
+        self.task_list.project = project
+        self.task_list.save()
+
+        response = self.client.post(
+            reverse("update_list", args=[self.task_list.pk]),
+            {"project": ""},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.task_list.refresh_from_db()
+        self.assertIsNone(self.task_list.project)

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from tasks.views import export, lists, sections, tags, tasks
+from tasks.views import export, import_tasks, lists, projects, sections, tags, tasks, timesheet
 
 urlpatterns = [
     # Main page
@@ -61,4 +61,37 @@ urlpatterns = [
         name="export_list",
     ),
     path("export/<str:fmt>/", export.export_all_view, name="export_all"),
+    # Import
+    path("import/", import_tasks.import_page, name="import_page"),
+    # Projects
+    path("projects/", projects.projects_index, name="projects_index"),
+    path("projects/create/", projects.create_project, name="create_project"),
+    path(
+        "projects/<int:project_id>/update/",
+        projects.update_project,
+        name="update_project",
+    ),
+    path(
+        "projects/<int:project_id>/delete/",
+        projects.delete_project,
+        name="delete_project",
+    ),
+    path(
+        "projects/<int:project_id>/toggle/",
+        projects.toggle_project_active,
+        name="toggle_project_active",
+    ),
+    # Timesheet
+    path("timesheet/", timesheet.timesheet_index, name="timesheet_index"),
+    path("timesheet/add/", timesheet.create_time_entry, name="create_time_entry"),
+    path(
+        "timesheet/<int:entry_id>/delete/",
+        timesheet.delete_time_entry,
+        name="delete_time_entry",
+    ),
+    path(
+        "timesheet/tasks-for-project/<int:project_id>/",
+        timesheet.tasks_for_project,
+        name="tasks_for_project",
+    ),
 ]

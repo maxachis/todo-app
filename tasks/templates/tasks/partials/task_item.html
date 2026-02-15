@@ -30,9 +30,7 @@
 
   <div class="subtask-drop-zone sortable-tasks" data-section-id="{{ task.section_id }}" data-parent-task-id="{{ task.id }}">
     {% for subtask in task.subtasks.all %}
-      {% if not subtask.is_completed %}
-        {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
-      {% endif %}
+      {% include "tasks/partials/task_item.html" with task=subtask depth=depth|default:0|add:1 %}
     {% endfor %}
   </div>
 </div>

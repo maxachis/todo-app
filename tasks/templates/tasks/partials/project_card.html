@@ -1,0 +1,59 @@
+<div class="project-card {% if not project.is_active %}project-inactive{% endif %}" id="project-{{ project.id }}">
+  <div class="project-card-header">
+    <h3 class="project-card-name">{{ project.name }}</h3>
+    <span class="project-status-badge {% if project.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+      {{ project.is_active|yesno:"Active,Archived" }}
+    </span>
+  </div>
+
+  {% if project.description %}
+  <p class="project-card-desc">{{ project.description }}</p>
+  {% endif %}
+
+  <div class="project-card-stats">
+    <span class="project-stat"><strong>{{ project.total_hours }}</strong> hr{{ project.total_hours|pluralize }}</span>
+    <span class="project-stat"><strong>{{ project.list_count }}</strong> list{{ project.list_count|pluralize }}</span>
+    <span class="project-stat"><strong>{{ project.completed_tasks }}</strong>/{{ project.total_tasks }} task{{ project.total_tasks|pluralize }}</span>
+  </div>
+
+  {% if project.total_tasks > 0 %}
+  <div class="project-progress">
+    <div class="project-progress-bar" style="width: {% widthratio project.completed_tasks project.total_tasks 100 %}%"></div>
+  </div>
+  {% endif %}
+
+  <div class="project-card-actions">
+    <button class="btn btn-sm btn-ghost"
+            onclick="this.closest('.project-card').querySelector('.project-edit-form').toggleAttribute('hidden')">
+      Edit
+    </button>
+    <button class="btn btn-sm btn-ghost"
+            hx-post="/projects/{{ project.id }}/toggle/"
+            hx-target="#projects-content"
+            hx-swap="outerHTML">
+      {{ project.is_active|yesno:"Archive,Activate" }}
+    </button>
+    <button class="btn btn-sm btn-danger"
+            hx-post="/projects/{{ project.id }}/delete/"
+            hx-target="#projects-content"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this project and all its time entries?">
+      Delete
+    </button>
+  </div>
+
+  <form class="project-edit-form" hidden
+        hx-post="/projects/{{ project.id }}/update/"
+        hx-target="#projects-content"
+        hx-swap="outerHTML">
+    <input type="text" name="name" value="{{ project.name }}" required class="form-input">
+    <input type="text" name="description" value="{{ project.description }}" class="form-input form-input-wide">
+    <div class="project-edit-actions">
+      <button type="submit" class="btn btn-sm">Save</button>
+      <button type="button" class="btn btn-sm btn-ghost"
+              onclick="this.closest('.project-edit-form').setAttribute('hidden', '')">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

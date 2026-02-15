@@ -12,37 +12,66 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v={% now 'U' %}">
   <script src="{% static 'vendor/htmx.min.js' %}"></script>
   <script src="{% static 'vendor/Sortable.min.js' %}"></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      {% block sidebar %}
-        {% include "tasks/partials/sidebar_lists.html" %}
-      {% endblock %}
-    </aside>
-    <main class="center-panel" id="center-panel">
-      {% block center %}
-        {% if active_list %}
-          {% include "tasks/partials/list_detail.html" %}
-        {% else %}
-          <p class="empty-state">Select or create a list to get started.</p>
-        {% endif %}
-      {% endblock %}
-    </main>
-    <aside class="detail-panel" id="detail-panel">
-      {% block detail %}
-        {% if selected_task %}
-          {% include "tasks/partials/task_detail.html" with task=selected_task %}
-        {% else %}
-          <div class="detail-empty-state">
-            <p>Select a task to view details</p>
-          </div>
-        {% endif %}
-      {% endblock %}
-    </aside>
+  <nav class="top-navbar">
+    <a href="/" class="navbar-brand">todo</a>
+    <div class="navbar-links">
+      <a href="/"
+         hx-get="/" hx-target="#page-body" hx-push-url="true"
+         class="navbar-link {% if active_nav == 'todo' %}active{% endif %}">
+        Tasks
+      </a>
+      <a href="/projects/"
+         hx-get="/projects/" hx-target="#page-body" hx-push-url="true"
+         class="navbar-link {% if active_nav == 'projects' %}active{% endif %}">
+        Projects
+      </a>
+      <a href="/timesheet/"
+         hx-get="/timesheet/" hx-target="#page-body" hx-push-url="true"
+         class="navbar-link {% if active_nav == 'timesheet' %}active{% endif %}">
+        Timesheet
+      </a>
+      <a href="/import/"
+         class="navbar-link {% if active_nav == 'import' %}active{% endif %}">
+        Import
+      </a>
+    </div>
+  </nav>
+
+  <div id="page-body">
+    {% block page_content %}
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar">
+        {% block sidebar %}
+          {% include "tasks/partials/sidebar_lists.html" %}
+        {% endblock %}
+      </aside>
+      <main class="center-panel" id="center-panel">
+        {% block center %}
+          {% if active_list %}
+            {% include "tasks/partials/list_detail.html" %}
+          {% else %}
+            <p class="empty-state">Select or create a list to get started.</p>
+          {% endif %}
+        {% endblock %}
+      </main>
+      <aside class="detail-panel" id="detail-panel">
+        {% block detail %}
+          {% if selected_task %}
+            {% include "tasks/partials/task_detail.html" with task=selected_task %}
+          {% else %}
+            <div class="detail-empty-state">
+              <p>Select a task to view details</p>
+            </div>
+          {% endif %}
+        {% endblock %}
+      </aside>
+    </div>
+    {% endblock %}
   </div>
 
   <div id="toast-container"></div>

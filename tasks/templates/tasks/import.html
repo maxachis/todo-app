@@ -1,0 +1,56 @@
+{% extends "base_single_column.html" %}
+
+{% block content %}
+<div class="import-page">
+  <h1>Import from TickTick</h1>
+  <p class="import-description">Upload a TickTick CSV backup to import your tasks. Re-importing the same file is safe — duplicates will be skipped.</p>
+
+  {% if error %}
+  <div class="import-error">{{ error }}</div>
+  {% endif %}
+
+  {% if stats %}
+  <div class="import-results">
+    <h2>Import Complete</h2>
+    <table class="import-stats-table">
+      <tbody>
+        <tr><td>Tasks created</td><td>{{ stats.tasks_created }}</td></tr>
+        <tr><td>Tasks skipped (already imported)</td><td>{{ stats.tasks_skipped }}</td></tr>
+        <tr><td>Lists created</td><td>{{ stats.lists_created }}</td></tr>
+        <tr><td>Sections created</td><td>{{ stats.sections_created }}</td></tr>
+        <tr><td>Tags created</td><td>{{ stats.tags_created }}</td></tr>
+        <tr><td>Parent links resolved</td><td>{{ stats.parents_linked }}</td></tr>
+        {% if stats.errors %}
+        <tr class="import-stat-error"><td>Errors</td><td>{{ stats.errors }}</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if stats.error_details %}
+    <details class="import-error-details">
+      <summary>Error details ({{ stats.errors }})</summary>
+      <ul>
+        {% for detail in stats.error_details %}
+        <li>{{ detail }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+
+    <div class="import-actions">
+      <a href="/import/" class="btn btn-secondary">Import another file</a>
+      <a href="/" class="btn btn-primary">Go to tasks</a>
+    </div>
+  </div>
+  {% else %}
+  <form method="post" enctype="multipart/form-data" class="import-form">
+    {% csrf_token %}
+    <div class="import-file-input">
+      <label for="csv_file">CSV file</label>
+      <input type="file" name="csv_file" id="csv_file" accept=".csv">
+    </div>
+    <button type="submit" class="btn btn-primary">Import</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

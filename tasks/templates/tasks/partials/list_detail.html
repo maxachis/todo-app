@@ -1,8 +1,24 @@
 {% if active_list %}
 <div class="list-header">
-  <h1>
-    {% if active_list.emoji %}{{ active_list.emoji }} {% endif %}{{ active_list.name }}
-  </h1>
+  <div class="list-header-left">
+    <h1>
+      {% if active_list.emoji %}{{ active_list.emoji }} {% endif %}{{ active_list.name }}
+    </h1>
+    {% if projects %}
+    <select class="list-project-select"
+            hx-post="/lists/{{ active_list.id }}/update/"
+            hx-target="#center-panel"
+            hx-swap="innerHTML"
+            name="project">
+      <option value="">No project</option>
+      {% for project in projects %}
+      <option value="{{ project.id }}" {% if active_list.project_id == project.id %}selected{% endif %}>
+        {{ project.name }}
+      </option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </div>
   <div class="list-actions">
     <a href="/lists/{{ active_list.id }}/export/json/" class="btn btn-sm">JSON</a>
     <a href="/lists/{{ active_list.id }}/export/csv/" class="btn btn-sm">CSV</a>

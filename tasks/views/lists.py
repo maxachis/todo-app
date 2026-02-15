@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
-from tasks.models import List, Section, Task
+from tasks.models import List, Project, Section, Task
 
 
 def _is_htmx(request):
@@ -16,6 +16,14 @@ def index(request):
     context = {"lists": lists, "active_list": first_list}
     if first_list:
         context["sections"] = first_list.sections.all()
+        context["projects"] = Project.objects.filter(is_active=True)
+
+    if _is_htmx(request):
+        # If targeted at #page-body (navbar click), return the full 3-panel layout
+        if request.headers.get("HX-Target") == "page-body":
+            return render(request, "tasks/partials/todo_page_body.html", context)
+        return render(request, "tasks/partials/full_content.html", context)
+
     return render(request, "tasks/index.html", context)
 
 
@@ -45,6 +53,7 @@ def list_detail(request, list_id):
         "active_list": task_list,
         "sections": sections,
         "lists": List.objects.all(),
+        "projects": Project.objects.filter(is_active=True),
     }
 
     if _is_htmx(request):
@@ -59,11 +68,20 @@ def update_list(request, list_id):
     task_list = get_object_or_404(List, pk=list_id)
     name = request.POST.get("name", "").strip()
     emoji = request.POST.get("emoji")
+    project_id = request.POST.get("project")
 
     if name:
         task_list.name = name
     if emoji is not None:
         task_list.emoji = emoji.strip()
+    if project_id is not None:
+        if project_id == "" or project_id == "0":
+            task_list.project = None
+        else:
+            try:
+                task_list.project = Project.objects.get(pk=int(project_id))
+            except (Project.DoesNotExist, ValueError):
+                pass
 
     task_list.save()
 
@@ -77,6 +95,7 @@ def update_list(request, list_id):
         )
         sections = task_list.sections.all()
         context["sections"] = sections
+        context["projects"] = Project.objects.filter(is_active=True)
         center_html = render_to_string(
             "tasks/partials/list_detail.html", context, request=request
         )
@@ -101,6 +120,7 @@ def delete_list(request, list_id):
         context = {"lists": lists, "active_list": first_list}
         if first_list:
             context["sections"] = first_list.sections.all()
+            context["projects"] = Project.objects.filter(is_active=True)
         return render(request, "tasks/partials/full_content.html", context)
 
     from django.shortcuts import redirect

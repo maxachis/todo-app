@@ -5,7 +5,7 @@ import json
 from django.test import TestCase
 from django.utils import timezone
 
-from tasks.models import List, Section, Tag, Task
+from tasks.models import List, Project, Section, Tag, Task, TimeEntry
 
 
 class ModelTestBase(TestCase):
@@ -265,3 +265,104 @@ class TaskModelTests(ModelTestBase):
         self.assertEqual(child_row["task"], "Sub")
         self.assertEqual(child_row["parent_task"], "Write tests")
         self.assertEqual(child_row["depth"], "1")
+
+
+class ProjectModelTests(TestCase):
+    def test_project_create(self):
+        """Project can be created with name and description."""
+        project = Project.objects.create(
+            name="Client Site", description="Website redesign", position=10
+        )
+        self.assertEqual(project.name, "Client Site")
+        self.assertTrue(project.is_active)
+        self.assertEqual(str(project), "Client Site")
+
+    def test_project_toggle_active(self):
+        """Project active status can be toggled."""
+        project = Project.objects.create(name="Test", position=10)
+        project.is_active = False
+        project.save()
+        project.refresh_from_db()
+        self.assertFalse(project.is_active)
+
+    def test_list_project_fk(self):
+        """List can be linked to a project via FK."""
+        project = Project.objects.create(name="Proj", position=10)
+        task_list = List.objects.create(name="Tasks", position=10, project=project)
+        task_list.refresh_from_db()
+        self.assertEqual(task_list.project, project)
+        self.assertIn(task_list, project.lists.all())
+
+    def test_list_project_set_null(self):
+        """Deleting a project sets list.project to NULL."""
+        project = Project.objects.create(name="Proj", position=10)
+        task_list = List.objects.create(name="Tasks", position=10, project=project)
+        project.delete()
+        task_list.refresh_from_db()
+        self.assertIsNone(task_list.project)
+
+    def test_project_ordering(self):
+        """Projects are ordered by position."""
+        p2 = Project.objects.create(name="B", position=20)
+        p1 = Project.objects.create(name="A", position=10)
+        projects = list(Project.objects.all())
+        self.assertEqual(projects[0], p1)
+        self.assertEqual(projects[1], p2)
+
+
+class TimeEntryModelTests(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(name="Proj", position=10)
+        self.task_list = List.objects.create(
+            name="Work", position=10, project=self.project
+        )
+        self.section = Section.objects.create(
+            list=self.task_list, name="To Do", position=10
+        )
+        self.task = Task.objects.create(
+            section=self.section, title="Do stuff", position=10
+        )
+
+    def test_time_entry_create(self):
+        """TimeEntry can be created with project and date."""
+        import datetime
+
+        entry = TimeEntry.objects.create(
+            project=self.project, date=datetime.date(2026, 2, 14)
+        )
+        self.assertEqual(entry.project, self.project)
+        self.assertEqual(entry.date, datetime.date(2026, 2, 14))
+
+    def test_time_entry_m2m_tasks(self):
+        """TimeEntry can link to multiple tasks via M2M."""
+        import datetime
+
+        task2 = Task.objects.create(
+            section=self.section, title="Other", position=20
+        )
+        entry = TimeEntry.objects.create(
+            project=self.project, date=datetime.date.today()
+        )
+        entry.tasks.add(self.task, task2)
+        self.assertEqual(entry.tasks.count(), 2)
+
+    def test_time_entry_cascade_on_project_delete(self):
+        """Deleting a project cascades to its time entries."""
+        import datetime
+
+        entry = TimeEntry.objects.create(
+            project=self.project, date=datetime.date.today()
+        )
+        entry_id = entry.pk
+        self.project.delete()
+        self.assertFalse(TimeEntry.objects.filter(pk=entry_id).exists())
+
+    def test_time_entry_str(self):
+        """TimeEntry __str__ includes project name and date."""
+        import datetime
+
+        entry = TimeEntry.objects.create(
+            project=self.project, date=datetime.date(2026, 2, 14)
+        )
+        self.assertIn("Proj", str(entry))
+        self.assertIn("2026-02-14", str(entry))

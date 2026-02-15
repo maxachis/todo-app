@@ -1,0 +1,100 @@
+<div id="timesheet-content">
+  <div class="page-header">
+    <h1 class="page-title">Timesheet</h1>
+    <p class="page-subtitle">One row, one hour</p>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="ts-summary">
+    <div class="ts-summary-total">
+      <span class="ts-summary-number">{{ total_hours }}</span>
+      <span class="ts-summary-label">hour{{ total_hours|pluralize }} this week</span>
+    </div>
+    {% for ph in project_hours %}
+    <span class="ts-project-badge">{{ ph.project__name }} <strong>{{ ph.hours }}</strong></span>
+    {% endfor %}
+  </div>
+
+  <!-- Week navigation -->
+  <div class="ts-week-nav">
+    <button class="btn btn-sm btn-ghost"
+            hx-get="/timesheet/?week={{ prev_week }}"
+            hx-target="#timesheet-content"
+            hx-swap="outerHTML"
+            hx-push-url="/timesheet/?week={{ prev_week }}"
+            title="Previous week">
+      &larr;
+    </button>
+    <span class="ts-week-label">
+      {{ monday|date:"M j" }} &ndash; {{ sunday|date:"M j, Y" }}
+    </span>
+    <button class="btn btn-sm btn-ghost"
+            hx-get="/timesheet/?week={{ next_week }}"
+            hx-target="#timesheet-content"
+            hx-swap="outerHTML"
+            hx-push-url="/timesheet/?week={{ next_week }}"
+            title="Next week">
+      &rarr;
+    </button>
+  </div>
+
+  <!-- Add hour form -->
+  <form class="ts-add-form"
+        hx-post="/timesheet/add/"
+        hx-target="#timesheet-content"
+        hx-swap="outerHTML">
+    <span class="ts-add-form-label">Log an hour</span>
+    <div class="ts-add-row">
+      <select name="project" required class="form-select"
+              hx-get="" hx-trigger="change"
+              hx-target="#task-selector"
+              hx-swap="innerHTML"
+              onchange="if(this.value) this.setAttribute('hx-get', '/timesheet/tasks-for-project/' + this.value + '/'); else this.setAttribute('hx-get', ''); htmx.process(this); htmx.trigger(this, 'change');">
+        <option value="">Select project...</option>
+        {% for project in active_projects %}
+        <option value="{{ project.id }}">{{ project.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="description" placeholder="What did you work on?" class="form-input form-input-wide">
+      <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" class="form-input form-input-date">
+      <button type="submit" class="btn btn-sm">+ Add Hour</button>
+    </div>
+    <div id="task-selector" class="ts-task-selector"></div>
+  </form>
+
+  <!-- Entries by date -->
+  {% for date, entries in entries_by_date %}
+  <div class="ts-date-group">
+    <h3 class="ts-date-heading">
+      {{ date|date:"l, M j" }}
+      <span class="ts-date-count">{{ entries|length }} hr{{ entries|length|pluralize }}</span>
+    </h3>
+    {% for entry in entries %}
+    <div class="ts-entry">
+      <span class="ts-entry-hour-marker">1h</span>
+      <span class="ts-entry-project">{{ entry.project.name }}</span>
+      {% if entry.description %}
+      <span class="ts-entry-desc">{{ entry.description }}</span>
+      {% else %}
+      <span class="ts-entry-desc" style="color: var(--text-faint); font-style: italic;">No description</span>
+      {% endif %}
+      {% if entry.tasks.all %}
+      <span class="ts-entry-tasks">
+        {% for task in entry.tasks.all %}
+        <span class="ts-entry-task-tag">{{ task.title }}</span>
+        {% endfor %}
+      </span>
+      {% endif %}
+      <button class="btn-icon btn-icon-danger"
+              hx-post="/timesheet/{{ entry.id }}/delete/"
+              hx-target="#timesheet-content"
+              hx-swap="outerHTML"
+              hx-confirm="Remove this hour?"
+              title="Delete">&times;</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p class="empty-state-inline">No hours logged this week.</p>
+  {% endfor %}
+</div>

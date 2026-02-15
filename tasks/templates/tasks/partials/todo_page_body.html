@@ -1,0 +1,21 @@
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    {% include "tasks/partials/sidebar_lists.html" %}
+  </aside>
+  <main class="center-panel" id="center-panel">
+    {% if active_list %}
+      {% include "tasks/partials/list_detail.html" %}
+    {% else %}
+      <p class="empty-state">Select or create a list to get started.</p>
+    {% endif %}
+  </main>
+  <aside class="detail-panel" id="detail-panel">
+    {% if selected_task %}
+      {% include "tasks/partials/task_detail.html" with task=selected_task %}
+    {% else %}
+      <div class="detail-empty-state">
+        <p>Select a task to view details</p>
+      </div>
+    {% endif %}
+  </aside>
+</div>
