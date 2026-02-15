@@ -178,68 +178,76 @@ def delete_task(request, task_id):
 def complete_task(request, task_id):
     """Mark a task as completed.
 
-    Uses hx-swap="none" on the client — all DOM updates are OOB swaps
-    so the center panel is updated without a visible flash.
+    Uses hx-swap="none" on the client — OOB swaps update only the
+    affected section (not the whole center panel) to avoid flicker.
     """
     task = get_object_or_404(Task, pk=task_id)
+    section = task.section
     task.complete()
 
     if _is_htmx(request):
-        context = _render_list_context(task.section.list)
-        center_html = render_to_string(
-            "tasks/partials/list_detail.html", context, request=request
+        # Refresh the section from DB so the template sees updated state
+        section.refresh_from_db()
+        section_html = render_to_string(
+            "tasks/partials/section.html",
+            {"section": section},
+            request=request,
         )
-        sidebar_html = _sidebar_oob_html(request, task.section.list)
+        sidebar_html = _sidebar_oob_html(request, section.list)
         toast_html = render_to_string(
             "tasks/partials/toast.html",
             {"task": task},
             request=request,
         )
-        # OOB swap for center panel content
-        oob_center = (
-            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
-            f"{center_html}</div>"
+        # OOB swap for just the affected section
+        oob_section = (
+            f'<div hx-swap-oob="outerHTML:#section-{section.pk}">'
+            f"{section_html}</div>"
         )
         # OOB swap for toast
         oob_toast = (
             f'<div id="toast-container" hx-swap-oob="innerHTML:#toast-container">'
             f"{toast_html}</div>"
         )
-        return HttpResponse(oob_center + sidebar_html + oob_toast)
+        return HttpResponse(oob_section + sidebar_html + oob_toast)
 
     from django.shortcuts import redirect
-    return redirect("list_detail", list_id=task.section.list.pk)
+    return redirect("list_detail", list_id=section.list.pk)
 
 
 @require_http_methods(["POST"])
 def uncomplete_task(request, task_id):
     """Mark a task as not completed.
 
-    Uses hx-swap="none" on the client — all DOM updates are OOB swaps
-    so the center panel is updated without a visible flash.
+    Uses hx-swap="none" on the client — OOB swaps update only the
+    affected section (not the whole center panel) to avoid flicker.
     """
     task = get_object_or_404(Task, pk=task_id)
+    section = task.section
     task.uncomplete()
 
     if _is_htmx(request):
-        context = _render_list_context(task.section.list)
-        center_html = render_to_string(
-            "tasks/partials/list_detail.html", context, request=request
+        # Refresh the section from DB so the template sees updated state
+        section.refresh_from_db()
+        section_html = render_to_string(
+            "tasks/partials/section.html",
+            {"section": section},
+            request=request,
         )
-        sidebar_html = _sidebar_oob_html(request, task.section.list)
-        # OOB swap for center panel content
-        oob_center = (
-            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
-            f"{center_html}</div>"
+        sidebar_html = _sidebar_oob_html(request, section.list)
+        # OOB swap for just the affected section
+        oob_section = (
+            f'<div hx-swap-oob="outerHTML:#section-{section.pk}">'
+            f"{section_html}</div>"
         )
         # Clear the toast container via OOB swap
         toast_clear = (
             '<div id="toast-container" hx-swap-oob="innerHTML:#toast-container"></div>'
         )
-        return HttpResponse(oob_center + sidebar_html + toast_clear)
+        return HttpResponse(oob_section + sidebar_html + toast_clear)
 
     from django.shortcuts import redirect
-    return redirect("list_detail", list_id=task.section.list.pk)
+    return redirect("list_detail", list_id=section.list.pk)
 
 
 @require_http_methods(["POST"])

@@ -65,16 +65,25 @@ function initSortable() {
     ensureSortable(el, {
       group: {
         name: "tasks",
-        put: true,
+        put: function(to, from, dragEl) {
+          // Only accept actual task items, not list nav items being reordered
+          return !!dragEl.dataset.taskId;
+        },
         pull: false
       },
       sort: false,
-      handle: ".task-drop-handle-none",
-      filter: ".list-drag-handle",
-      preventOnFilter: false,
       onAdd: function(evt) {
         var taskId = evt.item.dataset.taskId;
         var listId = evt.to.dataset.listId;
+
+        if (!taskId) {
+          // Not a task drop — a list nav item was moved here by mistake.
+          // Return it to its original container.
+          if (evt.from && evt.from !== evt.to) {
+            evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
+          }
+          return;
+        }
 
         htmx.ajax("POST", "/tasks/" + taskId + "/move/", {
           values: {

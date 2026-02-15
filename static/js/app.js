@@ -17,9 +17,21 @@ function initAll() {
   restoreFocus();
 }
 
+/* Debounced version of initAll for HTMX event handlers.
+   Collapses rapid-fire calls (e.g. afterSwap + afterSettle
+   firing back-to-back) into a single execution. */
+var _initAllTimer = null;
+function debouncedInitAll() {
+  if (_initAllTimer) clearTimeout(_initAllTimer);
+  _initAllTimer = setTimeout(function() {
+    _initAllTimer = null;
+    initAll();
+  }, 16);
+}
+
 // Re-init after HTMX swaps.
 document.addEventListener("htmx:afterSwap", function(e) {
-  initAll();
+  debouncedInitAll();
   if (e.detail.target && e.detail.target.id === "center-panel") {
     closeSidebar();
   }
@@ -30,7 +42,7 @@ document.addEventListener("htmx:afterSwap", function(e) {
   }
 });
 document.addEventListener("htmx:afterSettle", function(e) {
-  initAll();
+  debouncedInitAll();
 });
 
 // Init on page load

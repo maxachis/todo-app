@@ -32,7 +32,7 @@
   <details open class="subtask-collapsible">
     <summary class="subtask-collapse-toggle" onclick="event.stopPropagation();">
       <span class="subtask-collapse-icon"></span>
-      <span class="subtask-collapse-count">{{ subtask_list|length }} subtask{{ subtask_list|length|pluralize }}</span>
+      <span class="subtask-collapse-count">{{ subtask_list|length }} subtask{{ subtask_list|length|pluralize }}{% with done=subtask_list|completed_count %}{% if done > 0 %} ({{ done }} done){% endif %}{% endwith %}</span>
     </summary>
     <div class="subtask-collapsible-content">
       <div class="subtask-drop-zone sortable-tasks" data-section-id="{{ task.section_id }}" data-parent-task-id="{{ task.id }}">

@@ -58,6 +58,12 @@ def render_markdown(value):
     return mark_safe(linked_html)
 
 
+@register.filter(name="completed_count")
+def completed_count(queryset):
+    """Count how many items in a queryset have is_completed=True."""
+    return sum(1 for item in queryset if item.is_completed)
+
+
 @register.filter(name="due_date_status")
 def due_date_status(due_date):
     """Return 'overdue', 'today', or 'upcoming' based on due_date vs today."""
