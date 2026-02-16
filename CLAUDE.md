@@ -136,6 +136,8 @@ templates/
 - **Undo toast** is a server-rendered HTMX partial dismissed client-side via `setTimeout`.
 - **Export** serves file downloads (not HTMX partials). JSON preserves full nested hierarchy. CSV flattens to one row per task with `parent_task` and `depth` columns. Markdown uses `#`/`##` headings and `- [ ]`/`- [x]` checkboxes. All responses set `Content-Disposition: attachment`.
 - **Annotated querysets need explicit ordering** — `annotate()` can drop `Meta.ordering`. Always chain `.order_by()` on querysets used for rendering.
+- **HTMX scroll stability** — when an action only changes a small part of the page (e.g., toggling a pin), return targeted OOB swaps for just the affected elements — never replace the entire `#center-panel`. Use `HX-Trigger` headers for client-side state toggles.
+- **Playwright locators in nested DOMs** — always scope pin/action button locators with `> .task-row >` or similar direct-child selectors to avoid matching buttons inside nested subtasks.
 
 ## Testing Conventions
 

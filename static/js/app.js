@@ -46,6 +46,13 @@ document.addEventListener("htmx:afterSwap", function(e) {
 document.addEventListener("htmx:afterSettle", function(e) {
   debouncedInitAll();
 });
+// Re-init when new content is loaded into the DOM by HTMX.
+// This catches OOB swaps that destroy the triggering element — in that case
+// htmx:afterSwap/afterSettle fire on the detached element and never reach
+// document, but htmx:load fires on the *new* (in-DOM) content and bubbles.
+document.addEventListener("htmx:load", function() {
+  debouncedInitAll();
+});
 
 // Init on page load
 document.addEventListener("DOMContentLoaded", function() {
