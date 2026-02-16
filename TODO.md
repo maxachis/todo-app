@@ -1,3 +1,5 @@
-- [ ] Create toast warning indicating that you can only pin three tasks at a time
 - [ ] When pinning, ensure user doesn't get disoriented because sections move down to accomodate space for new pin.
 - [ ] Set up system for allowing subtasks to be pinned as well -- perhaps providing a link to the parent task, or something else. 
+- [ ] Enable editing emoji and title of list by clicking emoji or title in content view
+- [ ] Can edit emoji or title, but then cannot edit either (or the other) again until after refresh.
+- [ ] In Pinned view, do not include "Parent" link of subtasks whose parent is pinned.

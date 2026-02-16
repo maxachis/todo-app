@@ -20,6 +20,7 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "todoapp.settings"
 pythonpath = ["."]
+addopts = "--basetemp=codex_pytest_tmp/run"
 markers = [
     "slow: marks tests as slow (toast timeout, drag-drop)",
 ]

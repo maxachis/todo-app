@@ -89,7 +89,7 @@ function selectEmoji(emoji) {
   closeEmojiPicker();
 
   if (trigger) {
-    var editForm = trigger.closest(".list-nav-edit-form");
+    var editForm = trigger.closest(".list-nav-edit-form, .list-header-edit-form");
     if (editForm) {
       htmx.trigger(editForm, "submit");
     }

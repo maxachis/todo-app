@@ -338,25 +338,49 @@ def pin_task(request, task_id):
             section__list=task_list, is_pinned=True, is_completed=False
         ).count()
         if pinned_count >= MAX_PINNED_PER_LIST:
-            return HttpResponse(
-                f"Cannot pin more than {MAX_PINNED_PER_LIST} tasks per list.",
-                status=400,
+            message = (
+                f"You can only pin {MAX_PINNED_PER_LIST} tasks per list. "
+                "Unpin one to pin another."
             )
+            if _is_htmx(request):
+                toast_html = render_to_string(
+                    "tasks/partials/toast_message.html",
+                    {"message": message},
+                    request=request,
+                )
+                oob_toast = (
+                    '<div id="toast-container" hx-swap-oob="innerHTML:#toast-container">'
+                    f"{toast_html}</div>"
+                )
+                return HttpResponse(oob_toast)
+            return HttpResponse(message, status=400)
         task.is_pinned = True
         task.save()
 
     if _is_htmx(request):
-        context = _render_list_context(task_list)
-        context["projects"] = Project.objects.filter(is_active=True)
-        center_html = render_to_string(
-            "tasks/partials/list_detail.html", context, request=request
+        pinned_tasks = Task.objects.filter(
+            section__list=task_list, is_pinned=True, is_completed=False
         )
-        sidebar_html = _sidebar_oob_html(request, task_list)
-        oob_center = (
-            f'<div id="center-panel-oob" hx-swap-oob="innerHTML:#center-panel">'
-            f"{center_html}</div>"
+        pinned_html = "".join(
+            render_to_string(
+                "tasks/partials/pinned_task_item.html",
+                {"task": t, "show_parent_context": True},
+                request=request,
+            )
+            for t in pinned_tasks
         )
-        return HttpResponse(oob_center + sidebar_html)
+        if not pinned_tasks:
+            pinned_html = '<p class="pinned-empty">Pin up to 3 tasks for quick access.</p>'
+        oob_pinned = (
+            f'<div id="pinned-items" hx-swap-oob="innerHTML:#pinned-items">'
+            f"{pinned_html}</div>"
+        )
+        trigger = json.dumps(
+            {"pinToggled": {"taskId": task_id, "pinned": task.is_pinned}}
+        )
+        resp = HttpResponse(oob_pinned)
+        resp["HX-Trigger"] = trigger
+        return resp
 
     from django.shortcuts import redirect
 

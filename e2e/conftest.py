@@ -13,6 +13,7 @@ Tests pick the minimal data they need.
 import os
 import socket
 import subprocess
+import sys
 import time
 
 import django
@@ -93,7 +94,7 @@ def base_url(tmp_path_factory):
 
     # 3. Run migrations so the temp DB has all tables
     subprocess.run(
-        ["python", "manage.py", "migrate", "--run-syncdb"],
+        [sys.executable, "manage.py", "migrate", "--run-syncdb"],
         cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         env=os.environ,
         check=True,
@@ -106,7 +107,7 @@ def base_url(tmp_path_factory):
     env = os.environ.copy()
 
     proc = subprocess.Popen(
-        ["python", "manage.py", "runserver", f"0.0.0.0:{port}", "--noreload"],
+        [sys.executable, "manage.py", "runserver", f"0.0.0.0:{port}", "--noreload"],
         cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         env=env,
         stdout=subprocess.PIPE,

@@ -10,7 +10,9 @@ function initAll() {
   try { initTitleInput(); } catch (ex) { console.error("initTitleInput error:", ex); }
   try { initMarkdownEditor(); } catch (ex) { console.error("initMarkdownEditor error:", ex); }
   try { initListNameEdit(); } catch (ex) { console.error("initListNameEdit error:", ex); }
+  try { initListHeaderEdit(); } catch (ex) { console.error("initListHeaderEdit error:", ex); }
   try { initSectionNameEdit(); } catch (ex) { console.error("initSectionNameEdit error:", ex); }
+  try { initPinButtons(); } catch (ex) { console.error("initPinButtons error:", ex); }
   try { initMobilePanels(); } catch (ex) { console.error("initMobilePanels error:", ex); }
   updateSubtaskCounts();
   restoreTaskFocus();

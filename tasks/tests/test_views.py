@@ -337,6 +337,53 @@ class TaskMoveViewTests(ViewTestBase):
         self.assertEqual(sub.parent, self.task)
 
 
+class TaskPinViewTests(ViewTestBase):
+    def test_tv33_pin_top_level_task(self):
+        """T-V-33: POST to pin a top-level task toggles is_pinned on."""
+        response = self.client.post(
+            reverse("pin_task", args=[self.task.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertTrue(self.task.is_pinned)
+
+    def test_tv34_pin_subtask_allowed(self):
+        """T-V-34: POST to pin a subtask is allowed."""
+        subtask = Task.objects.create(
+            section=self.section, title="Child", parent=self.task, position=20
+        )
+        response = self.client.post(
+            reverse("pin_task", args=[subtask.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        subtask.refresh_from_db()
+        self.assertTrue(subtask.is_pinned)
+
+    def test_tv35_pin_limit_returns_toast(self):
+        """T-V-35: Pinning past the list limit returns warning toast fragment."""
+        t2 = Task.objects.create(section=self.section, title="Two", position=20)
+        t3 = Task.objects.create(section=self.section, title="Three", position=30)
+        t4 = Task.objects.create(section=self.section, title="Four", position=40)
+
+        self.client.post(
+            reverse("pin_task", args=[self.task.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.client.post(reverse("pin_task", args=[t2.pk]), HTTP_HX_REQUEST="true")
+        self.client.post(reverse("pin_task", args=[t3.pk]), HTTP_HX_REQUEST="true")
+
+        response = self.client.post(
+            reverse("pin_task", args=[t4.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("toast-warning", response.content.decode())
+        t4.refresh_from_db()
+        self.assertFalse(t4.is_pinned)
+
+
 class ExportViewTests(ViewTestBase):
     def test_tv25_export_single_list(self):
         """T-V-25: GET export for a single list returns a downloadable file."""

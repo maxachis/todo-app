@@ -18,10 +18,11 @@
 
     <span class="task-title">{{ task.title|linkify }}</span>
 
-    {% if not task.parent and not task.is_completed %}
+    {% if not task.is_completed %}
     <button class="pin-btn {% if task.is_pinned %}pinned{% endif %}"
             hx-post="/tasks/{{ task.id }}/pin/"
             hx-swap="none"
+            data-pin-task-id="{{ task.id }}"
             title="{% if task.is_pinned %}Unpin{% else %}Pin to top{% endif %}"
             onclick="event.stopPropagation();">
       <svg class="pin-icon" width="14" height="14" viewBox="0 0 24 24" fill="{% if task.is_pinned %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 2h6l-1.5 5H15a3 3 0 0 1 3 3v2H6v-2a3 3 0 0 1 3-3h.5L8 2z"/></svg>
@@ -36,6 +37,16 @@
     <span class="task-tag">{{ tag.name }}</span>
     {% endfor %}
   </div>
+  {% if show_parent_context and task.parent %}
+  <div class="task-parent-context">
+    <button type="button"
+            class="parent-task-link"
+            data-parent-task-id="{{ task.parent_id }}"
+            onclick="event.stopPropagation(); jumpToTask({{ task.parent_id }});">
+      Parent: {{ task.parent.title }}
+    </button>
+  </div>
+  {% endif %}
 
   {% with subtask_list=task.subtasks.all %}
   <details open class="subtask-collapsible">

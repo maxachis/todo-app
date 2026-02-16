@@ -3,6 +3,15 @@
    ============================================ */
 
 var focusedTaskId = null;
+var _suppressTaskFocusRestore = false;
+
+function suppressTaskFocusRestore() {
+  _suppressTaskFocusRestore = true;
+  focusedTaskId = null;
+  document.querySelectorAll(".task-row.keyboard-focus").forEach(function(el) {
+    el.classList.remove("keyboard-focus");
+  });
+}
 
 function getVisibleTasks() {
   return Array.from(
@@ -44,6 +53,10 @@ function setTaskFocus(taskEl, loadDetail) {
 }
 
 function restoreTaskFocus() {
+  if (_suppressTaskFocusRestore) {
+    _suppressTaskFocusRestore = false;
+    return;
+  }
   if (focusedTaskId) {
     var el = document.querySelector('.task-item[data-task-id="' + focusedTaskId + '"]');
     if (el) {
