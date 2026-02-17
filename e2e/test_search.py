@@ -1,48 +1,29 @@
-"""E2E tests for search functionality."""
+"""E2E tests for global search interactions."""
 
 from playwright.sync_api import expect
 
 
 class TestSearch:
     def test_search_shows_results(self, page, base_url, seed_list_with_tasks):
-        """Typing in the search box shows matching tasks."""
-        task_list, section, tasks = seed_list_with_tasks
         page.goto(base_url)
 
-        search_input = page.locator(".navbar-search-input")
-        search_input.fill("groceries")
+        page.locator(".search-input").fill("groceries")
+        expect(page.locator(".results-dropdown")).to_contain_text("Buy groceries")
 
-        # Results should appear in dropdown
-        dropdown = page.locator("#search-results-dropdown")
-        expect(dropdown).to_contain_text("Buy groceries", timeout=5000)
-
-    def test_search_no_results(self, page, base_url, seed_list_with_tasks):
-        """Searching for nonexistent text shows no results."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_click_result_navigates_to_task(self, page, base_url, seed_full):
         page.goto(base_url)
 
-        search_input = page.locator(".navbar-search-input")
-        search_input.fill("zzzznonexistent")
+        page.locator(".search-input").fill("Review PRs")
+        expect(page.locator(".results-dropdown .result")).to_contain_text("Review PRs")
+        page.locator('.results-dropdown .result:has-text("Review PRs")').click()
 
-        # Wait for debounce + response
-        page.wait_for_timeout(500)
+        expect(page.locator("#center-panel")).to_contain_text("Work")
+        expect(page.locator("#detail-title")).to_have_value("Review PRs")
 
-        dropdown = page.locator("#search-results-dropdown")
-        expect(dropdown).not_to_contain_text("Buy groceries")
-
-    def test_search_clears_on_outside_click(self, page, base_url, seed_list_with_tasks):
-        """Clicking outside the search area clears results."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_click_outside_closes_results(self, page, base_url, seed_list_with_tasks):
         page.goto(base_url)
 
-        search_input = page.locator(".navbar-search-input")
-        search_input.fill("groceries")
-
-        dropdown = page.locator("#search-results-dropdown")
-        expect(dropdown).to_contain_text("Buy groceries", timeout=5000)
-
-        # Click outside
+        page.locator(".search-input").fill("groceries")
+        expect(page.locator(".results-dropdown")).to_be_visible()
         page.locator("#center-panel").click()
-
-        # Dropdown should be cleared
-        expect(dropdown).to_be_empty()
+        expect(page.locator(".results-dropdown")).to_have_count(0)

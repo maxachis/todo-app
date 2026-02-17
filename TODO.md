@@ -1,4 +1,6 @@
 - [ ] Add more emojis
 - [ ] Add ability to set tasks to repeat
 - [ ] Create dashboard of upcoming events 
-- [ ] Show time in device-native timezone (for me right now it's EST)
+- [ ] Import page should also allow a user to import a file in the same content as the tasks are able to be exported via the Task "Export All" button.
+
+## Regression

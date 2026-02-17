@@ -8,6 +8,7 @@ dependencies = [
     "markdown>=3.7",
     "bleach>=6.1",
     "gunicorn>=22.0",
+    "django-ninja>=1.5.3",
 ]
 
 [dependency-groups]

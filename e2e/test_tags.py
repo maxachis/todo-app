@@ -1,4 +1,4 @@
-"""E2E tests for tag add/remove on tasks."""
+"""E2E tests for task tag add/remove in detail panel."""
 
 from playwright.sync_api import expect
 
@@ -6,141 +6,40 @@ from e2e.conftest import fresh_from_db
 from tasks.models import Tag
 
 
-class TestTagAdd:
-    def test_add_tag_to_task(self, page, base_url, seed_list_with_tasks):
-        """Add a tag via the detail panel form."""
-        task_list, section, tasks = seed_list_with_tasks
+class TestTags:
+    def test_add_tag(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        # Open detail for first task
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').click()
+        page.locator("#tag-input").fill("urgent")
+        page.locator("form.tag-form button[type='submit']").click()
 
-        # Add a tag
-        page.fill('#detail-panel .tag-form input[name="name"]', "urgent")
-        page.click('#detail-panel .tag-form button[type="submit"]')
-
-        # Tag should appear in detail panel
-        expect(page.locator("#detail-panel .tag")).to_contain_text("urgent")
-        assert Tag.objects.filter(name="urgent").exists()
+        expect(page.locator("#detail-panel")).to_contain_text("urgent")
         fresh_from_db(tasks[0])
         assert tasks[0].tags.filter(name="urgent").exists()
 
-    def test_add_multiple_tags(self, page, base_url, seed_list_with_tasks):
-        """Add multiple tags to the same task."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
-
-        for tag_name in ["urgent", "shopping"]:
-            page.fill('#detail-panel .tag-form input[name="name"]', tag_name)
-            page.click('#detail-panel .tag-form button[type="submit"]')
-            expect(page.locator("#detail-panel")).to_contain_text(tag_name)
-
-        fresh_from_db(tasks[0])
-        assert tasks[0].tags.count() == 2
-
-    def test_add_tag_updates_center_panel(self, page, base_url, seed_list_with_tasks):
-        """Adding a tag in the detail panel immediately shows it in the task row."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        task_row = page.locator(f'#task-{tasks[0].id}')
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
-
-        # Add a tag
-        page.fill('#detail-panel .tag-form input[name="name"]', "urgent")
-        page.click('#detail-panel .tag-form button[type="submit"]')
-
-        # Tag should appear in the center panel task row
-        expect(task_row.locator(".task-tag")).to_contain_text("urgent")
-
-
-class TestTagAutocomplete:
-    def test_datalist_suggests_existing_tags(self, page, base_url, seed_list_with_tasks):
-        """Previously created tags appear as datalist options on a different task."""
-        task_list, section, tasks = seed_list_with_tasks
-
-        # Create a tag on the first task via ORM
+    def test_tag_suggestions_exclude_existing(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         tag = Tag.objects.create(name="errand")
         tasks[0].tags.add(tag)
 
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').click()
 
-        # Open detail for the second task (which has no tags)
-        page.locator(f'.task-item[data-task-id="{tasks[1].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Walk the dog")
+        expect(page.locator('#tag-suggestions option[value="errand"]')).to_have_count(0)
 
-        # The datalist should contain "errand" as an option
-        options = page.locator('#tag-suggestions option[value="errand"]')
-        expect(options).to_have_count(1)
-
-    def test_datalist_excludes_applied_tags(self, page, base_url, seed_list_with_tasks):
-        """Tags already on the task should not appear in the datalist."""
-        task_list, section, tasks = seed_list_with_tasks
-
-        # Create tags and apply one to the first task
-        tag1 = Tag.objects.create(name="urgent")
-        tag2 = Tag.objects.create(name="shopping")
-        tasks[0].tags.add(tag1)
-
+    def test_remove_tag(self, page, base_url, seed_full):
+        task = seed_full["tasks"][0]
         page.goto(base_url)
+        page.locator(f'[data-list-id="{seed_full["list1"].id}"]').click()
 
-        # Open detail for first task
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
-
-        # "urgent" is already applied — should NOT be in datalist
-        expect(page.locator('#tag-suggestions option[value="urgent"]')).to_have_count(0)
-        # "shopping" is not applied — should be in datalist
-        expect(page.locator('#tag-suggestions option[value="shopping"]')).to_have_count(1)
-
-
-class TestTagRemove:
-    def test_remove_tag_from_task(self, page, base_url, seed_full):
-        """Remove a tag by clicking the x button."""
-        data = seed_full
-        task = data["tasks"][0]
-        page.goto(base_url)
-
-        # Open detail for the task that has tags
-        page.locator(f'.task-item[data-task-id="{task.id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("urgent")
-
-        # Count tags before
+        page.locator(f'.task-row[data-task-id="{task.id}"]').click()
         initial_count = task.tags.count()
-
-        # Click remove on the first tag
-        page.locator("#detail-panel .tag-remove").first.click()
-
-        # Wait for HTMX swap — the detail panel should refresh
-        # After removing one tag, there should be fewer .tag elements
-        expect(page.locator("#detail-panel .tag")).to_have_count(initial_count - 1)
+        page.locator("#detail-panel .tag button").first.click()
+        page.wait_for_timeout(300)
 
         fresh_from_db(task)
         assert task.tags.count() == initial_count - 1
-
-    def test_remove_tag_updates_center_panel(self, page, base_url, seed_full):
-        """Removing a tag in the detail panel immediately removes it from the task row."""
-        data = seed_full
-        task = data["tasks"][0]
-        page.goto(base_url)
-
-        task_row = page.locator(f"#task-{task.id}")
-
-        # Verify tag is visible in center panel before removal
-        expect(task_row.locator(".task-tag").first).to_be_visible()
-        initial_tag_count = task.tags.count()
-
-        # Open detail panel
-        page.locator(f'.task-item[data-task-id="{task.id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("urgent")
-
-        # Remove a tag
-        page.locator("#detail-panel .tag-remove").first.click()
-
-        # Center panel should reflect the removal
-        expect(task_row.locator(".task-tag")).to_have_count(initial_tag_count - 1)

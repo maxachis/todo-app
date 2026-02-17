@@ -1,98 +1,207 @@
-"""E2E tests for drag-and-drop reordering via SortableJS."""
-
-import pytest
-from playwright.sync_api import expect
+"""E2E tests for drag/drop behavior in Svelte UI."""
 
 from e2e.conftest import fresh_from_db
+from playwright.sync_api import expect
 from tasks.models import Task
 
 
-@pytest.mark.slow
 class TestDragDrop:
-    def test_reorder_tasks_within_section(
-        self, page, base_url, seed_list_with_tasks
-    ):
-        """Drag a task to reorder it within the same section."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_reorder_within_section(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+        page.wait_for_selector(".task-dnd-zone")
 
-        # Get bounding boxes of first and third task rows
-        first_row = page.locator(
-            f'.task-item[data-task-id="{tasks[0].id}"] > .task-row'
-        )
-        third_row = page.locator(
-            f'.task-item[data-task-id="{tasks[2].id}"] > .task-row'
-        )
-
-        first_box = first_row.bounding_box()
-        third_box = third_row.bounding_box()
-
-        # Drag first task below third task
-        page.mouse.move(
-            first_box["x"] + first_box["width"] / 2,
-            first_box["y"] + first_box["height"] / 2,
-        )
-        page.mouse.down()
-        # Move in steps to trigger SortableJS gesture detection
-        page.mouse.move(
-            third_box["x"] + third_box["width"] / 2,
-            third_box["y"] + third_box["height"] + 5,
-            steps=10,
-        )
-        page.mouse.up()
-
-        # Wait for the move request to complete
-        page.wait_for_timeout(500)
-
-        # Verify the order changed — "Buy groceries" should no longer be first
-        task_items = page.locator(
-            f'.section[data-section-id="{section.id}"] .task-list > .task-item'
-        )
-        first_task_title = task_items.first.locator(".task-title").text_content()
-        assert first_task_title != "Buy groceries"
-
-    def test_drag_task_to_different_section(self, page, base_url, seed_full):
-        """Verify cross-section move works by simulating via SortableJS API.
-
-        Native browser drag-and-drop across SortableJS groups is hard to
-        simulate reliably in headless Chromium. Instead, we programmatically
-        move the DOM element and trigger SortableJS's onEnd callback, then
-        verify the server persists the move correctly.
-        """
-        data = seed_full
-        task = data["tasks"][1]  # "Walk the dog"
-        page.goto(base_url)
-
-        # Use JS to simulate what SortableJS does: move the DOM element
-        # and call postMove to persist it
         page.evaluate(
-            """([taskId, sectionId]) => {
-                const taskEl = document.querySelector(
-                    `.task-item[data-task-id="${taskId}"]`
-                );
-                const targetList = document.querySelector(
-                    `.section[data-section-id="${sectionId}"] .task-list`
-                );
-                // Move DOM element
-                targetList.appendChild(taskEl);
-                // Persist via the same function SortableJS uses
-                postMove(taskId, {
-                    section: sectionId,
-                    position: 0,
-                    parent: "null"
-                });
+            """(taskIds) => {
+                const zone = document.querySelectorAll('.task-dnd-zone')[0];
+                zone.dispatchEvent(new CustomEvent('finalize', {
+                    bubbles: true,
+                    detail: { items: taskIds.map((id) => ({ id })) }
+                }));
             }""",
-            [str(task.id), str(data["section2"].id)],
+            [tasks[1].id, tasks[0].id, tasks[2].id],
         )
+        page.wait_for_timeout(400)
 
+        rows = page.locator(".task-dnd-zone .task-row")
+        expect(rows).to_have_count(3)
+        expect(page.locator(".task-dnd-zone")).to_contain_text("Buy groceries")
+        expect(page.locator(".task-dnd-zone")).to_contain_text("Walk the dog")
+        expect(page.locator(".task-dnd-zone")).to_contain_text("Read a book")
+
+        fresh_from_db(tasks[1])
+        fresh_from_db(tasks[0])
+        assert tasks[1].position < tasks[0].position
+
+    def test_move_across_sections(self, page, base_url, seed_full):
+        data = seed_full
+        moving = data["tasks"][1]
+        target_section_id = data["section2"].id
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
+        page.wait_for_selector(".task-dnd-zone")
+
+        page.evaluate(
+            """(taskId) => {
+                const zones = document.querySelectorAll('.task-dnd-zone');
+                const zone = zones[1];
+                const ids = Array.from(zone.querySelectorAll('[data-task-id]')).map((el) => Number(el.dataset.taskId));
+                if (!ids.includes(taskId)) ids.unshift(taskId);
+                zone.dispatchEvent(new CustomEvent('finalize', {
+                    bubbles: true,
+                    detail: { items: ids.map((id) => ({ id })) }
+                }));
+            }""",
+            moving.id,
+        )
+        page.wait_for_timeout(400)
+
+        fresh_from_db(moving)
+        assert moving.section_id == target_section_id
+
+    def test_cross_list_drop_target(self, page, base_url, seed_full):
+        data = seed_full
+        moving = data["tasks"][0]
+        target_list = data["list2"]
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
+        page.wait_for_selector(f'[data-list-id="{target_list.id}"]')
+
+        page.evaluate(
+            """([taskId, listId]) => {
+                const target = document.querySelector(`[data-list-id="${listId}"]`);
+                const dt = new DataTransfer();
+                dt.setData('text/task-id', String(taskId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+            }""",
+            [moving.id, target_list.id],
+        )
         page.wait_for_timeout(500)
 
-        # Verify the task appears in the target section's DOM
-        target_section = page.locator(
-            f'.section[data-section-id="{data["section2"].id}"]'
-        )
-        expect(target_section).to_contain_text("Walk the dog")
+        fresh_from_db(moving)
+        assert moving.section.list_id == target_list.id
 
-        # Verify in the database
-        fresh_from_db(task)
-        assert task.section_id == data["section2"].id
+    def test_reorder_sections_without_duplicates(self, page, base_url, seed_full):
+        data = seed_full
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
+        page.wait_for_selector(".sections-dnd")
+
+        page.evaluate(
+            """(sectionIds) => {
+                const zone = document.querySelector('.sections-dnd');
+                zone.dispatchEvent(new CustomEvent('finalize', {
+                    bubbles: true,
+                    detail: { items: sectionIds.map((id) => ({ id })) }
+                }));
+            }""",
+            [data["section2"].id, data["section1"].id],
+        )
+        page.wait_for_timeout(500)
+
+        headers = page.locator(".section-header[data-section-id]")
+        expect(headers).to_have_count(2)
+
+        unique_count = page.evaluate(
+            """() => {
+                const ids = Array.from(document.querySelectorAll('.section-header[data-section-id]'))
+                    .map((el) => Number(el.getAttribute('data-section-id')));
+                return new Set(ids).size;
+            }"""
+        )
+        assert unique_count == 2
+
+        fresh_from_db(data["section1"])
+        fresh_from_db(data["section2"])
+        assert data["section2"].position < data["section1"].position
+
+    def test_sections_use_header_drag_handle_only(self, page, base_url, seed_full):
+        data = seed_full
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
+
+        handles = page.locator(".section-header .drag-handle")
+        expect(handles).to_have_count(2)
+        expect(page.locator(".task-row .drag-handle")).to_have_count(0)
+
+    def test_drop_below_midpoint_nests_under_target_task(self, page, base_url, seed_list):
+        task_list, section = seed_list
+        task_a = Task.objects.create(section=section, title="Task A", position=10)
+        task_b = Task.objects.create(section=section, title="Task B", position=20)
+
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+        page.locator(f'.task-row[data-task-id="{task_b.id}"]').wait_for()
+
+        page.evaluate(
+            """([dragId, targetId]) => {
+                const target = document.querySelector(`.task-row[data-task-id="${targetId}"]`);
+                if (!target) return;
+                const rect = target.getBoundingClientRect();
+                const y = rect.top + (rect.height * 0.75);
+                const dt = new DataTransfer();
+                dt.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+            }""",
+            [task_a.id, task_b.id],
+        )
+        page.wait_for_timeout(500)
+
+        fresh_from_db(task_a)
+        assert task_a.parent_id == task_b.id
+
+    def test_drop_above_midpoint_on_subtask_keeps_same_parent_level(self, page, base_url, seed_list):
+        task_list, section = seed_list
+        task_a = Task.objects.create(section=section, title="Task A", position=10)
+        task_c = Task.objects.create(section=section, title="Task C", position=20)
+        task_b = Task.objects.create(section=section, parent=task_c, title="Task B", position=10)
+
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+        page.locator(f'.task-row[data-task-id="{task_b.id}"]').wait_for()
+
+        page.evaluate(
+            """([dragId, targetId]) => {
+                const target = document.querySelector(`.task-row[data-task-id="${targetId}"]`);
+                if (!target) return;
+                const rect = target.getBoundingClientRect();
+                const y = rect.top + (rect.height * 0.25);
+                const dt = new DataTransfer();
+                dt.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+            }""",
+            [task_a.id, task_b.id],
+        )
+        page.wait_for_timeout(500)
+
+        fresh_from_db(task_a)
+        assert task_a.parent_id == task_c.id
+
+    def test_rapid_finalize_reorders_do_not_break_task_list(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+        page.wait_for_selector(".task-dnd-zone")
+
+        page.evaluate(
+            """(taskIds) => {
+                const zone = document.querySelectorAll('.task-dnd-zone')[0];
+                zone.dispatchEvent(new CustomEvent('finalize', {
+                    bubbles: true,
+                    detail: { items: taskIds.map((id) => ({ id })) }
+                }));
+                zone.dispatchEvent(new CustomEvent('finalize', {
+                    bubbles: true,
+                    detail: { items: taskIds.slice().reverse().map((id) => ({ id })) }
+                }));
+            }""",
+            [tasks[0].id, tasks[1].id, tasks[2].id],
+        )
+        page.wait_for_timeout(600)
+
+        rows = page.locator(".task-dnd-zone .task-row")
+        expect(rows).to_have_count(3)
