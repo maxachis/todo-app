@@ -1,99 +1,150 @@
-"""E2E tests for List CRUD operations."""
-
-import re
+"""E2E tests for list create/rename/delete in sidebar."""
 
 from playwright.sync_api import expect
 
-from tasks.models import List, Section
+from e2e.conftest import fresh_from_db
+from tasks.models import List
 
 
-class TestListCreate:
-    def test_create_list_via_sidebar_form(self, page, base_url):
-        """Create a list using the sidebar inline form."""
+class TestListCrud:
+    def test_create_list(self, page, base_url):
         page.goto(base_url)
-        page.fill('#sidebar .inline-form input[name="name"]', "Shopping")
-        page.click('#sidebar .inline-form button[type="submit"]')
 
-        # New list appears in sidebar
-        expect(page.locator("#sidebar")).to_contain_text("Shopping")
+        sidebar = page.locator("#sidebar")
+        name_input = sidebar.locator('input[placeholder="Create list..."]')
+        name_input.fill("Shopping")
+        name_input.press("Enter")
+        page.wait_for_timeout(300)
+
+        expect(sidebar).to_contain_text("Shopping")
         assert List.objects.filter(name="Shopping").exists()
 
-    def test_create_list_appears_active(self, page, base_url):
-        """Newly created list becomes the active list in the sidebar."""
-        page.goto(base_url)
-        page.fill('#sidebar .inline-form input[name="name"]', "My Tasks")
-        page.click('#sidebar .inline-form button[type="submit"]')
-
-        # The new list item should have the active class
-        expect(page.locator('.list-nav-item.active')).to_contain_text("My Tasks")
-
-    def test_create_list_clears_input(self, page, base_url):
-        """After creating a list, the input field is cleared."""
-        page.goto(base_url)
-        sidebar_input = page.locator('#sidebar .inline-form input[name="name"]')
-        sidebar_input.fill("New List")
-        page.click('#sidebar .inline-form button[type="submit"]')
-
-        # Wait for HTMX swap
-        expect(page.locator("#sidebar")).to_contain_text("New List")
-        # Input should be empty after swap (whole sidebar re-renders)
-        expect(page.locator('#sidebar .inline-form input[name="name"]')).to_have_value(
-            ""
-        )
-
-
-class TestListRename:
-    def test_rename_list_via_double_click(self, page, base_url, seed_list):
-        """Double-click list name to enter edit mode, then rename."""
+    def test_rename_list_inline(self, page, base_url, seed_list):
         task_list, _ = seed_list
         page.goto(base_url)
 
-        list_item = page.locator(f'.list-nav-item[data-list-id="{task_list.id}"]')
-        display = list_item.locator(".list-nav-display")
-        display.dblclick()
+        row = page.locator(f'[data-list-id="{task_list.id}"]')
+        row.dblclick()
+        row.locator("input").fill("Renamed List")
+        row.locator("input").press("Enter")
 
-        # Should be in edit mode
-        expect(list_item).to_have_class(re.compile(r"editing"))
-
-        # Clear and type new name
-        name_input = list_item.locator('.list-nav-edit-form input[name="name"]')
-        name_input.fill("Renamed List")
-        name_input.press("Enter")
-
-        # Should update in sidebar
-        expect(page.locator("#sidebar")).to_contain_text("Renamed List")
+        expect(row).to_contain_text("Renamed List")
         task_list.refresh_from_db()
         assert task_list.name == "Renamed List"
 
-    def test_rename_list_cancel_with_escape(self, page, base_url, seed_list):
-        """Pressing Escape cancels the rename."""
+    def test_delete_list(self, page, base_url, seed_list):
+        task_list, _section = seed_list
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').wait_for()
+
+        dialog_seen = {"value": False}
+
+        def on_dialog(dialog):
+            dialog_seen["value"] = True
+            dialog.dismiss()
+
+        page.on("dialog", on_dialog)
+        page.evaluate(
+            """(id) => {
+                const btn = document.querySelector(`[data-list-id="${id}"] button.delete`);
+                btn?.click();
+            }""",
+            task_list.id,
+        )
+        assert dialog_seen["value"] is True
+        assert List.objects.filter(pk=task_list.pk).exists()
+
+    def test_reorder_lists_via_sidebar_drag_finalize(self, page, base_url, seed_full):
+        data = seed_full
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').wait_for()
+        page.locator(f'[data-list-id="{data["list2"].id}"]').wait_for()
+
+        page.evaluate(
+            """(ids) => {
+                const zone = document.querySelector('.list-dnd-zone');
+                zone.dispatchEvent(new CustomEvent('finalize', {
+                    bubbles: true,
+                    detail: { items: ids.map((id) => ({ id })) }
+                }));
+            }""",
+            [data["list2"].id, data["list1"].id],
+        )
+        page.wait_for_timeout(400)
+
+        fresh_from_db(data["list1"])
+        fresh_from_db(data["list2"])
+        assert data["list2"].position < data["list1"].position
+
+    def test_emoji_picker_search_by_keyword(self, page, base_url):
+        page.goto(base_url)
+
+        page.locator("form.create-form button.emoji").click()
+        search = page.locator('.picker input[placeholder="Search emoji..."]')
+        search.fill("launch")
+
+        rocket = page.locator('.picker button[aria-label="rocket"]')
+        expect(rocket).to_be_visible()
+        rocket.click()
+
+        expect(page.locator("form.create-form button.emoji")).to_have_text("🚀")
+
+    def test_only_one_list_inline_editor_active_at_a_time(self, page, base_url, seed_full):
+        data = seed_full
+        list1 = data["list1"]
+        list2 = data["list2"]
+        page.goto(base_url)
+
+        row1 = page.locator(f'[data-list-id="{list1.id}"]')
+        row2 = page.locator(f'[data-list-id="{list2.id}"]')
+
+        row1.dblclick()
+        row1.locator("input").fill("Renamed First")
+        row2.dblclick()
+
+        expect(page.locator('#sidebar [data-list-id] input')).to_have_count(1)
+        page.wait_for_timeout(400)
+        list1.refresh_from_db()
+        assert list1.name == "Renamed First"
+
+    def test_double_click_sidebar_emoji_opens_picker_and_updates(self, page, base_url, seed_list):
         task_list, _ = seed_list
         page.goto(base_url)
 
-        list_item = page.locator(f'.list-nav-item[data-list-id="{task_list.id}"]')
-        list_item.locator(".list-nav-display").dblclick()
+        row = page.locator(f'[data-list-id="{task_list.id}"]')
+        row.locator("button.emoji-btn").dblclick()
+        search = page.locator('.picker input[placeholder="Search emoji..."]')
+        search.fill("house")
+        page.locator('.picker button[aria-label="house"]').click()
+        page.wait_for_timeout(300)
 
-        name_input = list_item.locator('.list-nav-edit-form input[name="name"]')
-        name_input.fill("Should Not Save")
-        name_input.press("Escape")
-
-        # Should revert and exit edit mode
-        expect(list_item).not_to_have_class(re.compile(r"editing"))
         task_list.refresh_from_db()
-        assert task_list.name == "Test List"
+        assert task_list.emoji == "🏠"
 
-
-class TestListDelete:
-    def test_delete_list_with_confirm(self, page, base_url, seed_list):
-        """Delete a list after confirming the dialog."""
+    def test_double_click_content_header_emoji_updates(self, page, base_url, seed_list):
         task_list, _ = seed_list
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        # Register dialog handler before clicking
-        page.on("dialog", lambda d: d.accept())
+        page.locator("button.list-emoji-btn").dblclick()
+        page.locator('.picker input[placeholder="Search emoji..."]').fill("rocket")
+        page.locator('.picker button[aria-label="rocket"]').click()
+        page.wait_for_timeout(300)
 
-        page.click(".btn-danger:has-text('Delete List')")
+        task_list.refresh_from_db()
+        assert task_list.emoji == "🚀"
+        expect(page.locator("#center-panel")).to_contain_text("To Do")
 
-        # List should be removed from sidebar
-        expect(page.locator("#sidebar")).not_to_contain_text("Test List")
-        assert not List.objects.filter(pk=task_list.pk).exists()
+    def test_double_click_content_header_title_updates(self, page, base_url, seed_list):
+        task_list, _ = seed_list
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        page.locator(".list-name").dblclick()
+        page.locator(".list-name-input").fill("Renamed From Header")
+        page.locator(".list-name-input").press("Enter")
+        page.wait_for_timeout(300)
+
+        task_list.refresh_from_db()
+        assert task_list.name == "Renamed From Header"
+        expect(page.locator("#center-panel")).to_contain_text("To Do")

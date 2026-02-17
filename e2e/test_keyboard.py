@@ -1,4 +1,4 @@
-"""E2E tests for keyboard navigation."""
+"""E2E tests for keyboard navigation and task actions."""
 
 from playwright.sync_api import expect
 
@@ -6,188 +6,183 @@ from e2e.conftest import fresh_from_db
 from tasks.models import Task
 
 
-class TestArrowNavigation:
-    def test_arrow_down_focuses_first_task(self, page, base_url, seed_list_with_tasks):
-        """Pressing ArrowDown when no task is focused selects the first task."""
-        task_list, section, tasks = seed_list_with_tasks
+class TestKeyboard:
+    def test_click_then_arrow_navigation_immediate(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        # Press ArrowDown on body (not inside an input)
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').click()
         page.keyboard.press("ArrowDown")
 
-        # First task should have keyboard focus
-        focused = page.locator(".task-row.keyboard-focus")
-        expect(focused).to_be_visible()
-        expect(focused).to_contain_text("Buy groceries")
+        expect(page.locator("#detail-title")).to_have_value("Walk the dog")
 
-    def test_arrow_down_moves_to_next(self, page, base_url, seed_list_with_tasks):
-        """ArrowDown moves focus to the next task."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_arrow_navigation_updates_selection(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Buy groceries"
-        )
+        row = page.locator(f'.task-row[data-task-id="{tasks[0].id}"]')
+        row.click()
+        row.focus()
+        row.press("ArrowDown")
 
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Walk the dog"
-        )
+        expect(page.locator("#detail-title")).to_have_value("Walk the dog")
 
-    def test_arrow_up_moves_to_previous(self, page, base_url, seed_list_with_tasks):
-        """ArrowUp moves focus to the previous task."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_jk_navigation(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        # Move down twice, then up once
-        page.keyboard.press("ArrowDown")
-        page.keyboard.press("ArrowDown")
-        page.keyboard.press("ArrowUp")
+        row = page.locator(f'.task-row[data-task-id="{tasks[0].id}"]')
+        row.click()
+        row.focus()
+        row.press("j")
+        expect(page.locator("#detail-title")).to_have_value("Walk the dog")
 
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Buy groceries"
-        )
+        row.press("k")
+        expect(page.locator("#detail-title")).to_have_value("Buy groceries")
 
-
-class TestJKNavigation:
-    def test_j_moves_down(self, page, base_url, seed_list_with_tasks):
-        """Pressing 'j' moves focus down like ArrowDown."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_tab_indent_shift_tab_outdent(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        page.keyboard.press("j")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Buy groceries"
-        )
-
-        page.keyboard.press("j")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Walk the dog"
-        )
-
-    def test_k_moves_up(self, page, base_url, seed_list_with_tasks):
-        """Pressing 'k' moves focus up like ArrowUp."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        page.keyboard.press("j")
-        page.keyboard.press("j")
-        page.keyboard.press("k")
-
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Buy groceries"
-        )
-
-
-class TestQuickComplete:
-    def test_x_completes_focused_task(self, page, base_url, seed_list_with_tasks):
-        """Pressing 'x' completes the currently focused task."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        # Focus first task
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Buy groceries"
-        )
-
-        # Press x to complete
-        page.keyboard.press("x")
-
-        # Should show toast
-        expect(page.locator("#undo-toast")).to_be_visible()
-
-        tasks[0].refresh_from_db()
-        assert tasks[0].is_completed is True
-
-
-class TestEscape:
-    def test_escape_clears_focus(self, page, base_url, seed_list_with_tasks):
-        """Pressing Escape removes keyboard focus from all tasks."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_be_visible()
-
-        page.keyboard.press("Escape")
-        expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
-
-
-class TestClickAwayClearsFocus:
-    def test_click_sidebar_clears_focus(self, page, base_url, seed_list_with_tasks):
-        """Clicking the sidebar clears the task highlight."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        # Focus a task
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_be_visible()
-
-        # Click the sidebar
-        page.locator("#sidebar").click()
-        expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
-
-    def test_click_detail_panel_clears_focus(self, page, base_url, seed_list_with_tasks):
-        """Clicking the detail panel clears the task highlight."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        # Click a task to focus it and load its detail
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-        expect(page.locator(".task-row.keyboard-focus")).to_be_visible()
-
-        # Click the detail panel area
-        page.locator("#detail-panel h2").click()
-        expect(page.locator(".task-row.keyboard-focus")).not_to_be_visible()
-
-
-class TestTabIndent:
-    def test_tab_indents_task(self, page, base_url, seed_list_with_tasks):
-        """Pressing Tab indents the focused task under its previous sibling."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        # Focus second task ("Walk the dog")
-        page.keyboard.press("ArrowDown")
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Walk the dog"
-        )
-
-        # Press Tab to indent under "Buy groceries"
-        page.keyboard.press("Tab")
-
-        # Wait for persist
-        page.wait_for_timeout(500)
-
-        # Verify in DB
+        row = page.locator(f'.task-row[data-task-id="{tasks[1].id}"]')
+        row.click()
+        row.focus()
+        row.press("Tab")
+        page.wait_for_timeout(400)
         fresh_from_db(tasks[1])
         assert tasks[1].parent_id == tasks[0].id
 
+        row.press("Shift+Tab")
+        page.wait_for_timeout(400)
+        fresh_from_db(tasks[0])
+        fresh_from_db(tasks[1])
+        assert tasks[1].parent_id is None
+        assert tasks[1].position > tasks[0].position
 
-class TestDeleteKey:
-    def test_delete_removes_focused_task(self, page, base_url, seed_list_with_tasks):
-        """Pressing Delete on a focused task removes it after confirmation."""
-        task_list, section, tasks = seed_list_with_tasks
-        task_id = tasks[0].id
+    def test_tab_does_not_cross_sections(self, page, base_url, seed_full):
+        data = seed_full
         page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
 
-        # Focus first task
-        page.keyboard.press("ArrowDown")
-        expect(page.locator(".task-row.keyboard-focus")).to_contain_text(
-            "Buy groceries"
-        )
+        row = page.locator(f'.task-row[data-task-id="{data["task_in_progress"].id}"]')
+        row.click()
+        row.focus()
+        row.press("Tab")
+        page.wait_for_timeout(400)
 
-        # Handle confirm dialog
-        page.on("dialog", lambda dialog: dialog.accept())
+        fresh_from_db(data["task_in_progress"])
+        assert data["task_in_progress"].section_id == data["section2"].id
+        assert data["task_in_progress"].parent_id is None
 
-        # Press Delete
-        page.keyboard.press("Delete")
+    def test_tab_uses_previous_same_level_not_child(self, page, base_url, seed_list):
+        task_list, section = seed_list
+        task_a = Task.objects.create(section=section, title="Task A", position=10)
+        task_b = Task.objects.create(section=section, title="Task B", position=20)
+        task_b_child = Task.objects.create(section=section, parent=task_b, title="Task B child", position=10)
+        task_c = Task.objects.create(section=section, title="Task C", position=30)
 
-        # Wait for OOB response
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        row = page.locator(f'.task-row[data-task-id="{task_c.id}"]')
+        row.click()
+        row.focus()
+        row.press("Tab")
         page.wait_for_timeout(500)
 
-        # Task should be gone from DB
+        fresh_from_db(task_c)
+        assert task_c.parent_id == task_b.id
+        assert task_c.parent_id != task_b_child.id
+
+    def test_shift_tab_outdents_on_first_press(self, page, base_url, seed_list):
+        task_list, section = seed_list
+        parent = Task.objects.create(section=section, title="Parent", position=10)
+        child = Task.objects.create(section=section, parent=parent, title="Child", position=10)
+
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        row = page.locator(f'.task-row[data-task-id="{child.id}"]')
+        row.click()
+        row.press("Shift+Tab")
+        page.wait_for_timeout(500)
+
+        fresh_from_db(child)
+        assert child.parent_id is None
+
+    def test_shift_tab_outdents_immediately_even_after_focus_blur(self, page, base_url, seed_list):
+        task_list, section = seed_list
+        parent = Task.objects.create(section=section, title="Parent", position=10)
+        child = Task.objects.create(section=section, parent=parent, title="Child", position=10)
+
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        row = page.locator(f'.task-row[data-task-id="{child.id}"]')
+        row.click()
+        page.evaluate("() => document.activeElement instanceof HTMLElement && document.activeElement.blur()")
+        page.keyboard.press("Shift+Tab")
+        page.wait_for_timeout(500)
+
+        fresh_from_db(child)
+        assert child.parent_id is None
+
+    def test_x_completes_and_escape_clears(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        row = page.locator(f'.task-row[data-task-id="{tasks[0].id}"]')
+        row.click()
+        row.focus()
+        row.press("x")
+        page.wait_for_timeout(400)
+        fresh_from_db(tasks[0])
+        assert tasks[0].is_completed is True
+
+        page.evaluate(
+            """() => {
+                const scope = document.querySelector('.keyboard-scope');
+                scope?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            }"""
+        )
+        expect(page.locator("#detail-panel")).to_contain_text("Select a task to view details")
+
+    def test_delete_key_removes_task(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
+        task_id = tasks[2].id
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        page.locator(f'.task-row[data-task-id="{task_id}"]').click()
+        page.evaluate(
+            """(id) => {
+                window.confirm = () => true;
+                const scope = document.querySelector('.keyboard-scope');
+                const selected = document.querySelector(`.task-row[data-task-id="${id}"]`);
+                selected?.focus();
+                scope?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+            }""",
+            task_id,
+        )
+        page.wait_for_timeout(400)
+
         assert not Task.objects.filter(pk=task_id).exists()
+
+    def test_ctrl_arrows_cycle_sections_and_lists(self, page, base_url, seed_full):
+        data = seed_full
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
+
+        row = page.locator(f'.task-row[data-task-id="{data["tasks"][0].id}"]')
+        row.click()
+        row.focus()
+        row.press("Control+ArrowDown")
+        expect(page.locator("#detail-title")).to_have_value("Write report")
+
+        row.press("Control+ArrowRight")
+        expect(page.locator("#center-panel")).to_contain_text("Work")

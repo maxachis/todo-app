@@ -26,6 +26,10 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 - **WHEN** the viewport is narrower than 1024px
 - **THEN** a bottom tab bar shows navigation links for Tasks, Projects, Timesheet, and Import
 
+#### Scenario: Non-task routes hide task side panels
+- **WHEN** the user navigates to Projects, Timesheet, or Import routes
+- **THEN** the list sidebar and task detail panel are not shown
+
 ### Requirement: List sidebar navigation
 The system SHALL display all lists in the sidebar, ordered by position. Selecting a list SHALL load its content in the center panel.
 
@@ -37,6 +41,10 @@ The system SHALL display all lists in the sidebar, ordered by position. Selectin
 - **WHEN** the user clicks a list in the sidebar
 - **THEN** the center panel displays that list's sections and tasks
 
+#### Scenario: Initial selected list loads full content
+- **WHEN** the Tasks route first loads with a default selected list
+- **THEN** the list header and its sections/tasks are both loaded without requiring an extra click
+
 #### Scenario: Empty state when no list selected
 - **WHEN** no list is selected
 - **THEN** the center panel shows "Select or create a list"
@@ -44,6 +52,22 @@ The system SHALL display all lists in the sidebar, ordered by position. Selectin
 #### Scenario: Inline list editing
 - **WHEN** the user double-clicks a list in the sidebar
 - **THEN** the list name and emoji become editable inline; Enter or emoji selection saves, Escape cancels
+
+#### Scenario: Inline editing is single-active
+- **WHEN** one list is already in inline edit mode and the user starts editing another list
+- **THEN** the previous list is auto-saved and exits edit mode so only one inline editor remains active
+
+#### Scenario: Sidebar emoji double-click edits list emoji
+- **WHEN** the user double-clicks a list emoji in the sidebar
+- **THEN** an emoji picker opens for that list and selecting an emoji persists it
+
+#### Scenario: Content header supports emoji and title double-click edits
+- **WHEN** the user double-clicks the current list emoji or title in the center panel header
+- **THEN** the corresponding list field enters edit flow and persists changes on selection/commit
+
+#### Scenario: Header title edit exits on list change
+- **WHEN** list-title inline edit is active and the user selects a different list
+- **THEN** the prior title edit is committed and edit mode exits for the previous list
 
 #### Scenario: Drag to reorder lists
 - **WHEN** the user drags a list to a new position in the sidebar
@@ -60,6 +84,10 @@ The system SHALL display sections within a list, each collapsible, with tasks ne
 - **WHEN** the user clicks a section's collapse toggle
 - **THEN** the section's tasks are hidden/shown
 
+#### Scenario: Section title inline editing is single-active
+- **WHEN** one section title is being edited and the user starts editing a different section title
+- **THEN** the first edit is committed and closed so only one section editor is active
+
 #### Scenario: Collapse all / expand all
 - **WHEN** the user clicks the "Collapse All" toggle in the list header
 - **THEN** all sections collapse; clicking again expands all
@@ -67,6 +95,10 @@ The system SHALL display sections within a list, each collapsible, with tasks ne
 #### Scenario: Drag to reorder sections
 - **WHEN** the user drags a section to a new position within the list
 - **THEN** the section order updates immediately and persists via API
+
+#### Scenario: Section drag starts only from header handle
+- **WHEN** the user attempts to drag from task rows/body area inside a section
+- **THEN** section drag does not initiate; dragging sections is only available from a handle in the section header
 
 ### Requirement: Task list rendering
 The system SHALL display tasks within sections, showing title, tags, due date, subtask count, and pin button. Completed tasks SHALL appear in a separate "Completed" group at the bottom.
@@ -151,6 +183,14 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 - **WHEN** the user drags a task to a new position within the same section
 - **THEN** the task list reorders immediately and the new position persists via API
 
+#### Scenario: Task drag lock during finalize
+- **WHEN** a task drag finalize/persist cycle is in progress
+- **THEN** initiating another task drag is disabled until the first cycle completes
+
+#### Scenario: Drag visual tracks cursor
+- **WHEN** the user drags a task
+- **THEN** the dragged element remains aligned to the cursor using the original grab offset (without immediate cursor-centering)
+
 #### Scenario: Move task to different section
 - **WHEN** the user drags a task into a different section
 - **THEN** the task appears in the new section immediately and the section/position change persists
@@ -158,6 +198,10 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 #### Scenario: Nest task as subtask
 - **WHEN** the user drags a task onto another task
 - **THEN** the dragged task becomes a subtask of the drop target, updating visually and persisting via API
+
+#### Scenario: Midpoint controls drop intent on task rows
+- **WHEN** the user drags task A over task B
+- **THEN** dropping above task B's midpoint inserts task A before task B at task B's current hierarchy level, and dropping below task B's midpoint nests task A under task B
 
 #### Scenario: Promote subtask
 - **WHEN** the user drags a subtask out of its parent's nesting area
@@ -171,6 +215,14 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 - **WHEN** a drag operation succeeds visually but the API call fails
 - **THEN** the store reverts to the pre-drag state and a toast shows an error message
 
+#### Scenario: Reorder does not create duplicate keyed items
+- **WHEN** the user reorders lists, sections, or tasks via drag-and-drop
+- **THEN** keyed render collections remain unique by item id and no duplicate-key runtime error is produced
+
+#### Scenario: Reordered items remain visible
+- **WHEN** a drag reorder finalize completes
+- **THEN** both moved and non-moved items remain visible in the list (no disappearing rows/sections)
+
 ### Requirement: Keyboard navigation
 The system SHALL support full keyboard navigation for tasks. Navigation state SHALL be managed in a Svelte store.
 
@@ -178,9 +230,33 @@ The system SHALL support full keyboard navigation for tasks. Navigation state SH
 - **WHEN** the user presses Arrow Up or Arrow Down (or j/k)
 - **THEN** the focus moves to the previous/next non-completed task, scrolling into view
 
+#### Scenario: Click-to-keyboard continuity
+- **WHEN** the user clicks a task row and then presses Arrow Up or Arrow Down
+- **THEN** keyboard navigation applies immediately without requiring an additional focus click
+
 #### Scenario: Tab indent / Shift+Tab outdent
 - **WHEN** the user presses Tab on a focused task
 - **THEN** the task becomes a subtask of the previous sibling; Shift+Tab promotes it
+
+#### Scenario: Tab indent is section-bounded
+- **WHEN** the user presses Tab and the previous visible task is in a different section
+- **THEN** no cross-section indent/reparent occurs and the task remains in its current section
+
+#### Scenario: Tab indent is same-level bounded
+- **WHEN** the user presses Tab on a task and the closest previous visible task is a deeper child level
+- **THEN** the task does not indent under that child and instead uses the closest previous task at the same current level
+
+#### Scenario: Outdent places task after former parent
+- **WHEN** the user presses Shift+Tab on a subtask
+- **THEN** the task is promoted one level and inserted immediately after its former parent in sibling order
+
+#### Scenario: Shift+Tab applies on first press
+- **WHEN** the user presses Shift+Tab on a focused subtask
+- **THEN** outdent is applied immediately without requiring a second keypress
+
+#### Scenario: Browser tab traversal is suppressed for task hierarchy shortcuts
+- **WHEN** a task is selected and the user presses Tab or Shift+Tab outside text-entry fields
+- **THEN** browser focus traversal does not run, and task indent/outdent is applied immediately
 
 #### Scenario: Complete with x key
 - **WHEN** the user presses x on a focused task
@@ -212,6 +288,10 @@ The system SHALL provide a searchable emoji picker modal for lists and sections.
 #### Scenario: Open emoji picker
 - **WHEN** the user clicks the emoji field on a list or section edit form
 - **THEN** a modal appears with a searchable grid of emojis across categories
+
+#### Scenario: Search uses names and keywords across an expansive set
+- **WHEN** the user types a text query in the emoji search input
+- **THEN** results are filtered by category label, emoji name, and related keywords across a broad emoji catalog (not only a small fixed subset)
 
 #### Scenario: Select emoji
 - **WHEN** the user clicks an emoji in the picker
@@ -259,6 +339,14 @@ The system SHALL display a "Pinned" section at the top of the list when any task
 - **WHEN** a task is completed
 - **THEN** the pin button is not shown on its task row
 
+#### Scenario: Pinned order remains stable across source reorders
+- **WHEN** pinned tasks are reordered within section/task lists
+- **THEN** the pinned section keeps a stable orientation independent of source list position changes
+
+#### Scenario: Reorder pinned tasks inside pinned section
+- **WHEN** the user drags pinned tasks within the pinned section
+- **THEN** the pinned section order updates to the new arrangement
+
 ### Requirement: Export UI
 The system SHALL provide export buttons that trigger file downloads from the API.
 
@@ -296,9 +384,17 @@ The system SHALL provide a dedicated page at `/timesheet` for weekly time tracki
 - **WHEN** viewing a week's timesheet
 - **THEN** a summary bar shows total hours and per-project breakdowns
 
+#### Scenario: Week bounds are Sunday through Saturday
+- **WHEN** a week is loaded in the timesheet view
+- **THEN** the range begins on Sunday and ends on Saturday
+
 #### Scenario: Create time entry
 - **WHEN** the user fills in the time entry form (project, date, description, optional tasks) and submits
 - **THEN** the entry is created and appears in the appropriate date group
+
+#### Scenario: Entry rows display local creation time
+- **WHEN** timesheet entries are listed
+- **THEN** each row shows the entry creation time in the user's local device time
 
 #### Scenario: Task selector by project
 - **WHEN** the user selects a project in the time entry form

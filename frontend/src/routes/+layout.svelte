@@ -1,0 +1,313 @@
+<script lang="ts">
+	import favicon from '$lib/assets/favicon.svg';
+	import ListSidebar from '$lib/components/lists/ListSidebar.svelte';
+	import TaskDetail from '$lib/components/tasks/TaskDetail.svelte';
+	import ToastContainer from '$lib/components/shared/ToastContainer.svelte';
+	import SearchBar from '$lib/components/search/SearchBar.svelte';
+	import { page } from '$app/stores';
+	import { selectedTaskStore } from '$lib/stores/tasks';
+
+	let { children } = $props();
+	let sidebarOpen = $state(false);
+	let detailOpen = $state(false);
+	const isTasksRoute = $derived($page.url.pathname === '/');
+
+	$effect(() => {
+		if ($selectedTaskStore !== null) {
+			detailOpen = true;
+		}
+	});
+
+	const tabs = [
+		{ href: '/', label: 'Tasks' },
+		{ href: '/projects', label: 'Projects' },
+		{ href: '/timesheet', label: 'Timesheet' },
+		{ href: '/import', label: 'Import' }
+	];
+</script>
+
+<svelte:head>
+	<link rel="icon" href={favicon} />
+</svelte:head>
+
+<div class="app-shell">
+	<header class="top-nav">
+		<button class="icon-btn mobile-only" onclick={() => (sidebarOpen = !sidebarOpen)} aria-label="Toggle sidebar">
+			&#9776;
+		</button>
+		<nav>
+			{#each tabs as tab}
+				<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}</a>
+			{/each}
+		</nav>
+		<SearchBar />
+		{#if isTasksRoute}
+			<button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+				&#8942;
+			</button>
+		{/if}
+	</header>
+
+	<main class="panels" class:single-panel={!isTasksRoute}>
+		{#if isTasksRoute}
+			<aside id="sidebar" class:open={sidebarOpen}>
+				<ListSidebar />
+			</aside>
+		{/if}
+
+		<section id="center-panel" class="center-panel">
+			{@render children()}
+		</section>
+
+		{#if isTasksRoute}
+			<section id="detail-panel" class="detail-panel" class:open={detailOpen}>
+				<div class="detail-header">
+					<strong>Task Detail</strong>
+					<button class="icon-btn mobile-only" onclick={() => (detailOpen = false)} aria-label="Close detail panel">
+						&#10005;
+					</button>
+				</div>
+				<TaskDetail />
+			</section>
+		{/if}
+	</main>
+
+	<ToastContainer />
+
+	<nav class="mobile-tabs">
+		{#each tabs as tab}
+			<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}</a>
+		{/each}
+	</nav>
+</div>
+
+<style>
+	:global(:root) {
+		--font-display: 'Crimson Pro', Georgia, serif;
+		--font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+		--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+		--bg-page: #f5f2ec;
+		--bg-surface: #ffffff;
+		--bg-surface-hover: #f3efe8;
+		--bg-surface-active: rgba(180, 88, 40, 0.07);
+		--bg-nav: #2c2825;
+		--bg-input: #ffffff;
+
+		--text-primary: #2c2825;
+		--text-secondary: #6b6560;
+		--text-tertiary: #9e9891;
+		--text-on-dark: #ede9e1;
+		--text-on-dark-muted: #a8a29e;
+
+		--accent: #b45828;
+		--accent-hover: #9a4a20;
+		--accent-light: rgba(180, 88, 40, 0.07);
+		--accent-medium: rgba(180, 88, 40, 0.14);
+
+		--border: #ddd7ce;
+		--border-light: #ece7df;
+		--border-focus: #b45828;
+		--border-nav: rgba(255, 255, 255, 0.1);
+
+		--pinned-bg: rgba(200, 155, 60, 0.08);
+		--pinned-border: rgba(200, 155, 60, 0.3);
+		--pinned-text: #8a6914;
+		--pinned-tag-bg: rgba(200, 155, 60, 0.12);
+
+		--tag-bg: #ece7df;
+		--tag-text: #6b6560;
+
+		--success: #3d7a50;
+		--success-bg: #eef7f0;
+		--success-border: #b6dfc4;
+		--error: #b83f3f;
+		--error-bg: #fdf0f0;
+		--error-border: #f0c4c4;
+
+		--shadow-sm: 0 1px 3px rgba(60, 50, 40, 0.05);
+		--shadow-md: 0 4px 14px rgba(60, 50, 40, 0.07);
+		--shadow-lg: 0 8px 28px rgba(60, 50, 40, 0.1);
+
+		--radius-sm: 0.375rem;
+		--radius-md: 0.5rem;
+		--radius-lg: 0.75rem;
+		--radius-xl: 1rem;
+
+		--transition: 0.18s ease;
+	}
+
+	:global(body) {
+		margin: 0;
+		font-family: var(--font-body);
+		background: var(--bg-page);
+		color: var(--text-primary);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	:global(*, *::before, *::after) {
+		box-sizing: border-box;
+	}
+
+	:global(::selection) {
+		background: var(--accent-medium);
+		color: var(--text-primary);
+	}
+
+	.app-shell {
+		min-height: 100vh;
+		display: grid;
+		grid-template-rows: auto 1fr auto;
+	}
+
+	.top-nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.65rem 1.25rem;
+		background: var(--bg-nav);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	}
+
+	.top-nav nav {
+		display: flex;
+		gap: 0.25rem;
+		flex-wrap: wrap;
+	}
+
+	a {
+		color: var(--text-on-dark-muted);
+		text-decoration: none;
+		font-weight: 500;
+		font-size: 0.875rem;
+		padding: 0.35rem 0.65rem;
+		border-radius: var(--radius-sm);
+		transition: color var(--transition), background var(--transition);
+	}
+
+	a:hover {
+		color: var(--text-on-dark);
+		background: rgba(255, 255, 255, 0.06);
+	}
+
+	a.active {
+		color: var(--text-on-dark);
+		background: rgba(255, 255, 255, 0.1);
+		font-weight: 600;
+	}
+
+	.panels {
+		display: grid;
+		grid-template-columns: 300px 1fr 320px;
+		gap: 0.875rem;
+		padding: 0.875rem;
+	}
+
+	.panels.single-panel {
+		grid-template-columns: 1fr;
+	}
+
+	aside,
+	.center-panel,
+	.detail-panel {
+		background: var(--bg-surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-xl);
+		padding: 1rem;
+		box-shadow: var(--shadow-sm);
+	}
+
+	aside {
+		overflow: hidden;
+		min-height: 0;
+	}
+
+	.icon-btn {
+		background: transparent;
+		border: 1px solid var(--border-nav);
+		color: var(--text-on-dark);
+		border-radius: var(--radius-sm);
+		padding: 0.25rem 0.5rem;
+		cursor: pointer;
+		transition: background var(--transition);
+	}
+
+	.icon-btn:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.detail-header strong {
+		font-family: var(--font-display);
+		font-size: 1.05rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.mobile-tabs {
+		display: none;
+	}
+
+	.mobile-only {
+		display: none;
+	}
+
+	@media (max-width: 1023px) {
+		.mobile-only {
+			display: inline-flex;
+		}
+
+		.panels {
+			grid-template-columns: 1fr;
+			padding-bottom: 5rem;
+		}
+
+		aside {
+			display: none;
+		}
+
+		aside.open {
+			display: block;
+		}
+
+		.detail-panel {
+			position: fixed;
+			top: 0;
+			right: -100%;
+			bottom: 0;
+			width: min(92vw, 360px);
+			z-index: 30;
+			transition: right 0.25s ease;
+			border-radius: 0;
+			overflow-y: auto;
+		}
+
+		.detail-panel.open {
+			right: 0;
+		}
+
+		.detail-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.mobile-tabs {
+			position: fixed;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			background: var(--bg-nav);
+			border-top: 1px solid rgba(255, 255, 255, 0.08);
+			padding: 0.6rem 0.4rem;
+		}
+
+		.mobile-tabs a {
+			text-align: center;
+			font-size: 0.8rem;
+		}
+	}
+</style>

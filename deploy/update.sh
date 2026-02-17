@@ -15,7 +15,10 @@ info "Pulling latest code"
 git -C "${APP_DIR}" pull
 
 info "Installing dependencies"
-"${APP_DIR}/venv/bin/pip" install --quiet django markdown bleach gunicorn
+"${APP_DIR}/venv/bin/pip" install --quiet django markdown bleach gunicorn django-ninja pydantic
+
+info "Building frontend"
+sudo -u "${APP_USER}" bash -lc "cd '${APP_DIR}/frontend' && npm install && npm run build"
 
 info "Running migrations"
 # Load .env line-by-line to handle special chars (parens, $, etc.) in values
@@ -32,5 +35,6 @@ sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
 
 info "Restarting app"
 systemctl restart todoapp
+systemctl reload nginx || true
 
 info "Done! App is live."

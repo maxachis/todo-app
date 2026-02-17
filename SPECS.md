@@ -2,12 +2,14 @@
 
 ## 1. Overview
 
-A multi-list task management application built with **Django** and **HTMX**. The UI consists of three panels: a left sidebar for list navigation, a central area for task display, and a right sidebar for task detail editing. The app also includes dedicated pages for projects, timesheet tracking, and data import, accessible via a top navigation bar.
+A multi-list task management application built with a **Svelte** frontend and **Django** backend API. The UI consists of three panels: a left sidebar for list navigation, a central area for task display, and a right sidebar for task detail editing. The app includes dedicated routes for projects, timesheet tracking, and data import, accessible via top and mobile navigation.
 
 ## 2. Tech Stack
 
-- **Backend:** Django (Python 3.14)
-- **Frontend interactivity:** HTMX + SortableJS (drag-and-drop)
+- **Backend:** Django + Django Ninja JSON API
+- **Frontend:** SvelteKit (TypeScript, adapter-static SPA)
+- **Frontend state/interactivity:** Svelte stores + component reactivity
+- **Drag-and-drop:** `svelte-dnd-action`
 - **Database:** SQLite (default Django)
 - **Port:** 8000
 
@@ -86,8 +88,12 @@ Each TimeEntry represents one hour of work.
 - **FR-1.4:** User can delete a list (deletes all sections and tasks within it).
 - **FR-1.5:** Lists are displayed in the left sidebar, ordered by position.
 - **FR-1.6:** Selecting a list displays its sections and tasks in the central panel.
-- **FR-1.7:** User can double-click a list in the sidebar to edit its name and emoji inline. Enter or emoji selection saves; Escape cancels; clicking away saves.
-- **FR-1.8:** An emoji picker modal provides a searchable grid of emojis across categories. Click-away or Escape closes it. Available for lists and sections.
+- **FR-1.7:** User can double-click a list in the sidebar to edit its name and emoji inline. Enter or emoji selection saves; Escape cancels; clicking away saves. Only one list can be in inline edit mode at a time; opening another editor auto-saves and closes the previous one.
+- **FR-1.8:** An emoji picker modal provides a searchable grid of emojis across categories with an expansive emoji set. Search matches category labels plus emoji names/keywords. Click-away or Escape closes it. Available for lists and sections.
+- **FR-1.10:** Double-clicking a list emoji in the sidebar opens emoji selection for that specific list and persists the new emoji.
+- **FR-1.11:** In the content header, double-clicking the list emoji edits the list emoji and double-clicking the list title edits the list title.
+- **FR-1.12:** On Tasks route load, the initially selected list must render full list content immediately (sections/tasks), not only header metadata.
+- **FR-1.13:** If list-title inline edit is active in the content header and selection changes to another list, the prior edit is committed and edit mode exits.
 - **FR-1.9:** User can assign a list to a project via a dropdown in the list header.
 
 ### FR-2: Section Management
@@ -98,6 +104,8 @@ Each TimeEntry represents one hour of work.
 - **FR-2.5:** Sections are displayed in order within their parent list.
 - **FR-2.6:** Sections are collapsible via `<details>` elements (open by default).
 - **FR-2.7:** A "Collapse All" / "Expand All" toggle in the list header collapses or expands all sections at once.
+- **FR-2.8:** Only one section-title inline editor can be active at a time; activating another section editor commits and closes the previous one.
+- **FR-2.9:** Section drag-reorder can only be initiated from a drag handle in the section header; task-body interactions must not initiate section dragging.
 
 ### FR-3: Task Management
 - **FR-3.1:** User can create a task within a section.
@@ -105,6 +113,7 @@ Each TimeEntry represents one hour of work.
 - **FR-3.3:** User can edit a task's title inline.
 - **FR-3.4:** User can delete a task (deletes all subtasks recursively).
 - **FR-3.5:** Tasks are displayed in order within their section or parent task.
+- **FR-3.5.1:** During drag-and-drop over a task row, pointer position controls outcome: above midpoint inserts before the target at the target's current level; below midpoint nests under the target as its subtask.
 - **FR-3.6:** Task tags are displayed as badges on the task row in the center panel.
 - **FR-3.7:** Task due date is displayed in abbreviated format (e.g., "Mar 15") on the task row in the center panel.
 - **FR-3.8:** Parent tasks display a subtask count label (e.g., "3 subtasks — 1 open") that updates dynamically.
@@ -131,10 +140,10 @@ Each TimeEntry represents one hour of work.
 - **FR-5.6:** Completing a parent task cascades completion to all non-completed subtasks. Each subtask's `is_completed` and `completed_at` are set recursively.
 - **FR-5.7:** Completion uses a CSS fade-out animation (180ms). The task is optimistically removed from the active list and moved to the "Completed" section after animation completes.
 
-### FR-6: HTMX Interactivity
-- **FR-6.1:** All CRUD operations use HTMX for partial page updates (no full-page reloads).
-- **FR-6.2:** The undo toast is rendered via HTMX swap and dismissed via client-side timer. Multiple toasts are supported in a toast container.
-- **FR-6.3:** After an HTMX swap, focus is restored to the previously focused input so the user can continue editing without re-clicking.
+### FR-6: Svelte Reactivity and API Mutations
+- **FR-6.1:** All CRUD operations are executed via JSON API calls from Svelte components/stores (no full-page reloads).
+- **FR-6.2:** Undo toasts are client-rendered and auto-dismissed with support for multiple stacked toasts.
+- **FR-6.3:** UI state (selection, open panels, task lists) updates reactively through Svelte stores after successful or optimistic mutations.
 
 ### FR-7: Drag-and-Drop
 - **FR-7.1:** User can drag a task to reorder it within its current section.
@@ -145,10 +154,14 @@ Each TimeEntry represents one hour of work.
 - **FR-7.6:** When a task is moved, all its subtasks move with it.
 - **FR-7.7:** After a drop, the `position`, `section`, `parent`, and/or list assignment are updated on the server via an HTMX request.
 - **FR-7.8:** Drag-and-drop uses SortableJS for the client-side interaction.
+- **FR-7.9:** While a task drag finalize/persist cycle is in progress, starting another task drag is disabled.
+- **FR-7.10:** Dragged task visuals remain aligned with the pointer during drag interactions, preserving the initial grab offset (no forced cursor-centering on drag start).
 - **FR-7.9:** Drag-and-drop and keyboard indent/outdent use optimistic DOM updates — the UI moves the task immediately, and the server persists the change silently in the background.
 - **FR-7.10:** The server prevents circular nesting (a task cannot become a subtask of itself or any of its descendants).
 - **FR-7.11:** User can drag lists in the sidebar to reorder them.
 - **FR-7.12:** User can drag sections within a list to reorder them.
+- **FR-7.13:** Drag-and-drop reordering of lists, sections, and tasks must preserve unique render keys (no duplicate-key render state during or after a drag finalize).
+- **FR-7.14:** After drag-and-drop reorder operations complete, all moved and unaffected items remain visible in the UI (no disappearing nodes).
 
 ### FR-8: Export
 - **FR-8.1:** User can export a single list or all lists.
@@ -163,9 +176,15 @@ Each TimeEntry represents one hour of work.
 ### FR-9: Keyboard Navigation
 - **FR-9.1:** User can navigate between non-completed tasks using Arrow Up/Down or j/k keys.
 - **FR-9.2:** User can indent a focused task (make it a subtask of the previous task) using Tab, and outdent using Shift+Tab.
+- **FR-9.12:** Tab indenting is section-bounded: a task can only indent relative to a previous task within the same section.
+- **FR-9.13:** Shift+Tab outdent promotes the task one level and places it immediately after its former parent in the resulting sibling order.
+- **FR-9.14:** Shift+Tab outdent must apply on the first keypress for the currently focused/selected task.
+- **FR-9.15:** When a task is selected, browser-native Tab focus traversal is suppressed for task indent/outdent shortcuts (except in text-entry fields), so Tab/Shift+Tab applies task hierarchy changes immediately.
 - **FR-9.3:** User can mark the focused task as complete using the x key.
 - **FR-9.4:** User can clear task selection using Escape.
 - **FR-9.5:** Clicking a task row highlights it and loads its detail panel. Clicking outside any task row (sidebar, detail panel, empty area) clears the highlight.
+- **FR-9.14:** Clicking a task row transfers keyboard focus to that task context so Arrow Up/Down (or j/k) navigation works immediately without an extra click.
+- **FR-9.15:** Tab indenting is level-aware: the new parent must be the closest previous task in the same section and same current level (`same parent_id`), never a deeper child task.
 - **FR-9.6:** The focused task scrolls into view automatically.
 - **FR-9.7:** User can jump to the next section using Ctrl+Arrow Down, and to the previous section using Ctrl+Arrow Up.
 - **FR-9.8:** User can delete the focused task using the Delete key (shows confirmation dialog).
@@ -180,6 +199,8 @@ Each TimeEntry represents one hour of work.
 - **FR-10.4:** Pinned tasks appear in a compact view without subtask details.
 - **FR-10.5:** Clicking a pinned task in the pinned section jumps to the task's actual location in the list (with a flash animation).
 - **FR-10.6:** The pinned section is hidden when no tasks are pinned.
+- **FR-10.7:** Reordering pinned tasks in their source sections does not reorder pinned task orientation in the pinned section.
+- **FR-10.8:** Pinned tasks can be drag-reordered directly within the pinned section view.
 - **FR-10.7:** Pin state is toggled via `POST /tasks/<id>/pin/` and updates the UI with targeted OOB swaps.
 
 ### FR-11: Search
@@ -206,6 +227,8 @@ Each TimeEntry represents one hour of work.
 - **FR-13.4:** The timesheet page shows a weekly view with navigation to previous/next weeks.
 - **FR-13.5:** A summary bar shows total hours and per-project hour breakdowns for the current week.
 - **FR-13.6:** Entries are grouped by date within the week view.
+- **FR-13.10:** Timesheet weeks run Sunday through Saturday.
+- **FR-13.11:** Each timesheet entry row displays its entry creation time in the device's local time zone.
 - **FR-13.7:** User can delete individual time entries.
 - **FR-13.8:** A task selector fetches incomplete tasks for the selected project's linked lists.
 - **FR-13.9:** Timesheet is accessible via a dedicated `/timesheet/` page linked from the navigation bar.
@@ -223,6 +246,7 @@ Each TimeEntry represents one hour of work.
 - **FR-15.1:** The app uses a three-panel layout: left sidebar (list navigation), center (task list), right (task detail). A top navigation bar provides links to Tasks, Projects, Timesheet, and Import pages.
 - **FR-15.2:** On screens narrower than 1024px, the layout collapses: the sidebar is hidden behind a hamburger menu, and the detail panel slides in as an overlay.
 - **FR-15.3:** A bottom tab bar mirrors the navigation links on mobile.
+- **FR-15.4:** On non-Tasks routes (`/projects`, `/timesheet`, `/import`), the task list sidebar and task detail panel are not rendered.
 - **FR-15.4:** When no list is selected, the center panel shows an empty state: "Select or create a list."
 - **FR-15.5:** When no task is selected, the detail panel shows an empty state: "Select a task to view details."
 - **FR-15.6:** The app registers a service worker and includes a web app manifest for PWA support (installable on mobile via "Add to Home Screen").
@@ -338,3 +362,9 @@ All tests use Django's built-in test framework (`django.test`).
 | T-I-13 | FR-11.3 | Search input triggers debounced HTMX request and returns results partial |
 | T-I-14 | FR-15.4 | Center panel shows empty state when no list is selected |
 | T-I-15 | FR-15.5 | Detail panel shows empty state when no task is selected |
+| T-I-16 | FR-7.13 | Reordering sections does not produce duplicate keyed section nodes in the rendered DOM |
+| T-I-17 | FR-7.14 | Reordering tasks keeps all task rows visible after finalize (no disappearing nodes) |
+| T-I-18 | FR-9.12 | Tab indent does not cross section boundaries; focused task remains in its section when no valid same-section predecessor exists |
+| T-I-19 | FR-9.13 | Shift+Tab outdent places the task immediately after its former parent instead of moving it to section top |
+| T-I-20 | FR-9.14 | After clicking a task row, Arrow Up/Down navigation works immediately without requiring a separate focus action |
+| T-I-21 | FR-9.15 | Tab indent chooses the closest previous same-level task as parent and never attaches to one of that task's children |

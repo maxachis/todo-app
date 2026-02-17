@@ -1,81 +1,47 @@
-"""E2E tests for navigation: sidebar, detail panel, empty states."""
+"""E2E tests for sidebar/navigation/detail states in the Svelte UI."""
 
 from playwright.sync_api import expect
 
-from tasks.models import List, Section, Task
 
+class TestNavigation:
+    def test_initial_tasks_view_loads_first_list_content(self, page, base_url, seed_full):
+        page.goto(base_url)
+        center = page.locator("#center-panel")
+        expect(center).to_contain_text("To Do")
+        expect(center).to_contain_text("Buy groceries")
 
-class TestSidebarNavigation:
     def test_click_list_loads_center_panel(self, page, base_url, seed_full):
-        """Clicking a list in sidebar loads its content in center panel."""
         data = seed_full
         page.goto(base_url)
 
-        # Click the second list
-        page.locator(f'.list-nav-item[data-list-id="{data["list2"].id}"]').click()
+        page.locator(f'[data-list-id="{data["list2"].id}"]').click()
 
-        # Center panel should show the Work list content
-        expect(page.locator("#center-panel")).to_contain_text("Work")
-        expect(page.locator("#center-panel")).to_contain_text("Backlog")
-        expect(page.locator("#center-panel")).to_contain_text("Review PRs")
+        center = page.locator("#center-panel")
+        expect(center).to_contain_text("Work")
+        expect(center).to_contain_text("Backlog")
+        expect(center).to_contain_text("Review PRs")
 
-    def test_switch_between_lists(self, page, base_url, seed_full):
-        """Switching between lists updates center panel each time."""
-        data = seed_full
+    def test_click_task_loads_detail_panel(self, page, base_url, seed_list_with_tasks):
+        task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        # Start on first list
-        expect(page.locator("#center-panel")).to_contain_text("Test List")
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').click()
 
-        # Switch to Work
-        page.locator(f'.list-nav-item[data-list-id="{data["list2"].id}"]').click()
-        expect(page.locator("#center-panel")).to_contain_text("Review PRs")
-
-        # Switch back
-        page.locator(f'.list-nav-item[data-list-id="{data["list1"].id}"]').click()
-        expect(page.locator("#center-panel")).to_contain_text("Buy groceries")
-
-
-class TestDetailPanel:
-    def test_click_task_loads_detail(self, page, base_url, seed_list_with_tasks):
-        """Clicking a task row loads its detail in the right panel."""
-        task_list, section, tasks = seed_list_with_tasks
-        page.goto(base_url)
-
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-
-        # Detail panel should show task info
         detail = page.locator("#detail-panel")
-        expect(detail).to_contain_text("Buy groceries")
-        expect(detail.locator('input[name="title"]')).to_have_value("Buy groceries")
+        expect(detail.locator("#detail-title")).to_have_value("Buy groceries")
+        expect(detail.locator("#detail-title")).to_have_value("Buy groceries")
 
-    def test_click_different_task_updates_detail(
-        self, page, base_url, seed_list_with_tasks
-    ):
-        """Clicking a different task updates the detail panel."""
-        task_list, section, tasks = seed_list_with_tasks
+    def test_empty_states(self, page, base_url):
         page.goto(base_url)
+        expect(page.locator("#center-panel")).to_contain_text("Select or create a list")
+        expect(page.locator("#detail-panel")).to_contain_text("Select a task to view details")
 
-        # Click first task
-        page.locator(f'.task-item[data-task-id="{tasks[0].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Buy groceries")
+    def test_non_tasks_routes_hide_lists_and_task_detail_panels(self, page, base_url):
+        page.goto(f"{base_url}/projects")
+        expect(page.locator("#sidebar")).to_have_count(0)
+        expect(page.locator("#detail-panel")).to_have_count(0)
 
-        # Click second task
-        page.locator(f'.task-item[data-task-id="{tasks[1].id}"] > .task-row').click()
-        expect(page.locator("#detail-panel")).to_contain_text("Walk the dog")
-
-
-class TestEmptyStates:
-    def test_empty_state_no_lists(self, page, base_url):
-        """With no lists, show the empty state message."""
-        page.goto(base_url)
-        expect(page.locator(".empty-state")).to_contain_text(
-            "Select or create a list"
-        )
-
-    def test_detail_empty_state(self, page, base_url, seed_list_with_tasks):
-        """With no task selected, detail panel shows empty state."""
-        page.goto(base_url)
-        expect(page.locator(".detail-empty-state")).to_contain_text(
-            "Select a task to view details"
-        )
+        page.goto(f"{base_url}/timesheet")
+        expect(page.locator("#sidebar")).to_have_count(0)
+        expect(page.locator("#detail-panel")).to_have_count(0)
