@@ -37,14 +37,20 @@ black .
 
 ```
 tasks/                  # Main Django app
-  models.py             # List, Section, Task, Tag
+  models.py             # Project, List, Section, Task, Tag, TimeEntry
   views/                # Split by concern (see below)
     lists.py            # List CRUD views
     sections.py         # Section CRUD views
-    tasks.py            # Task CRUD, complete/uncomplete, move
+    tasks.py            # Task CRUD, complete/uncomplete, move, pin
     tags.py             # Tag add/remove on tasks
     export.py           # Export views (JSON, CSV, Markdown)
+    search.py           # Global search across lists
+    projects.py         # Project CRUD and toggle active
+    timesheet.py        # Weekly time tracking views
+    import_tasks.py     # TickTick CSV import
     reorder.py          # Shared reorder_siblings() utility
+  services/
+    ticktick_import.py  # TickTick CSV parser and import logic
   urls.py               # All URL patterns
   forms.py              # Django forms for validation
   tests/
@@ -80,6 +86,7 @@ e2e/                    # Playwright E2E tests
   test_tags.py          # Tag add/remove on tasks
   test_export.py        # JSON/CSV/MD export
   test_markdown.py      # Markdown editor
+  test_pinning.py       # Pin/unpin tasks
 templates/
   base.html             # Three-panel shell: sidebar, center, right detail
 ```
@@ -89,7 +96,7 @@ templates/
 **Split** views into separate files per concern (`lists.py`, `sections.py`, `tasks.py`, `tags.py`) — they have low coupling and tasks are typically scoped to one entity at a time.
 
 **Keep combined:**
-- `models.py` — all four models in one file. They're tightly coupled (FK chains) and small enough that splitting adds overhead with no benefit.
+- `models.py` — all six models in one file. They're tightly coupled (FK chains) and small enough that splitting adds overhead with no benefit.
 - `urls.py` — single file. All routes in one place is easier to scan than scattered URL configs.
 - `forms.py` — single file unless it exceeds ~100 lines, then split to match views.
 
@@ -122,7 +129,7 @@ templates/
 
 ### JavaScript
 
-- Minimal JS — only for SortableJS initialization and toast auto-dismiss
+- Vanilla JS split into focused modules — no framework, no build step
 - No framework, no build step. Vanilla JS in `static/js/`
 - `snake_case` for filenames, `camelCase` for variables/functions
 
@@ -132,7 +139,7 @@ templates/
 - **Arbitrary nesting** via self-referential `parent` FK. No depth limit enforced at the model level.
 - **Position fields** on List, Section, Task. Reordering updates positions of affected siblings. Use gap-based numbering (10, 20, 30) to reduce writes on reorder.
 - **Markdown rendering** uses `markdown` + `bleach`. Sanitize on *output* (when rendering), not on input (store raw Markdown). Linkify URLs automatically. All links get `target="_blank" rel="noopener noreferrer"`.
-- **Completing a parent does not cascade** to subtasks.
+- **Completing a parent cascades** to all non-completed subtasks recursively.
 - **Undo toast** is a server-rendered HTMX partial dismissed client-side via `setTimeout`.
 - **Export** serves file downloads (not HTMX partials). JSON preserves full nested hierarchy. CSV flattens to one row per task with `parent_task` and `depth` columns. Markdown uses `#`/`##` headings and `- [ ]`/`- [x]` checkboxes. All responses set `Content-Disposition: attachment`.
 - **Annotated querysets need explicit ordering** — `annotate()` can drop `Meta.ordering`. Always chain `.order_by()` on querysets used for rendering.

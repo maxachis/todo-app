@@ -1,1 +1,4 @@
-- [x] Currently, can edit emoji or title, but then cannot edit either (or the other) again until after refresh. Fix.
+- [ ] Add more emojis
+- [ ] Add ability to set tasks to repeat
+- [ ] Create dashboard of upcoming events 
+- [ ] Show time in device-native timezone (for me right now it's EST)

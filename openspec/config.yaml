@@ -1,0 +1,23 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Django + HTMX + SortableJS, SQLite, vanilla JS
+  Single-user task management app, no auth
+  Three-panel layout: sidebar, center task list, right detail panel
+  Markdown notes with bleach sanitization
+  Drag-and-drop reordering within/across sections and lists
+  Export to JSON, CSV, Markdown
+  Keyboard navigation (arrow keys, j/k, Tab indent/outdent)
+  Tests: Django TestCase (model/view/integration) + Playwright E2E
+  See CLAUDE.md for code style and architecture decisions
+
+rules:
+  proposal:
+    - Reference existing FR/NFR IDs when the change modifies existing behavior
+    - Include a "Non-goals" section for scope clarity
+  delta-spec:
+    - Use the same numbering scheme as SPECS.md (FR-X.Y, NFR-X, T-M-X, etc.)
+    - Specify test IDs for any new or modified behavior
+  tasks:
+    - Include which files need to change (views, templates, JS, tests)
+    - Keep individual tasks small enough to verify independently

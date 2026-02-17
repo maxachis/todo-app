@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py test:*)",
+      "Bash(uv run python:*)",
+      "Bash(\".venv/Scripts/python\" manage.py test tasks)",
+      "Bash(where:*)",
+      "Bash(uv:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(python manage.py:*)",
+      "Bash(printf:*)",
+      "Bash(python:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=todoapp.settings python:*)",
+      "WebSearch",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:singularity-app.com)",
+      "WebFetch(domain:support.ticktick.com)",
+      "WebFetch(domain:help.ticktick.com)",
+      "WebFetch(domain:developer.ticktick.com)",
+      "WebFetch(domain:rollout.com)",
+      "WebFetch(domain:lazeroffmichael.github.io)",
+      "Bash(git check-ignore:*)",
+      "Bash(git rm:*)",
+      "Bash(git stash:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(curl:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python manage.py shell:*)",
+      "Bash(pytest:*)",
+      "Bash(openspec new:*)",
+      "Bash(openspec status:*)",
+      "Bash(openspec instructions proposal:*)",
+      "Bash(openspec instructions design:*)"
+    ]
+  }
+}
