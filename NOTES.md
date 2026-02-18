@@ -7,3 +7,13 @@
 ## Ideas
 
 Can I cache data locally and only sync intermittently?
+
+
+[Service]
+User=todoapp
+Group=todoapp
+WorkingDirectory=/opt/todoapp
+EnvironmentFile=/opt/todoapp/.env
+ExecStart=/opt/todoapp/venv/bin/gunicorn todoapp.wsgi:application --bind 127.0.0.1:8000 --workers 2
+Restart=on-failure
+RestartSec=5

@@ -1,0 +1,22 @@
+{$APP_HOST} {
+    tls /etc/caddy/certs/tailscale.crt /etc/caddy/certs/tailscale.key
+
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /static/* {
+        root * /srv/staticfiles
+        file_server
+    }
+
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+}

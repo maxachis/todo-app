@@ -1,0 +1,17 @@
+.git
+.gitignore
+.venv
+.pytest_cache
+.tmp
+codex_pytest_tmp
+node_modules
+frontend/node_modules
+frontend/.svelte-kit
+frontend/build
+backend-dev.err.log
+backend-dev.out.log
+frontend-dev.err.log
+frontend-dev.out.log
+db.sqlite3
+__pycache__
+*.pyc

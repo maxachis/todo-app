@@ -214,15 +214,4 @@
 - [x] 24.7 Update `CLAUDE.md` — new project structure, commands, architecture decisions
 - [x] 24.8 Update `SPECS.md` — replace FR-6 (HTMX) with Svelte reactivity, update tech stack section
 - [x] 24.9 Verify all E2E tests pass against Svelte frontend
-- [ ] 24.10 Verify production deployment on Hetzner
-
-
-
-
-
-
-
-
-
-
-
+- [x] 24.10 Verify production deployment on Hetzner

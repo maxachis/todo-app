@@ -31,6 +31,40 @@ uv run python manage.py runserver 0.0.0.0:8000
 
 The app runs on [http://localhost:8000](http://localhost:8000).
 
+## Docker Deploy (Django + Svelte + Caddy)
+
+This repo now includes a production-oriented Docker flow that avoids host runtime drift.
+
+1. Copy env template and set real values:
+
+```bash
+cp deploy/.env.docker.example deploy/.env.docker
+```
+
+2. Update `deploy/.env.docker`:
+- `APP_HOST` to your public/Tailscale hostname
+- `SECRET_KEY` to a secure value
+- `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` for your domain
+
+3. Start services:
+
+```bash
+docker compose --env-file deploy/.env.docker up -d --build
+```
+
+4. Verify:
+
+```bash
+curl -i https://<your-host>/api/health/
+curl -i https://<your-host>/
+```
+
+Notes:
+- Django runs in `backend` container and auto-runs migrations + `collectstatic` on start.
+- Svelte frontend is built into the `caddy` image and served from `/`.
+- Caddy proxies `/api/*` and `/admin/*` to Django, serves `/static/*` from a shared volume.
+- Existing `db.sqlite3` is bind-mounted into the backend container at `/data/db.sqlite3`.
+
 ## Running Tests
 
 ```bash
