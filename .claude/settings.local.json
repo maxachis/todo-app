@@ -38,7 +38,12 @@
       "Bash(openspec instructions apply:*)",
       "Bash(npx svelte-check:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run check:*)"
+      "Bash(npm run check:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git -c core.fileMode=false checkout -- frontend/src/lib/actions/keyboard.ts)",
+      "Bash(git -c core.fileMode=false pull origin main)",
+      "Bash(git -c core.fileMode=false checkout integrate-network-app)"
     ]
   }
 }

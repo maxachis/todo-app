@@ -1,0 +1,1 @@
+A relationship is different in this context from a simple link table, in that it can contain additional metadata.

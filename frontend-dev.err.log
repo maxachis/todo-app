@@ -1,0 +1,142 @@
+
+[1;31m[404] GET /6976908b6584ae539011e22e/Chis_Maximilian_Last_Will_and_Testament%20%282%29.pdf[0m
+[2m12:49:08 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /[0m
+
+[2m12:49:08 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /[0m
+
+
+[1;31m[404] GET /favicon.ico[0m
+[2m12:49:08 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /favicon.ico[0m
+
+[2m12:49:11 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /[0m
+
+[2m12:49:11 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /[0m
+
+
+[1;31m[404] GET /favicon.ico[0m
+[2m12:49:11 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /favicon.ico[0m
+
+[2m12:49:12 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /[0m
+
+[2m12:49:12 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /[0m
+
+
+[1;31m[404] GET /favicon.ico[0m
+[2m12:49:12 PM[22m [31m[1m[vite][22m[39m [31m[2m(ssr)[22m[39m [31mError when evaluating SSR module /src/routes/+layout.svelte: C:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte:46:7 Invalid number
+https://svelte.dev/e/js_parse_error[39m
+  Plugin: [35mvite-plugin-svelte:compile[39m
+  File: [36mC:/Users/maxac/Code Projects/Personal Projects/ToDo App/frontend/src/routes/+layout.svelte[39m:46:7
+[33m   44 |      {#if isTasksRoute}
+   45 |        <button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
+   46 |          \u{22EF}
+                    ^
+   47 |        </button>
+   48 |      {/if}[39m
+
+[1;31m[500] GET /favicon.ico[0m
+
+file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/@sveltejs/kit/src/core/config/index.js:19
+		throw new Error(`${relative} does not exist`);
+		^
+
+Error: src\app.html does not exist
+    at load_template (file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/@sveltejs/kit/src/core/config/index.js:19:9)
+    at write_server (file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/@sveltejs/kit/src/core/sync/write_server.js:138:14)
+    at Module.server (file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/@sveltejs/kit/src/core/sync/sync.js:95:2)
+    at FSWatcher.<anonymous> (file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/@sveltejs/kit/src/exports/vite/dev/index.js:385:9)
+    at FSWatcher.emit (node:events:524:28)
+    at file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/vite/dist/node/chunks/config.js:14069:13
+    at Map.forEach (<anonymous>)
+    at Timeout._onTimeout (file:///C:/Users/maxac/Code%20Projects/Personal%20Projects/ToDo%20App/frontend/node_modules/vite/dist/node/chunks/config.js:14067:28)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
+
+Node.js v22.12.0
