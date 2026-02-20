@@ -36,6 +36,8 @@ function isTextEntryTarget(target: EventTarget | null): boolean {
 
 export function keyboard(node: HTMLElement, options: KeyboardOptions) {
 	const handleKeydown = async (event: KeyboardEvent) => {
+		if (isTextEntryTarget(event.target)) return;
+
 		const elements = getVisibleTaskElements(node);
 		const ids = elements
 			.map((el) => toId(el.dataset.taskId ?? null))
