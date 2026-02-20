@@ -186,3 +186,14 @@ class TestKeyboard:
 
         row.press("Control+ArrowRight")
         expect(page.locator("#center-panel")).to_contain_text("Work")
+
+    def test_shortcut_keys_typeable_in_task_input(self, page, base_url, seed_list):
+        task_list, section = seed_list
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        task_input = page.locator(f'.create-form[data-section-id="{section.id}"] .task-input')
+        task_input.click()
+        task_input.type("jkx")
+
+        expect(task_input).to_have_value("jkx")
