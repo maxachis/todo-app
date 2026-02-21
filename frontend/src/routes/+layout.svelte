@@ -6,6 +6,13 @@
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
 	import { page } from '$app/stores';
 	import { selectedTaskStore } from '$lib/stores/tasks';
+	import { themePreference, cycleTheme, type ThemePreference } from '$lib/stores/theme';
+
+	const themeIcons: Record<ThemePreference, string> = {
+		light: '\u2600\uFE0F',
+		system: '\uD83D\uDCBB',
+		dark: '\uD83C\uDF19'
+	};
 
 	let { children } = $props();
 	let sidebarOpen = $state(false);
@@ -20,6 +27,7 @@
 
 	const tabs = [
 		{ href: '/', label: 'Tasks' },
+		{ href: '/upcoming', label: 'Upcoming' },
 		{ href: '/projects', label: 'Projects' },
 		{ href: '/timesheet', label: 'Timesheet' },
 		{ href: '/import', label: 'Import' }
@@ -40,12 +48,16 @@
 				<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}</a>
 			{/each}
 		</nav>
+		<div class="nav-spacer"></div>
 		<SearchBar />
 		{#if isTasksRoute}
 			<button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
 				&#8942;
 			</button>
 		{/if}
+		<button class="theme-toggle" onclick={cycleTheme} aria-label="Theme: {$themePreference}" title="Theme: {$themePreference}">
+			{themeIcons[$themePreference]}
+		</button>
 	</header>
 
 	<main class="panels" class:single-panel={!isTasksRoute}>
@@ -125,6 +137,8 @@
 		--error-bg: #fdf0f0;
 		--error-border: #f0c4c4;
 
+		--backdrop: rgba(44, 40, 37, 0.4);
+
 		--shadow-sm: 0 1px 3px rgba(60, 50, 40, 0.05);
 		--shadow-md: 0 4px 14px rgba(60, 50, 40, 0.07);
 		--shadow-lg: 0 8px 28px rgba(60, 50, 40, 0.1);
@@ -135,6 +149,52 @@
 		--radius-xl: 1rem;
 
 		--transition: 0.18s ease;
+	}
+
+	:global(:root[data-theme='dark']) {
+		--bg-page: #1a1816;
+		--bg-surface: #262220;
+		--bg-surface-hover: #302c28;
+		--bg-surface-active: rgba(212, 117, 62, 0.1);
+		--bg-nav: #1a1816;
+		--bg-input: #302c28;
+
+		--text-primary: #ede9e1;
+		--text-secondary: #a8a29e;
+		--text-tertiary: #78716c;
+		--text-on-dark: #ede9e1;
+		--text-on-dark-muted: #a8a29e;
+
+		--accent: #d4753e;
+		--accent-hover: #e08a55;
+		--accent-light: rgba(212, 117, 62, 0.1);
+		--accent-medium: rgba(212, 117, 62, 0.18);
+
+		--border: #3d3733;
+		--border-light: #332e2a;
+		--border-focus: #d4753e;
+		--border-nav: rgba(255, 255, 255, 0.08);
+
+		--pinned-bg: rgba(200, 155, 60, 0.12);
+		--pinned-border: rgba(200, 155, 60, 0.25);
+		--pinned-text: #c9a84c;
+		--pinned-tag-bg: rgba(200, 155, 60, 0.15);
+
+		--tag-bg: #332e2a;
+		--tag-text: #a8a29e;
+
+		--success: #5cb176;
+		--success-bg: rgba(92, 177, 118, 0.12);
+		--success-border: rgba(92, 177, 118, 0.25);
+		--error: #e06060;
+		--error-bg: rgba(224, 96, 96, 0.12);
+		--error-border: rgba(224, 96, 96, 0.25);
+
+		--backdrop: rgba(0, 0, 0, 0.5);
+
+		--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
+		--shadow-md: 0 4px 14px rgba(0, 0, 0, 0.2);
+		--shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.25);
 	}
 
 	:global(body) {
@@ -196,6 +256,25 @@
 		color: var(--text-on-dark);
 		background: rgba(255, 255, 255, 0.1);
 		font-weight: 600;
+	}
+
+	.theme-toggle {
+		background: transparent;
+		border: 1px solid var(--border-nav);
+		border-radius: var(--radius-sm);
+		padding: 0.25rem 0.45rem;
+		font-size: 0.9rem;
+		cursor: pointer;
+		line-height: 1;
+		transition: background var(--transition);
+	}
+
+	.theme-toggle:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.nav-spacer {
+		flex: 1;
 	}
 
 	.panels {

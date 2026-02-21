@@ -241,7 +241,7 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(44, 40, 37, 0.4);
+		background: var(--backdrop);
 		backdrop-filter: blur(2px);
 		display: grid;
 		place-items: center;
