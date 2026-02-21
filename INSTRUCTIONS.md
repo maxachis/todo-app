@@ -5,3 +5,4 @@ For each of these, do the following:
 3. Where appropriate, add to the outstanding delta spec or the core spec. 
 4. When completed, put an "x" to indicate the task is completed.
 
+- [ ] The "Search tasks..." search bar should only appear when on the tasks page

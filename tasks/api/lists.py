@@ -42,6 +42,8 @@ def _serialize_task(task: Task) -> TaskSchema:
         is_pinned=task.is_pinned,
         tags=[TagSchema(id=tag.id, name=tag.name) for tag in task.tags.all()],
         subtasks=subtasks,
+        recurrence_type=task.recurrence_type,
+        recurrence_rule=task.recurrence_rule,
     )
 
 

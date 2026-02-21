@@ -66,6 +66,21 @@ class Task(models.Model):
         (PRIORITY_HIGH, "High"),
     ]
 
+    RECURRENCE_NONE = "none"
+    RECURRENCE_DAILY = "daily"
+    RECURRENCE_WEEKLY = "weekly"
+    RECURRENCE_MONTHLY = "monthly"
+    RECURRENCE_YEARLY = "yearly"
+    RECURRENCE_CUSTOM_DATES = "custom_dates"
+    RECURRENCE_CHOICES = [
+        (RECURRENCE_NONE, "None"),
+        (RECURRENCE_DAILY, "Daily"),
+        (RECURRENCE_WEEKLY, "Weekly"),
+        (RECURRENCE_MONTHLY, "Monthly"),
+        (RECURRENCE_YEARLY, "Yearly"),
+        (RECURRENCE_CUSTOM_DATES, "Custom Dates"),
+    ]
+
     section = models.ForeignKey(
         Section, on_delete=models.CASCADE, related_name="tasks"
     )
@@ -88,6 +103,10 @@ class Task(models.Model):
     external_id = models.CharField(max_length=100, null=True, blank=True, unique=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name="tasks")
     is_pinned = models.BooleanField(default=False)
+    recurrence_type = models.CharField(
+        max_length=20, choices=RECURRENCE_CHOICES, default=RECURRENCE_NONE
+    )
+    recurrence_rule = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["position"]
@@ -101,12 +120,45 @@ class Task(models.Model):
         return self.subtasks.filter(is_completed=False).count()
 
     def complete(self):
-        """Mark this task and all descendant subtasks as completed."""
+        """Mark this task and all descendant subtasks as completed.
+
+        If this task has a recurrence rule, creates the next occurrence
+        and returns its ID. Otherwise returns None.
+        """
         self.is_completed = True
         self.completed_at = timezone.now()
         self.save()
         for subtask in self.subtasks.filter(is_completed=False):
             subtask.complete()
+
+        next_occurrence_id = None
+        if self.recurrence_type != self.RECURRENCE_NONE:
+            from tasks.services.recurrence import compute_next_due_date
+
+            next_due = compute_next_due_date(
+                self.recurrence_type, self.recurrence_rule, self.due_date
+            )
+            max_pos = (
+                Task.objects.filter(section=self.section, parent=self.parent)
+                .aggregate(max_pos=models.Max("position"))["max_pos"]
+                or 0
+            )
+            next_task = Task.objects.create(
+                section=self.section,
+                parent=self.parent,
+                title=self.title,
+                notes=self.notes,
+                priority=self.priority,
+                due_date=next_due,
+                due_time=self.due_time,
+                position=max_pos + 10,
+                recurrence_type=self.recurrence_type,
+                recurrence_rule=self.recurrence_rule,
+            )
+            next_task.tags.set(self.tags.all())
+            next_occurrence_id = next_task.id
+
+        return next_occurrence_id
 
     def uncomplete(self):
         """Mark this task as not completed."""

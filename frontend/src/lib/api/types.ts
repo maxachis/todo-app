@@ -20,6 +20,9 @@ export interface Task {
   is_pinned: boolean;
   tags: Tag[];
   subtasks: Task[];
+  recurrence_type: string;
+  recurrence_rule: Record<string, unknown>;
+  next_occurrence_id: number | null;
 }
 
 export interface Section {
@@ -59,6 +62,21 @@ export interface TimeEntry {
   description: string;
   date: string;
   created_at: string;
+}
+
+export interface UpcomingTask {
+  id: number;
+  title: string;
+  due_date: string;
+  due_time: string | null;
+  priority: number;
+  is_pinned: boolean;
+  list_id: number;
+  list_name: string;
+  list_emoji: string;
+  section_id: number;
+  section_name: string;
+  tags: string[];
 }
 
 export interface SearchResultTask {
@@ -157,6 +175,8 @@ export interface UpdateTaskInput {
   due_date?: string | null;
   due_time?: string | null;
   priority?: number;
+  recurrence_type?: string;
+  recurrence_rule?: Record<string, unknown>;
 }
 
 export interface MoveTaskInput {

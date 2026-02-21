@@ -80,6 +80,27 @@ def update_task(request, task_id: int, payload: TaskUpdateInput):
     if payload.priority is not None:
         task.priority = payload.priority
 
+    if payload.recurrence_type is not None:
+        from tasks.services.recurrence import RecurrenceValidationError, validate_recurrence_rule
+
+        rule = payload.recurrence_rule if payload.recurrence_rule is not None else {}
+        if payload.recurrence_type == "none":
+            rule = {}
+        try:
+            validate_recurrence_rule(payload.recurrence_type, rule)
+        except RecurrenceValidationError as e:
+            raise HttpError(422, str(e))
+        task.recurrence_type = payload.recurrence_type
+        task.recurrence_rule = rule
+    elif payload.recurrence_rule is not None:
+        from tasks.services.recurrence import RecurrenceValidationError, validate_recurrence_rule
+
+        try:
+            validate_recurrence_rule(task.recurrence_type, payload.recurrence_rule)
+        except RecurrenceValidationError as e:
+            raise HttpError(422, str(e))
+        task.recurrence_rule = payload.recurrence_rule
+
     task.save()
     task.refresh_from_db()
     return _serialize_task(task)
@@ -95,9 +116,11 @@ def delete_task(request, task_id: int):
 @router.post("/tasks/{task_id}/complete/", response=TaskSchema)
 def complete_task(request, task_id: int):
     task = get_object_or_404(Task, pk=task_id)
-    task.complete()
+    next_occurrence_id = task.complete()
     task.refresh_from_db()
-    return _serialize_task(task)
+    result = _serialize_task(task)
+    result.next_occurrence_id = next_occurrence_id
+    return result
 
 
 @router.post("/tasks/{task_id}/uncomplete/", response=TaskSchema)

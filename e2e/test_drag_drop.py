@@ -205,3 +205,37 @@ class TestDragDrop:
 
         rows = page.locator(".task-dnd-zone .task-row")
         expect(rows).to_have_count(3)
+
+    def test_real_mouse_drag_reorders_sections(self, page, base_url, seed_full):
+        data = seed_full
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{data["list1"].id}"]').click()
+        page.wait_for_selector(".sections-dnd")
+
+        handle1 = page.locator(
+            f'.section-header[data-section-id="{data["section1"].id}"] .drag-handle'
+        )
+        handle1.wait_for()
+
+        box1 = handle1.bounding_box()
+        section2_block = page.locator(".section-block").nth(1)
+        box_s2 = section2_block.bounding_box()
+        assert box1 and box_s2
+
+        start_x = box1["x"] + box1["width"] / 2
+        start_y = box1["y"] + box1["height"] / 2
+        end_x = box_s2["x"] + box_s2["width"] / 2
+        end_y = box_s2["y"] + box_s2["height"] * 0.75
+
+        page.mouse.move(start_x, start_y)
+        page.mouse.down()
+        page.mouse.move(start_x, start_y + 10, steps=5)
+        page.wait_for_timeout(300)
+        page.mouse.move(end_x, end_y, steps=30)
+        page.wait_for_timeout(500)
+        page.mouse.up()
+        page.wait_for_timeout(1000)
+
+        fresh_from_db(data["section1"])
+        fresh_from_db(data["section2"])
+        assert data["section2"].position < data["section1"].position

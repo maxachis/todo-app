@@ -16,6 +16,7 @@ import type {
   Task,
   TimeEntry,
   TimesheetResponse,
+  UpcomingTask,
   UpdateListInput,
   UpdateProjectInput,
   UpdateSectionInput,
@@ -100,7 +101,7 @@ export const api = {
   import: {
     upload: (file: File) => {
       const body = new FormData();
-      body.append('csv_file', file);
+      body.append('file', file);
       return apiRequest<ImportSummary>('/import/', { method: 'POST', body });
     }
   },
@@ -113,6 +114,9 @@ export const api = {
     remove: (id: number) => apiRequest<void>(`/projects/${id}/`, { method: 'DELETE' }),
     toggle: (id: number) => apiRequest<Project>(`/projects/${id}/toggle/`, { method: 'POST' }),
     getTasks: (id: number) => apiRequest<Task[]>(`/projects/${id}/tasks/`)
+  },
+  upcoming: {
+    get: () => apiRequest<UpcomingTask[]>('/upcoming/')
   },
   timesheet: {
     get: (week?: string) =>

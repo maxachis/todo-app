@@ -3,6 +3,7 @@
 	import { api } from '$lib';
 	import { updateTask, selectedTaskDetail, selectTask } from '$lib/stores/tasks';
 	import MarkdownEditor from '../shared/MarkdownEditor.svelte';
+	import RecurrenceEditor from './RecurrenceEditor.svelte';
 
 	const task = $derived($selectedTaskDetail);
 
@@ -43,6 +44,11 @@
 	async function savePriority(): Promise<void> {
 		if (!task || priorityValue === task.priority) return;
 		await updateTask(task.id, { priority: priorityValue });
+	}
+
+	async function saveRecurrence(payload: import('$lib').UpdateTaskInput): Promise<void> {
+		if (!task) return;
+		await updateTask(task.id, payload);
 	}
 
 	async function saveNotes(next: string): Promise<void> {
@@ -109,6 +115,10 @@
 				onblur={saveDueDate}
 				onchange={saveDueDate}
 			/>
+		</div>
+
+		<div class="field">
+			<RecurrenceEditor {task} onSave={saveRecurrence} />
 		</div>
 
 		<div class="field">

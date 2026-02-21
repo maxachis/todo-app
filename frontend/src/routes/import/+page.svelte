@@ -35,13 +35,13 @@
 <section class="import-page">
 	<header>
 		<h1>Import</h1>
-		<p>Import tasks from a TickTick CSV export.</p>
+		<p>Import tasks from a file. Supported formats: app JSON export, app CSV export, or TickTick CSV.</p>
 	</header>
 
 	<form class="import-form" onsubmit={handleSubmit}>
-		<input type="file" accept=".csv" onchange={handleFileChange} />
+		<input type="file" accept=".csv,.json" onchange={handleFileChange} />
 		<button type="submit" disabled={!file || loading}>
-			{loading ? 'Importing...' : 'Import CSV'}
+			{loading ? 'Importing...' : 'Import'}
 		</button>
 	</form>
 
