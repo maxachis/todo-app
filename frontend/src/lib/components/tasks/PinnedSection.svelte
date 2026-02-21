@@ -130,7 +130,7 @@
 	}
 
 	@keyframes flash-highlight {
-		0% { background: rgba(200, 155, 60, 0.2); }
+		0% { background: var(--pinned-border); }
 		100% { background: transparent; }
 	}
 </style>

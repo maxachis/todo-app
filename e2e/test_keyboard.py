@@ -194,6 +194,13 @@ class TestKeyboard:
 
         task_input = page.locator(f'.create-form[data-section-id="{section.id}"] .task-input')
         task_input.click()
-        task_input.type("jkx")
 
-        expect(task_input).to_have_value("jkx")
+        lowercase = "abcdefghijklmnopqrstuvwxyz"
+        uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        digits = "0123456789"
+        punctuation = "!@#$%^&*()-_=+[]{}|;:',.<>?/`~"
+
+        all_chars = lowercase + uppercase + digits + punctuation
+        task_input.press_sequentially(all_chars, delay=0)
+
+        expect(task_input).to_have_value(all_chars)

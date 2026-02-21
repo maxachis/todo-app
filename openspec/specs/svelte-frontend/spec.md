@@ -10,7 +10,7 @@ The system SHALL use SvelteKit with `adapter-static` to produce a static SPA bui
 - **THEN** the SPA loads and fetches data from the Django API via client-side requests
 
 ### Requirement: Three-panel layout shell
-The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). A top navigation bar SHALL provide links to Tasks, Projects, Timesheet, and Import pages.
+The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). A top navigation bar SHALL provide links to Tasks, Projects, Timesheet, and Import pages. The navigation bar SHALL also include a theme toggle control.
 
 #### Scenario: Desktop layout shows all three panels
 - **WHEN** the viewport is wider than 1024px
@@ -27,6 +27,10 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 #### Scenario: Non-task routes hide task side panels
 - **WHEN** the user navigates to Projects, Timesheet, or Import routes
 - **THEN** the list sidebar and task detail panel are not shown
+
+#### Scenario: Navigation bar includes theme toggle
+- **WHEN** the navigation bar renders
+- **THEN** a theme toggle control is displayed between the navigation links and the search bar
 
 ### Requirement: List sidebar navigation
 The system SHALL display all lists in the sidebar, ordered by position. Selecting a list SHALL load its content in the center panel.
@@ -99,11 +103,15 @@ The system SHALL display sections within a list, each collapsible, with tasks ne
 - **THEN** section drag does not initiate; dragging sections is only available from a handle in the section header
 
 ### Requirement: Task list rendering
-The system SHALL display tasks within sections, showing title, tags, due date, subtask count, and pin button. Completed tasks SHALL appear in a separate "Completed" group at the bottom.
+The system SHALL display tasks within sections, showing title, tags, due date, subtask count, pin button, and a recurrence indicator. Completed tasks SHALL appear in a separate "Completed" group at the bottom.
 
 #### Scenario: Tasks render with metadata
 - **WHEN** a section is displayed
-- **THEN** each task row shows its title, tag badges, abbreviated due date, and subtask count label
+- **THEN** each task row shows its title, tag badges, abbreviated due date, subtask count label, and a repeat icon if the task has recurrence
+
+#### Scenario: Recurring task shows repeat indicator
+- **WHEN** a task has `recurrence_type` other than `none`
+- **THEN** the task row displays a small repeat icon (e.g., circular arrows) near the due date
 
 #### Scenario: Completed tasks grouped separately
 - **WHEN** a section contains completed tasks
@@ -118,11 +126,11 @@ The system SHALL display tasks within sections, showing title, tags, due date, s
 - **THEN** subtasks are rendered nested below the parent with visual indentation, collapsible via a toggle
 
 ### Requirement: Task detail panel
-The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur.
+The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. A recurrence editor SHALL be displayed below the due date field.
 
 #### Scenario: Selecting a task shows detail
 - **WHEN** the user clicks a task row
-- **THEN** the right panel displays the task's title, notes, due date, priority, tags, and parent link
+- **THEN** the right panel displays the task's title, notes, due date, priority, tags, parent link, and recurrence settings
 
 #### Scenario: Auto-save on blur
 - **WHEN** the user edits the title, due date, or notes and then blurs the field
@@ -156,11 +164,15 @@ The system SHALL provide a block-based Markdown editor for task notes. Inactive 
 - **THEN** the rendered HTML strips all dangerous content
 
 ### Requirement: Task completion with optimistic UI
-The system SHALL provide task completion with immediate visual feedback. Completing a parent SHALL cascade to non-completed subtasks.
+The system SHALL provide task completion with immediate visual feedback. Completing a parent SHALL cascade to non-completed subtasks. Completing a recurring task SHALL display a toast indicating the next occurrence.
 
 #### Scenario: Complete a task with animation
 - **WHEN** the user checks a task's completion checkbox
 - **THEN** the task fades out (180ms), moves to the "Completed" section, and a toast appears offering undo
+
+#### Scenario: Complete a recurring task shows next occurrence toast
+- **WHEN** the user completes a recurring task
+- **THEN** a toast appears with the message "Next: [due date]" and the new task instance appears in the section
 
 #### Scenario: Undo via toast
 - **WHEN** the user clicks "Undo" on the toast within 5 seconds

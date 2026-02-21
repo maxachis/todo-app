@@ -164,8 +164,7 @@
 	}}
 	ondragover={(event) => {
 		if (task.is_completed) return;
-		const draggedTaskId = Number(event.dataTransfer?.getData('text/task-id'));
-		if (Number.isNaN(draggedTaskId) || draggedTaskId === task.id) return;
+		if (!event.dataTransfer?.types.includes('text/task-id')) return;
 		event.preventDefault();
 		dropMode = midpointDropMode(event);
 	}}
@@ -203,6 +202,16 @@
 					<span class="tag">{tag.name}</span>
 				{/each}
 			</div>
+		{/if}
+		{#if task.recurrence_type && task.recurrence_type !== 'none'}
+			<span class="repeat-icon" title="Repeating task">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<polyline points="17 1 21 5 17 9"></polyline>
+					<path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+					<polyline points="7 23 3 19 7 15"></polyline>
+					<path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+				</svg>
+			</span>
 		{/if}
 		{#if dueDateFormatted()}
 			<span class="due-date">{dueDateFormatted()}</span>
@@ -312,6 +321,12 @@
 		border-radius: var(--radius-sm);
 		font-size: 0.68rem;
 		font-weight: 500;
+	}
+
+	.repeat-icon {
+		color: var(--accent);
+		display: inline-flex;
+		align-items: center;
 	}
 
 	.due-date {

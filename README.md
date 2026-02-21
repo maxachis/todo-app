@@ -2,6 +2,12 @@
 
 A multi-list task management application built with Django, HTMX, and SortableJS.
 
+## SSH From Device with Private Key
+
+```bash
+ssh root@178.156.197.32
+```
+
 ## Features
 
 - **Multiple lists** with emoji support and sidebar navigation
@@ -118,3 +124,5 @@ static/
 Export endpoints:
 - Single list: `/lists/<id>/export/<json|csv|md>/`
 - All lists: `/export/<json|csv|md>/`
+
+

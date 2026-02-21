@@ -1,5 +1,6 @@
 import json
 from datetime import date, time
+from unittest.mock import patch
 
 from django.test import Client, TestCase
 
@@ -185,3 +186,141 @@ class TaskAPITests(TestCase):
         self.assertEqual(unpin_response.status_code, 200)
         one.refresh_from_db()
         self.assertFalse(one.is_pinned)
+
+    def test_update_task_set_recurrence(self):
+        task = Task.objects.create(section=self.section_a, title="Recurring", position=10)
+
+        response = self.client.put(
+            f"/api/tasks/{task.id}/",
+            data=json.dumps({
+                "recurrence_type": "weekly",
+                "recurrence_rule": {"days": [0, 2, 4]},
+            }),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["recurrence_type"], "weekly")
+        self.assertEqual(data["recurrence_rule"], {"days": [0, 2, 4]})
+
+    def test_update_task_clear_recurrence(self):
+        task = Task.objects.create(
+            section=self.section_a, title="Recurring", position=10,
+            recurrence_type="weekly", recurrence_rule={"days": [0]},
+        )
+
+        response = self.client.put(
+            f"/api/tasks/{task.id}/",
+            data=json.dumps({"recurrence_type": "none"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["recurrence_type"], "none")
+        self.assertEqual(data["recurrence_rule"], {})
+
+    def test_update_task_invalid_recurrence_rejected(self):
+        task = Task.objects.create(section=self.section_a, title="Bad", position=10)
+
+        response = self.client.put(
+            f"/api/tasks/{task.id}/",
+            data=json.dumps({
+                "recurrence_type": "weekly",
+                "recurrence_rule": {"days": [9]},
+            }),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_partial_update_preserves_recurrence(self):
+        task = Task.objects.create(
+            section=self.section_a, title="Keep recurrence", position=10,
+            recurrence_type="daily", recurrence_rule={},
+        )
+
+        response = self.client.put(
+            f"/api/tasks/{task.id}/",
+            data=json.dumps({"title": "New title"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["recurrence_type"], "daily")
+
+    @patch("tasks.services.recurrence.date")
+    def test_complete_recurring_task_creates_next_occurrence(self, mock_date):
+        mock_date.today.return_value = date(2026, 2, 20)
+        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+
+        task = Task.objects.create(
+            section=self.section_a, title="Daily task", position=10,
+            due_date=date(2026, 2, 20),
+            recurrence_type="daily", recurrence_rule={},
+        )
+
+        response = self.client.post(
+            f"/api/tasks/{task.id}/complete/",
+            data="{}",
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["is_completed"])
+        self.assertIsNotNone(data["next_occurrence_id"])
+
+        next_task = Task.objects.get(pk=data["next_occurrence_id"])
+        self.assertEqual(next_task.title, "Daily task")
+        self.assertEqual(next_task.due_date, date(2026, 2, 21))
+        self.assertEqual(next_task.recurrence_type, "daily")
+        self.assertFalse(next_task.is_completed)
+
+    def test_complete_non_recurring_task_no_next_occurrence(self):
+        task = Task.objects.create(
+            section=self.section_a, title="One-off", position=10,
+        )
+
+        response = self.client.post(
+            f"/api/tasks/{task.id}/complete/",
+            data="{}",
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsNone(data["next_occurrence_id"])
+
+    @patch("tasks.services.recurrence.date")
+    def test_complete_recurring_task_copies_tags(self, mock_date):
+        mock_date.today.return_value = date(2026, 2, 20)
+        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+
+        from tasks.models import Tag
+        tag = Tag.objects.create(name="taxes")
+        task = Task.objects.create(
+            section=self.section_a, title="Tax filing", position=10,
+            due_date=date(2026, 2, 20),
+            recurrence_type="yearly", recurrence_rule={"month": 2, "day": 20},
+        )
+        task.tags.add(tag)
+
+        response = self.client.post(
+            f"/api/tasks/{task.id}/complete/",
+            data="{}",
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        data = response.json()
+        next_task = Task.objects.get(pk=data["next_occurrence_id"])
+        self.assertIn(tag, next_task.tags.all())

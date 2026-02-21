@@ -2,6 +2,7 @@ import { get, writable } from 'svelte/store';
 
 import { api, type CreateTaskInput, type MoveTaskInput, type Task, type UpdateTaskInput } from '$lib';
 import { loadListDetail, replaceTaskInList, removeTaskFromList, addTaskToSection, selectedListStore } from './lists';
+import { addToast } from './toast';
 
 export const selectedTaskStore = writable<number | null>(null);
 export const selectedTaskDetail = writable<Task | null>(null);
@@ -55,6 +56,18 @@ export async function completeTask(taskId: number): Promise<Task> {
   const updated = await api.tasks.complete(taskId);
   await refreshListDetail();
   selectedTaskDetail.update((d) => (d?.id === taskId ? updated : d));
+
+  if (updated.next_occurrence_id && updated.recurrence_type !== 'none') {
+    const nextTask = await api.tasks.get(updated.next_occurrence_id);
+    const dateStr = nextTask.due_date
+      ? new Date(nextTask.due_date + 'T00:00:00').toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric'
+        })
+      : 'soon';
+    addToast({ message: `Next: ${dateStr}`, type: 'info' });
+  }
+
   return updated;
 }
 

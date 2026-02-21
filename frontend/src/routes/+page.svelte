@@ -17,6 +17,7 @@
 	import EmojiPicker from '$lib/components/lists/EmojiPicker.svelte';
 	import ExportButton from '$lib/components/shared/ExportButton.svelte';
 	import { completeTask, deleteTask, moveTask, selectTask, selectedTaskStore } from '$lib/stores/tasks';
+	import { page } from '$app/stores';
 	import type { Task } from '$lib';
 
 	let allCollapsed = $state(false);
@@ -51,6 +52,32 @@
 
 	$effect(() => {
 		loadProjects();
+	});
+
+	let deepLinkHandled = false;
+	$effect(() => {
+		if (deepLinkHandled) return;
+		const params = $page.url.searchParams;
+		const listParam = params.get('list');
+		const taskParam = params.get('task');
+		if (listParam) {
+			deepLinkHandled = true;
+			const listId = Number(listParam);
+			if (!Number.isNaN(listId)) {
+				selectList(listId).then(() => {
+					if (taskParam) {
+						const taskId = Number(taskParam);
+						if (!Number.isNaN(taskId)) {
+							selectTask(taskId);
+							setTimeout(() => {
+								const el = document.querySelector(`.task-row[data-task-id="${taskId}"]`);
+								el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+							}, 100);
+						}
+					}
+				});
+			}
+		}
 	});
 
 	$effect(() => {

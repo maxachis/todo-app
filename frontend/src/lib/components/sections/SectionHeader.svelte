@@ -63,7 +63,7 @@
 </script>
 
 <div class="section-header" data-section-id={section.id}>
-	<button class="drag-handle" use:dragHandle aria-label="Drag section">⋮⋮</button>
+	<div class="drag-handle" use:dragHandle aria-label="Drag section" role="button" tabindex="0">⋮⋮</div>
 	<button class="collapse-toggle" onclick={onToggleCollapse} aria-label={collapsed ? 'Expand section' : 'Collapse section'}>
 		<span class="chevron" class:collapsed>{collapsed ? '▶' : '▼'}</span>
 	</button>

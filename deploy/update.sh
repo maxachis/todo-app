@@ -14,6 +14,9 @@ error() { echo -e "\n\033[1;31mERROR:\033[0m $*" >&2; exit 1; }
 info "Pulling latest code"
 git -C "${APP_DIR}" pull
 
+info "Fixing file ownership"
+chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
+
 info "Installing dependencies"
 "${APP_DIR}/venv/bin/pip" install --quiet django markdown bleach gunicorn django-ninja pydantic
 

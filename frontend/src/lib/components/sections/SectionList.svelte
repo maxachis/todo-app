@@ -1,12 +1,15 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+	import { flip } from 'svelte/animate';
+	import { dragHandleZone } from 'svelte-dnd-action';
 	import type { Section } from '$lib';
 	import SectionHeader from './SectionHeader.svelte';
 	import TaskList from '../tasks/TaskList.svelte';
 	import TaskCreateForm from '../tasks/TaskCreateForm.svelte';
-	import DragContainer from '../dnd/DragContainer.svelte';
-	import DragItem from '../dnd/DragItem.svelte';
 	import { addToast } from '$lib/stores/toast';
 	import { moveSectionWithOptions, refreshSelectedListDetail } from '$lib/stores/lists';
+
+	const FLIP_DURATION = 150;
 
 	let {
 		sections,
@@ -30,7 +33,7 @@
 
 	$effect(() => {
 		if (allCollapsed) {
-			collapsedIds = new Set(sections.map((s) => s.id));
+			collapsedIds = new Set(untrack(() => sections).map((s) => s.id));
 		} else {
 			collapsedIds = new Set();
 		}
@@ -64,8 +67,7 @@
 	}
 
 	function handleSectionConsider(event: CustomEvent<{ items: Section[] }>): void {
-		const items = event.detail.items as Section[];
-		sortableSections = items.filter((section, index, arr) => arr.findIndex((s) => s.id === section.id) === index);
+		sortableSections = event.detail.items as Section[];
 	}
 
 	async function handleSectionFinalize(event: CustomEvent<{ items: Section[] }>): Promise<void> {
@@ -85,16 +87,14 @@
 </script>
 
 <div class="section-list">
-	<DragContainer
-		items={sortableSections}
-		type="section-dnd"
-		className="sections-dnd"
-		useDragHandleZone={true}
-		onConsider={handleSectionConsider}
-		onFinalize={handleSectionFinalize}
+	<div
+		class="sections-dnd"
+		use:dragHandleZone={{ items: sortableSections, type: 'section-dnd', flipDurationMs: FLIP_DURATION, useCursorForDetection: true }}
+		onconsider={handleSectionConsider}
+		onfinalize={handleSectionFinalize}
 	>
 		{#each sortableSections as section (section.id)}
-			<DragItem id={section.id} className="section-block">
+			<div class="section-block" animate:flip={{ duration: FLIP_DURATION }}>
 				<SectionHeader
 					{section}
 					collapsed={collapsedIds.has(section.id)}
@@ -109,9 +109,9 @@
 					<TaskList tasks={section.tasks} sectionId={section.id} />
 					<TaskCreateForm sectionId={section.id} />
 				{/if}
-			</DragItem>
+			</div>
 		{/each}
-	</DragContainer>
+	</div>
 </div>
 
 <style>

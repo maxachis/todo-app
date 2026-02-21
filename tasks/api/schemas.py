@@ -54,6 +54,9 @@ class TaskSchema(Schema):
     is_pinned: bool
     tags: list[TagSchema] = []
     subtasks: list[TaskSchema] = []
+    recurrence_type: str = "none"
+    recurrence_rule: dict = {}
+    next_occurrence_id: int | None = None
 
 
 class TaskCreateInput(Schema):
@@ -67,6 +70,8 @@ class TaskUpdateInput(Schema):
     due_date: date | None = None
     due_time: time | None = None
     priority: int | None = None
+    recurrence_type: str | None = None
+    recurrence_rule: dict | None = None
 
 
 class TaskMoveInput(Schema):
@@ -118,6 +123,21 @@ class ListUpdateInput(Schema):
 
 class MoveInput(Schema):
     position: int
+
+
+class UpcomingTaskSchema(Schema):
+    id: int
+    title: str
+    due_date: date
+    due_time: time | None
+    priority: int
+    is_pinned: bool
+    list_id: int
+    list_name: str
+    list_emoji: str
+    section_id: int
+    section_name: str
+    tags: list[str] = []
 
 
 class TimeEntrySchema(Schema):

@@ -27,6 +27,8 @@ def _build_task_tree(task):
         "completed_at": str(task.completed_at) if task.completed_at else None,
         "position": task.position,
         "tags": list(task.tags.values_list("name", flat=True)),
+        "recurrence_type": task.recurrence_type,
+        "recurrence_rule": task.recurrence_rule,
         "subtasks": [
             _build_task_tree(sub)
             for sub in task.subtasks.all().order_by("position")
@@ -58,6 +60,9 @@ def serialize_list_to_json(task_list):
 def _flatten_tasks(task_list, section, task, rows):
     """Recursively flatten a task and its subtasks into CSV rows."""
     depth = _get_task_depth(task)
+    recurrence = ""
+    if task.recurrence_type and task.recurrence_type != "none":
+        recurrence = task.recurrence_type
     rows.append({
         "list": task_list.name,
         "section": section.name,
@@ -68,6 +73,7 @@ def _flatten_tasks(task_list, section, task, rows):
         "due_date": str(task.due_date) if task.due_date else "",
         "tags": ",".join(task.tags.values_list("name", flat=True)),
         "is_completed": str(task.is_completed),
+        "recurrence": recurrence,
     })
     for sub in task.subtasks.all().order_by("position"):
         _flatten_tasks(task_list, section, sub, rows)
@@ -78,7 +84,7 @@ def serialize_list_to_csv(task_list):
     output = io.StringIO()
     fieldnames = [
         "list", "section", "task", "parent_task", "depth",
-        "notes", "due_date", "tags", "is_completed",
+        "notes", "due_date", "tags", "is_completed", "recurrence",
     ]
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
