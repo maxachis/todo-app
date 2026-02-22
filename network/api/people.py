@@ -18,6 +18,8 @@ def _serialize_person(person: Person) -> PersonSchema:
         first_name=person.first_name,
         middle_name=person.middle_name,
         last_name=person.last_name,
+        email=person.email,
+        linkedin_url=person.linkedin_url,
         notes=person.notes,
         follow_up_cadence_days=person.follow_up_cadence_days,
         created_at=person.created_at,
@@ -44,6 +46,8 @@ def create_person(request, payload: PersonCreateInput):
         first_name=first_name,
         middle_name=payload.middle_name.strip(),
         last_name=last_name,
+        email=payload.email.strip(),
+        linkedin_url=payload.linkedin_url.strip(),
         notes=payload.notes,
         follow_up_cadence_days=payload.follow_up_cadence_days,
     )
@@ -74,6 +78,12 @@ def update_person(request, person_id: int, payload: PersonUpdateInput):
         if not cleaned:
             raise HttpError(422, {"last_name": ["This field may not be blank."]})
         person.last_name = cleaned
+
+    if payload.email is not None:
+        person.email = payload.email.strip()
+
+    if payload.linkedin_url is not None:
+        person.linkedin_url = payload.linkedin_url.strip()
 
     if payload.notes is not None:
         person.notes = payload.notes

@@ -6,7 +6,7 @@ The system SHALL provide Svelte routes and navigation entries for People, Organi
 - **THEN** the People view loads in the Svelte app without full-page reload
 
 ### Requirement: Network list and detail views
-The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback.
+The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback. The People list view SHALL include a sort control bar between the create form and the list, allowing the user to choose a sort field and toggle sort direction.
 
 #### Scenario: View person detail with linked tasks
 - **WHEN** a user selects a person from the list
@@ -55,6 +55,10 @@ The system SHALL provide list and detail views for people, organizations, and in
 #### Scenario: Select org type via typeahead in organization edit form
 - **WHEN** a user types into the org type field of the organization edit form
 - **THEN** a filtered list of org types appears matching the typed text, and selecting one updates the org type for the organization
+
+#### Scenario: People list includes sort controls
+- **WHEN** the People page loads
+- **THEN** a sort control bar is visible between the create form and the people list, showing the active sort field and direction
 
 ### Requirement: Editable relationship notes on the Relationships page
 The system SHALL allow users to edit the notes field on existing person-to-person and organization-to-person relationships directly from the Relationships page.
