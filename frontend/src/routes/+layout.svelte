@@ -49,7 +49,9 @@
 			{/each}
 		</nav>
 		<div class="nav-spacer"></div>
-		<SearchBar />
+		{#if isTasksRoute}
+			<SearchBar />
+		{/if}
 		{#if isTasksRoute}
 			<button class="icon-btn mobile-only" onclick={() => (detailOpen = true)} aria-label="Open detail panel">
 				&#8942;

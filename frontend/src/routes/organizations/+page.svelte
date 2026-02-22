@@ -118,7 +118,7 @@
 			{#if selected}
 				<div class="detail-header">
 					<h2>{selected.name}</h2>
-					<button class="danger" onclick={() => deleteOrganization(selected)}>Delete</button>
+					<button class="danger" onclick={() => selected && deleteOrganization(selected)}>Delete</button>
 				</div>
 				<div class="detail-form">
 					<label>

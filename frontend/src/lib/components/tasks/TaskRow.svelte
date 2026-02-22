@@ -173,13 +173,21 @@
 	}}
 	ondrop={handleDropOnTask}
 >
-	<input
-		type="checkbox"
-		checked={task.is_completed}
-		onclick={(e) => e.stopPropagation()}
-		onchange={handleCheck}
-		class="checkbox"
-	/>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<label class="checkbox-wrap" onclick={(e) => e.stopPropagation()}>
+		<input
+			type="checkbox"
+			checked={task.is_completed}
+			onchange={handleCheck}
+			class="checkbox-native"
+		/>
+		<span class="checkbox-custom" class:checked={task.is_completed}>
+			<svg viewBox="0 0 14 14" fill="none" class="check-icon">
+				<path d="M3.5 7.2L6 9.7L10.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		</span>
+	</label>
 
 	{#if editing}
 		<input
@@ -267,11 +275,83 @@
 		box-shadow: inset 3px 0 0 var(--accent);
 	}
 
-	.checkbox {
+	.checkbox-wrap {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		cursor: pointer;
-		width: 1rem;
-		height: 1rem;
-		accent-color: var(--accent);
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.checkbox-native {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.checkbox-custom {
+		position: relative;
+		width: 1.15rem;
+		height: 1.15rem;
+		border-radius: 50%;
+		border: 1.5px solid var(--border);
+		background: transparent;
+		transition:
+			border-color 0.2s ease,
+			background-color 0.2s ease,
+			transform 0.15s ease,
+			box-shadow 0.2s ease;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.checkbox-custom:hover {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-light);
+	}
+
+	.checkbox-native:focus-visible + .checkbox-custom {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-medium);
+	}
+
+	.checkbox-custom.checked {
+		background: var(--accent);
+		border-color: var(--accent);
+		animation: check-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.check-icon {
+		width: 0.7rem;
+		height: 0.7rem;
+		color: transparent;
+		transition: color 0.15s ease 0.05s;
+	}
+
+	.checked .check-icon {
+		color: #fff;
+	}
+
+	.checked .check-icon path {
+		stroke-dasharray: 12;
+		stroke-dashoffset: 12;
+		animation: check-draw 0.25s ease forwards 0.08s;
+	}
+
+	@keyframes check-pop {
+		0% { transform: scale(1); }
+		50% { transform: scale(1.2); }
+		100% { transform: scale(1); }
+	}
+
+	@keyframes check-draw {
+		to { stroke-dashoffset: 0; }
 	}
 
 	.title {

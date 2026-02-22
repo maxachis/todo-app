@@ -250,7 +250,7 @@
 						const match = nodes.find((node) => node.id === el.dataset.id);
 						if (match) {
 							renderDetails(match);
-							searchResultsEl.textContent = '';
+							searchResultsEl!.textContent = '';
 							searchInput && (searchInput.value = '');
 						}
 					};

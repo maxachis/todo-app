@@ -20,6 +20,16 @@ class TestSearch:
         expect(page.locator("#center-panel")).to_contain_text("Work")
         expect(page.locator("#detail-title")).to_have_value("Review PRs")
 
+    def test_search_bar_hidden_on_non_tasks_pages(self, page, base_url, seed_list_with_tasks):
+        page.goto(f"{base_url}/projects")
+        expect(page.locator(".search-input")).to_have_count(0)
+
+        page.goto(f"{base_url}/timesheet")
+        expect(page.locator(".search-input")).to_have_count(0)
+
+        page.goto(base_url)
+        expect(page.locator(".search-input")).to_be_visible()
+
     def test_click_outside_closes_results(self, page, base_url, seed_list_with_tasks):
         page.goto(base_url)
 

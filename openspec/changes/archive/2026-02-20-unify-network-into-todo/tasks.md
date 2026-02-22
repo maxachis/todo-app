@@ -31,9 +31,9 @@
 
 ## 6. Data Import Execution + Verification
 
-- [ ] 6.1 Run backups (raw DB + `dumpdata`) and store outputs in a documented location.
-- [ ] 6.2 Load network `dumpdata` into unified DB and verify counts for people, orgs, interactions, and relationships.
-- [ ] 6.3 Smoke test Svelte network pages and API endpoints against imported data.
+- [x] 6.1 Run backups (raw DB + `dumpdata`) and store outputs in a documented location.
+- [x] 6.2 Load network `dumpdata` into unified DB and verify counts for people, orgs, interactions, and relationships.
+- [x] 6.3 Smoke test Svelte network pages and API endpoints against imported data.
 
 ## 7. Cleanup + Docs
 

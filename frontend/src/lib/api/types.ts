@@ -138,6 +138,132 @@ export interface ImportSummary {
   error_details: string[];
 }
 
+// Network types
+
+export interface Person {
+  id: number;
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  notes: string;
+  follow_up_cadence_days: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePersonInput {
+  first_name: string;
+  last_name: string;
+  middle_name?: string;
+  notes?: string;
+  follow_up_cadence_days?: number | null;
+}
+
+export interface UpdatePersonInput {
+  first_name?: string;
+  last_name?: string;
+  middle_name?: string;
+  notes?: string;
+  follow_up_cadence_days?: number | null;
+}
+
+export interface OrgType {
+  id: number;
+  name: string;
+}
+
+export interface Organization {
+  id: number;
+  name: string;
+  org_type_id: number;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateOrganizationInput {
+  name: string;
+  org_type_id: number;
+  notes?: string;
+}
+
+export interface UpdateOrganizationInput {
+  name?: string;
+  org_type_id?: number;
+  notes?: string;
+}
+
+export interface InteractionType {
+  id: number;
+  name: string;
+}
+
+export interface Interaction {
+  id: number;
+  person_id: number;
+  interaction_type_id: number;
+  date: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateInteractionInput {
+  person_id: number;
+  interaction_type_id: number;
+  date: string;
+  notes?: string;
+}
+
+export interface UpdateInteractionInput {
+  person_id?: number;
+  interaction_type_id?: number;
+  date?: string;
+  notes?: string;
+}
+
+export interface RelationshipPersonPerson {
+  id: number;
+  person_1_id: number;
+  person_2_id: number;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RelationshipOrganizationPerson {
+  id: number;
+  organization_id: number;
+  person_id: number;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GraphNode {
+  data: {
+    id: string;
+    label: string;
+    type: string;
+    details: Record<string, string>;
+  };
+}
+
+export interface GraphEdge {
+  data: {
+    id: string;
+    source: string;
+    target: string;
+    type: string;
+    notes: string;
+  };
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
 export interface CreateListInput {
   name: string;
   emoji?: string;

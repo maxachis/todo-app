@@ -1,15 +1,26 @@
 import { apiRequest } from './client';
 import type {
+  CreateInteractionInput,
   CreateListInput,
+  CreateOrganizationInput,
+  CreatePersonInput,
   CreateProjectInput,
   CreateSectionInput,
   CreateTaskInput,
   CreateTimeEntryInput,
+  GraphData,
   ImportSummary,
+  Interaction,
+  InteractionType,
   List,
   MoveInput,
   MoveTaskInput,
+  Organization,
+  OrgType,
+  Person,
   Project,
+  RelationshipOrganizationPerson,
+  RelationshipPersonPerson,
   SearchResponse,
   Section,
   Tag,
@@ -17,7 +28,10 @@ import type {
   TimeEntry,
   TimesheetResponse,
   UpcomingTask,
+  UpdateInteractionInput,
   UpdateListInput,
+  UpdateOrganizationInput,
+  UpdatePersonInput,
   UpdateProjectInput,
   UpdateSectionInput,
   UpdateTaskInput
@@ -124,5 +138,64 @@ export const api = {
     create: (payload: CreateTimeEntryInput) =>
       apiRequest<TimeEntry>('/timesheet/', { method: 'POST', body: JSON.stringify(payload) }),
     remove: (id: number) => apiRequest<void>(`/timesheet/${id}/`, { method: 'DELETE' })
+  },
+  people: {
+    getAll: () => apiRequest<Person[]>('/people/'),
+    get: (id: number) => apiRequest<Person>(`/people/${id}/`),
+    create: (payload: CreatePersonInput) =>
+      apiRequest<Person>('/people/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdatePersonInput) =>
+      apiRequest<Person>(`/people/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/people/${id}/`, { method: 'DELETE' })
+  },
+  organizations: {
+    getAll: () => apiRequest<Organization[]>('/organizations/'),
+    get: (id: number) => apiRequest<Organization>(`/organizations/${id}/`),
+    create: (payload: CreateOrganizationInput) =>
+      apiRequest<Organization>('/organizations/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdateOrganizationInput) =>
+      apiRequest<Organization>(`/organizations/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/organizations/${id}/`, { method: 'DELETE' })
+  },
+  orgTypes: {
+    getAll: () => apiRequest<OrgType[]>('/org-types/'),
+    create: (payload: { name: string }) =>
+      apiRequest<OrgType>('/org-types/', { method: 'POST', body: JSON.stringify(payload) })
+  },
+  interactionTypes: {
+    getAll: () => apiRequest<InteractionType[]>('/interaction-types/')
+  },
+  interactions: {
+    getAll: () => apiRequest<Interaction[]>('/interactions/'),
+    get: (id: number) => apiRequest<Interaction>(`/interactions/${id}/`),
+    create: (payload: CreateInteractionInput) =>
+      apiRequest<Interaction>('/interactions/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdateInteractionInput) =>
+      apiRequest<Interaction>(`/interactions/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/interactions/${id}/`, { method: 'DELETE' })
+  },
+  relationships: {
+    people: {
+      getAll: () => apiRequest<RelationshipPersonPerson[]>('/relationships/people/'),
+      create: (payload: { person_1_id: number; person_2_id: number; notes?: string }) =>
+        apiRequest<RelationshipPersonPerson>('/relationships/people/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      remove: (id: number) => apiRequest<void>(`/relationships/people/${id}/`, { method: 'DELETE' })
+    },
+    organizations: {
+      getAll: () => apiRequest<RelationshipOrganizationPerson[]>('/relationships/organizations/'),
+      create: (payload: { organization_id: number; person_id: number; notes?: string }) =>
+        apiRequest<RelationshipOrganizationPerson>('/relationships/organizations/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      remove: (id: number) =>
+        apiRequest<void>(`/relationships/organizations/${id}/`, { method: 'DELETE' })
+    }
+  },
+  graph: {
+    get: () => apiRequest<GraphData>('/graph/')
   }
 };
