@@ -10,7 +10,9 @@ while IFS='=' read -r key value; do
     ENV_ARGS+=("${key}=${value}")
 done < "${APP_DIR}/.env"
 
-env "${ENV_ARGS[@]}" uv run python -c "
+cd "${APP_DIR}"
+env "${ENV_ARGS[@]}" DJANGO_SETTINGS_MODULE=todoapp.settings uv run python -c "
+import django; django.setup()
 from tasks.services.outlook_auth import load_token_cache, get_msal_app
 cache = load_token_cache()
 app = get_msal_app(cache)
