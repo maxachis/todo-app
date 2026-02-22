@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 import os
 
-from django.conf import settings
 from django.db import transaction
 from ninja import Router
 from ninja.errors import HttpError
@@ -55,14 +53,3 @@ def import_tasks(request):
             )
 
     raise HttpError(400, "Unsupported file type. Please upload a .json or .csv file.")
-
-
-@router.get("/import/outlook/status/")
-def outlook_poll_status(request):
-    status_path = settings.OUTLOOK_POLL_STATUS_FILE
-    if not status_path.exists():
-        return {"status": "no_data"}
-    try:
-        return json.loads(status_path.read_text())
-    except (json.JSONDecodeError, OSError):
-        return {"status": "no_data"}

@@ -8,6 +8,12 @@ A multi-list task management application built with Django, HTMX, and SortableJS
 ssh root@178.156.197.32
 ```
 
+## Location In Server
+
+```
+/opt/todoapp
+```
+
 ## Features
 
 - **Multiple lists** with emoji support and sidebar navigation
