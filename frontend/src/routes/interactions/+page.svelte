@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Interaction, type InteractionType, type Person } from '$lib';
+	import { api, type Interaction, type InteractionType, type Person, type List } from '$lib';
+	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 
 	let interactions: Interaction[] = $state([]);
 	let people: Person[] = $state([]);
 	let interactionTypes: InteractionType[] = $state([]);
 	let selected: Interaction | null = $state(null);
+	let linkedTaskIds = $state<number[]>([]);
+	let allTasks = $state<{ id: number; title: string }[]>([]);
 
 	let newPersonId = $state<number | null>(null);
 	let newTypeId = $state<number | null>(null);
@@ -44,6 +47,42 @@
 		editTypeId = item.interaction_type_id;
 		editDate = item.date;
 		editNotes = item.notes;
+		loadLinkedTasks(item.id);
+	}
+
+	async function loadAllTasks(): Promise<void> {
+		const lists: List[] = await api.lists.getAll();
+		const flat: { id: number; title: string }[] = [];
+		for (const list of lists) {
+			for (const section of list.sections) {
+				for (const task of section.tasks) {
+					flat.push({ id: task.id, title: task.title });
+				}
+			}
+		}
+		allTasks = flat;
+	}
+
+	async function loadLinkedTasks(interactionId: number): Promise<void> {
+		if (allTasks.length === 0) await loadAllTasks();
+		const links = await api.taskLinks.interactions.list(interactionId);
+		linkedTaskIds = links.map((l) => l.task_id);
+	}
+
+	async function addTaskLink(taskId: number): Promise<void> {
+		if (!selected) return;
+		await api.taskLinks.interactions.add(selected.id, taskId);
+		linkedTaskIds = [...linkedTaskIds, taskId];
+	}
+
+	async function removeTaskLink(taskId: number): Promise<void> {
+		if (!selected) return;
+		await api.taskLinks.interactions.remove(selected.id, taskId);
+		linkedTaskIds = linkedTaskIds.filter((id) => id !== taskId);
+	}
+
+	function taskName(t: { id: number }): string {
+		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
 	async function createInteraction(event: SubmitEvent): Promise<void> {
@@ -127,7 +166,7 @@
 			{#if selected}
 				<div class="detail-header">
 					<h2>{findPerson(selected.person_id)?.last_name}, {findPerson(selected.person_id)?.first_name}</h2>
-					<button class="danger" onclick={() => deleteInteraction(selected)}>Delete</button>
+					<button class="danger" onclick={() => selected && deleteInteraction(selected)}>Delete</button>
 				</div>
 				<div class="detail-form">
 					<label>
@@ -155,6 +194,16 @@
 						<textarea rows="5" bind:value={editNotes}></textarea>
 					</label>
 					<button class="primary" onclick={saveInteraction}>Save</button>
+				</div>
+				<div class="linked-tasks-section">
+					<LinkedEntities
+						label="Linked Tasks"
+						entities={allTasks}
+						linkedIds={linkedTaskIds}
+						getDisplayName={taskName}
+						onAdd={addTaskLink}
+						onRemove={removeTaskLink}
+					/>
 				</div>
 			{:else}
 				<div class="empty-state">Select an interaction to view details.</div>
@@ -297,6 +346,12 @@
 		border-radius: var(--radius-sm);
 		padding: 0.35rem 0.6rem;
 		cursor: pointer;
+	}
+
+	.linked-tasks-section {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-light);
 	}
 
 	.empty-state {

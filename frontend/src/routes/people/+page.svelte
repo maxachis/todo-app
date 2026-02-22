@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Person } from '$lib';
+	import { api, type Person, type Task, type List } from '$lib';
+	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 
 	let people: Person[] = $state([]);
 	let selected: Person | null = $state(null);
+	let linkedTaskIds = $state<number[]>([]);
+	let allTasks = $state<{ id: number; title: string }[]>([]);
 
 	let newFirst = $state('');
 	let newMiddle = $state('');
@@ -35,6 +38,42 @@
 		editLast = person.last_name;
 		editNotes = person.notes;
 		editCadence = person.follow_up_cadence_days?.toString() ?? '';
+		loadLinkedTasks(person.id);
+	}
+
+	async function loadAllTasks(): Promise<void> {
+		const lists: List[] = await api.lists.getAll();
+		const flat: { id: number; title: string }[] = [];
+		for (const list of lists) {
+			for (const section of list.sections) {
+				for (const task of section.tasks) {
+					flat.push({ id: task.id, title: task.title });
+				}
+			}
+		}
+		allTasks = flat;
+	}
+
+	async function loadLinkedTasks(personId: number): Promise<void> {
+		if (allTasks.length === 0) await loadAllTasks();
+		const links = await api.taskLinks.people.listByPerson(personId);
+		linkedTaskIds = links.map((l) => l.task_id);
+	}
+
+	async function addTaskLink(taskId: number): Promise<void> {
+		if (!selected) return;
+		await api.taskLinks.people.add(taskId, selected.id);
+		linkedTaskIds = [...linkedTaskIds, taskId];
+	}
+
+	async function removeTaskLink(taskId: number): Promise<void> {
+		if (!selected) return;
+		await api.taskLinks.people.remove(taskId, selected.id);
+		linkedTaskIds = linkedTaskIds.filter((id) => id !== taskId);
+	}
+
+	function taskName(t: { id: number }): string {
+		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
 	async function createPerson(event: SubmitEvent): Promise<void> {
@@ -112,7 +151,7 @@
 			{#if selected}
 				<div class="detail-header">
 					<h2>{selected.last_name}, {selected.first_name}</h2>
-					<button class="danger" onclick={() => deletePerson(selected)}>Delete</button>
+					<button class="danger" onclick={() => selected && deletePerson(selected)}>Delete</button>
 				</div>
 				<div class="detail-form">
 					<label>
@@ -136,6 +175,16 @@
 						<textarea rows="5" bind:value={editNotes}></textarea>
 					</label>
 					<button class="primary" onclick={savePerson}>Save</button>
+				</div>
+				<div class="linked-tasks-section">
+					<LinkedEntities
+						label="Linked Tasks"
+						entities={allTasks}
+						linkedIds={linkedTaskIds}
+						getDisplayName={taskName}
+						onAdd={addTaskLink}
+						onRemove={removeTaskLink}
+					/>
 				</div>
 			{:else}
 				<div class="empty-state">Select a person to view details.</div>
@@ -276,6 +325,12 @@
 		border-radius: var(--radius-sm);
 		padding: 0.35rem 0.6rem;
 		cursor: pointer;
+	}
+
+	.linked-tasks-section {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-light);
 	}
 
 	.empty-state {

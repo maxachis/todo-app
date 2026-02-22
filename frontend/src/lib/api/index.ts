@@ -1,23 +1,40 @@
 import { apiRequest } from './client';
 import type {
+  CreateInteractionInput,
   CreateListInput,
+  CreateOrganizationInput,
+  CreatePersonInput,
   CreateProjectInput,
   CreateSectionInput,
   CreateTaskInput,
   CreateTimeEntryInput,
+  GraphData,
   ImportSummary,
+  Interaction,
+  InteractionTaskLink,
+  InteractionType,
   List,
   MoveInput,
   MoveTaskInput,
+  Organization,
+  OrgType,
+  Person,
   Project,
+  RelationshipOrganizationPerson,
+  RelationshipPersonPerson,
   SearchResponse,
   Section,
   Tag,
   Task,
+  TaskOrganizationLink,
+  TaskPersonLink,
   TimeEntry,
   TimesheetResponse,
   UpcomingTask,
+  UpdateInteractionInput,
   UpdateListInput,
+  UpdateOrganizationInput,
+  UpdatePersonInput,
   UpdateProjectInput,
   UpdateSectionInput,
   UpdateTaskInput
@@ -124,5 +141,102 @@ export const api = {
     create: (payload: CreateTimeEntryInput) =>
       apiRequest<TimeEntry>('/timesheet/', { method: 'POST', body: JSON.stringify(payload) }),
     remove: (id: number) => apiRequest<void>(`/timesheet/${id}/`, { method: 'DELETE' })
+  },
+  people: {
+    getAll: () => apiRequest<Person[]>('/people/'),
+    get: (id: number) => apiRequest<Person>(`/people/${id}/`),
+    create: (payload: CreatePersonInput) =>
+      apiRequest<Person>('/people/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdatePersonInput) =>
+      apiRequest<Person>(`/people/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/people/${id}/`, { method: 'DELETE' })
+  },
+  organizations: {
+    getAll: () => apiRequest<Organization[]>('/organizations/'),
+    get: (id: number) => apiRequest<Organization>(`/organizations/${id}/`),
+    create: (payload: CreateOrganizationInput) =>
+      apiRequest<Organization>('/organizations/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdateOrganizationInput) =>
+      apiRequest<Organization>(`/organizations/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/organizations/${id}/`, { method: 'DELETE' })
+  },
+  orgTypes: {
+    getAll: () => apiRequest<OrgType[]>('/org-types/'),
+    create: (payload: { name: string }) =>
+      apiRequest<OrgType>('/org-types/', { method: 'POST', body: JSON.stringify(payload) })
+  },
+  interactionTypes: {
+    getAll: () => apiRequest<InteractionType[]>('/interaction-types/')
+  },
+  interactions: {
+    getAll: () => apiRequest<Interaction[]>('/interactions/'),
+    get: (id: number) => apiRequest<Interaction>(`/interactions/${id}/`),
+    create: (payload: CreateInteractionInput) =>
+      apiRequest<Interaction>('/interactions/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdateInteractionInput) =>
+      apiRequest<Interaction>(`/interactions/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/interactions/${id}/`, { method: 'DELETE' })
+  },
+  relationships: {
+    people: {
+      getAll: () => apiRequest<RelationshipPersonPerson[]>('/relationships/people/'),
+      create: (payload: { person_1_id: number; person_2_id: number; notes?: string }) =>
+        apiRequest<RelationshipPersonPerson>('/relationships/people/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      remove: (id: number) => apiRequest<void>(`/relationships/people/${id}/`, { method: 'DELETE' })
+    },
+    organizations: {
+      getAll: () => apiRequest<RelationshipOrganizationPerson[]>('/relationships/organizations/'),
+      create: (payload: { organization_id: number; person_id: number; notes?: string }) =>
+        apiRequest<RelationshipOrganizationPerson>('/relationships/organizations/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      remove: (id: number) =>
+        apiRequest<void>(`/relationships/organizations/${id}/`, { method: 'DELETE' })
+    }
+  },
+  graph: {
+    get: () => apiRequest<GraphData>('/graph/')
+  },
+  taskLinks: {
+    people: {
+      list: (taskId: number) => apiRequest<TaskPersonLink[]>(`/tasks/${taskId}/people/`),
+      listByPerson: (personId: number) =>
+        apiRequest<TaskPersonLink[]>(`/people/${personId}/tasks/`),
+      add: (taskId: number, personId: number) =>
+        apiRequest<TaskPersonLink>(`/tasks/${taskId}/people/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: personId })
+        }),
+      remove: (taskId: number, personId: number) =>
+        apiRequest<void>(`/tasks/${taskId}/people/${personId}/`, { method: 'DELETE' })
+    },
+    organizations: {
+      list: (taskId: number) =>
+        apiRequest<TaskOrganizationLink[]>(`/tasks/${taskId}/organizations/`),
+      listByOrg: (organizationId: number) =>
+        apiRequest<TaskOrganizationLink[]>(`/organizations/${organizationId}/tasks/`),
+      add: (taskId: number, organizationId: number) =>
+        apiRequest<TaskOrganizationLink>(`/tasks/${taskId}/organizations/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: organizationId })
+        }),
+      remove: (taskId: number, organizationId: number) =>
+        apiRequest<void>(`/tasks/${taskId}/organizations/${organizationId}/`, { method: 'DELETE' })
+    },
+    interactions: {
+      list: (interactionId: number) =>
+        apiRequest<InteractionTaskLink[]>(`/interactions/${interactionId}/tasks/`),
+      add: (interactionId: number, taskId: number) =>
+        apiRequest<InteractionTaskLink>(`/interactions/${interactionId}/tasks/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: taskId })
+        }),
+      remove: (interactionId: number, taskId: number) =>
+        apiRequest<void>(`/interactions/${interactionId}/tasks/${taskId}/`, { method: 'DELETE' })
+    }
   }
 };

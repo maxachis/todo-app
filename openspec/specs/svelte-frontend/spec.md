@@ -10,7 +10,7 @@ The system SHALL use SvelteKit with `adapter-static` to produce a static SPA bui
 - **THEN** the SPA loads and fetches data from the Django API via client-side requests
 
 ### Requirement: Three-panel layout shell
-The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). A top navigation bar SHALL provide links to Tasks, Projects, Timesheet, and Import pages. The navigation bar SHALL also include a theme toggle control.
+The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, and Import pages. The navigation bar SHALL also include a theme toggle control.
 
 #### Scenario: Desktop layout shows all three panels
 - **WHEN** the viewport is wider than 1024px
@@ -22,10 +22,10 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 
 #### Scenario: Bottom tab bar on mobile
 - **WHEN** the viewport is narrower than 1024px
-- **THEN** a bottom tab bar shows navigation links for Tasks, Projects, Timesheet, and Import
+- **THEN** a bottom tab bar shows navigation links for Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, and Import
 
 #### Scenario: Non-task routes hide task side panels
-- **WHEN** the user navigates to Projects, Timesheet, or Import routes
+- **WHEN** the user navigates to People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, or Import routes
 - **THEN** the list sidebar and task detail panel are not shown
 
 #### Scenario: Navigation bar includes theme toggle
@@ -411,15 +411,23 @@ The system SHALL provide a dedicated page at `/timesheet` for weekly time tracki
 - **THEN** a task selector shows incomplete tasks from that project's linked lists
 
 ### Requirement: Import page
-The system SHALL provide a dedicated page at `/import` for importing tasks from TickTick CSV files.
+The system SHALL provide a dedicated page at `/import` for importing tasks from TickTick CSV files, the app's native JSON export, and the app's native CSV export.
 
-#### Scenario: Upload CSV
-- **WHEN** the user selects a CSV file and submits the import form
+#### Scenario: Upload CSV file
+- **WHEN** the user selects a `.csv` file and submits the import form
+- **THEN** the file is uploaded to the API and a summary shows counts of created/skipped entities
+
+#### Scenario: Upload JSON file
+- **WHEN** the user selects a `.json` file and submits the import form
 - **THEN** the file is uploaded to the API and a summary shows counts of created/skipped entities
 
 #### Scenario: Import error display
-- **WHEN** the import fails (invalid file, parse error)
+- **WHEN** the import fails (invalid file, parse error, unrecognized format)
 - **THEN** the error message is displayed to the user
+
+#### Scenario: File picker accepts JSON and CSV
+- **WHEN** the user clicks the file input on the import page
+- **THEN** the file picker filters for `.csv` and `.json` files
 
 ### Requirement: Svelte store state management
 The system SHALL manage application state using Svelte writable stores, one per resource type, with co-located async mutation functions.
@@ -453,3 +461,49 @@ The system SHALL use TypeScript for all frontend code. API response types SHALL 
 #### Scenario: Type mismatch caught at build time
 - **WHEN** a component accesses a property that doesn't exist on the API response type
 - **THEN** the TypeScript compiler reports an error during build
+
+### Requirement: Recurrence editor in task detail
+The system SHALL provide a recurrence editor in the task detail panel that allows setting and modifying repeat schedules. The editor SHALL appear below the due date field.
+
+#### Scenario: Recurrence type selector
+- **WHEN** the user views a task's detail panel
+- **THEN** a "Repeat" dropdown is shown with options: None, Daily, Weekly, Monthly, Yearly, Custom Dates
+
+#### Scenario: Weekly recurrence shows day picker
+- **WHEN** the user selects "Weekly" from the repeat dropdown
+- **THEN** a row of weekday toggles (Mon-Sun) appears for selecting which days the task repeats
+
+#### Scenario: Monthly recurrence shows day-of-month input
+- **WHEN** the user selects "Monthly" from the repeat dropdown
+- **THEN** a numeric input appears for selecting the day of the month (1-31)
+
+#### Scenario: Yearly recurrence shows month and day inputs
+- **WHEN** the user selects "Yearly" from the repeat dropdown
+- **THEN** month and day inputs appear for selecting the annual date
+
+#### Scenario: Custom dates shows date list editor
+- **WHEN** the user selects "Custom Dates" from the repeat dropdown
+- **THEN** an interface appears to add/remove MM-DD date entries, displayed as a list
+
+#### Scenario: Recurrence changes auto-save on blur
+- **WHEN** the user changes the recurrence type or rule parameters and blurs the editor
+- **THEN** the recurrence settings are saved to the API via the task update endpoint
+
+#### Scenario: Daily recurrence has no extra options
+- **WHEN** the user selects "Daily" from the repeat dropdown
+- **THEN** no additional configuration inputs appear (daily is the only option needed)
+
+#### Scenario: Clearing recurrence
+- **WHEN** the user selects "None" from the repeat dropdown on a recurring task
+- **THEN** the recurrence is removed and the task behaves as a one-off task on next completion
+
+### Requirement: Recurrence-aware TypeScript types
+The system SHALL extend the frontend Task type to include recurrence fields for type-safe access throughout the UI.
+
+#### Scenario: Task type includes recurrence fields
+- **WHEN** the frontend TypeScript types are defined
+- **THEN** the `Task` interface includes `recurrence_type: string`, `recurrence_rule: object`, and `next_occurrence_id: number | null`
+
+#### Scenario: UpdateTaskInput includes recurrence fields
+- **WHEN** the frontend update input type is defined
+- **THEN** the `UpdateTaskInput` interface includes optional `recurrence_type?: string` and `recurrence_rule?: object`

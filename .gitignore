@@ -8,3 +8,6 @@ frontend/build/
 frontend/.svelte-kit/
 deploy/.env.docker
 import/network-app/
+backups/
+codex_pytest_tmp/
+.claude/settings.local.json

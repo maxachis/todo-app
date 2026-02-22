@@ -40,6 +40,20 @@ def _serialize_interaction_task(link: InteractionTask) -> InteractionTaskLinkSch
     )
 
 
+@router.get("/people/{person_id}/tasks/", response=list[TaskPersonLinkSchema])
+def list_person_tasks(request, person_id: int):
+    Person.objects.only("id").get(pk=person_id)
+    links = TaskPerson.objects.filter(person_id=person_id).order_by("id")
+    return [_serialize_task_person(link) for link in links]
+
+
+@router.get("/organizations/{organization_id}/tasks/", response=list[TaskOrganizationLinkSchema])
+def list_organization_tasks(request, organization_id: int):
+    Organization.objects.only("id").get(pk=organization_id)
+    links = TaskOrganization.objects.filter(organization_id=organization_id).order_by("id")
+    return [_serialize_task_organization(link) for link in links]
+
+
 @router.get("/tasks/{task_id}/people/", response=list[TaskPersonLinkSchema])
 def list_task_people(request, task_id: int):
     Task.objects.only("id").get(pk=task_id)
