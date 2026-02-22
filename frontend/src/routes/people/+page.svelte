@@ -197,6 +197,9 @@
 	.network-page {
 		display: grid;
 		gap: 1rem;
+		height: 100%;
+		min-height: 0;
+		grid-template-rows: auto 1fr;
 	}
 
 	h1 {
@@ -209,6 +212,7 @@
 		display: grid;
 		grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
 		gap: 1rem;
+		min-height: 0;
 	}
 
 	.panel {
@@ -217,6 +221,8 @@
 		border-radius: var(--radius-lg);
 		padding: 0.9rem;
 		box-shadow: var(--shadow-sm);
+		min-height: 0;
+		overflow-y: auto;
 	}
 
 	.create-form {

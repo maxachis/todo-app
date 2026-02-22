@@ -223,9 +223,10 @@
 	}
 
 	.app-shell {
-		min-height: 100vh;
+		height: 100vh;
 		display: grid;
 		grid-template-rows: auto 1fr auto;
+		overflow: hidden;
 	}
 
 	.top-nav {
@@ -289,6 +290,7 @@
 		grid-template-columns: 300px 1fr 320px;
 		gap: 0.875rem;
 		padding: 0.875rem;
+		min-height: 0;
 	}
 
 	.panels.single-panel {
@@ -303,6 +305,9 @@
 		border-radius: var(--radius-xl);
 		padding: 1rem;
 		box-shadow: var(--shadow-sm);
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
 	}
 
 	aside {
@@ -340,6 +345,12 @@
 	}
 
 	@media (max-width: 1023px) {
+		.app-shell {
+			height: auto;
+			min-height: 100vh;
+			overflow: visible;
+		}
+
 		.mobile-only {
 			display: inline-flex;
 		}
