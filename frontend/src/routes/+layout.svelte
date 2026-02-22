@@ -9,6 +9,9 @@
 	import { selectedTaskStore } from '$lib/stores/tasks';
 	import { sidebarWidth, detailWidth, savePanelWidths, clampWidths } from '$lib/stores/panelWidths';
 	import { themePreference, cycleTheme, type ThemePreference } from '$lib/stores/theme';
+	import { onMount } from 'svelte';
+	import { apiRequest } from '$lib/api/client';
+	import { addToast } from '$lib/stores/toast';
 
 	const themeIcons: Record<ThemePreference, string> = {
 		light: '\u2600\uFE0F',
@@ -35,6 +38,20 @@
 	$effect(() => {
 		if ($selectedTaskStore !== null) {
 			detailOpen = true;
+		}
+	});
+
+	onMount(async () => {
+		try {
+			const status = await apiRequest<{ status: string; error?: string }>('/import/outlook/status/');
+			if (status.status === 'error') {
+				addToast({
+					message: `Outlook sync error: ${status.error || 'Unknown error'}`,
+					type: 'error'
+				});
+			}
+		} catch {
+			// Silently ignore — endpoint may not exist or be configured
 		}
 	});
 

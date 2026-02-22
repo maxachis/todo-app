@@ -146,3 +146,16 @@ if not DEBUG:
     }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Outlook email import (Microsoft Graph API)
+OUTLOOK_CLIENT_ID = os.environ.get("OUTLOOK_CLIENT_ID", "")
+OUTLOOK_TENANT_ID = os.environ.get("OUTLOOK_TENANT_ID", "consumers")
+OUTLOOK_SOURCE_CATEGORY = os.environ.get("OUTLOOK_SOURCE_CATEGORY", "ToDo")
+OUTLOOK_PROCESSED_CATEGORY = os.environ.get("OUTLOOK_PROCESSED_CATEGORY", "ToDo-Imported")
+OUTLOOK_INBOX_LIST_NAME = os.environ.get("OUTLOOK_INBOX_LIST_NAME", "Email Inbox")
+OUTLOOK_TOKEN_CACHE_FILE = Path(
+    os.environ.get("OUTLOOK_TOKEN_CACHE_FILE", BASE_DIR / "outlook_token_cache.json")
+)
+OUTLOOK_POLL_STATUS_FILE = Path(
+    os.environ.get("OUTLOOK_POLL_STATUS_FILE", BASE_DIR / "outlook_poll_status.json")
+)

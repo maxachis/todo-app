@@ -9,6 +9,9 @@ dependencies = [
     "bleach>=6.1",
     "gunicorn>=22.0",
     "django-ninja>=1.5.3",
+    "msal>=1.31",
+    "html2text>=2024.2",
+    "requests>=2.31",
 ]
 
 [dependency-groups]
