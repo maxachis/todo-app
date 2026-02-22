@@ -383,4 +383,36 @@
 		margin: 0;
 		font-style: italic;
 	}
+
+	@media (max-width: 640px) {
+		.tag {
+			min-height: 44px;
+			display: inline-flex;
+			align-items: center;
+		}
+
+		.tag button {
+			min-height: 44px;
+			min-width: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.tag-form button {
+			min-height: 44px;
+		}
+
+		input,
+		select {
+			padding: 0.55rem 0.65rem;
+			font-size: 1rem;
+		}
+
+		.parent-link {
+			min-height: 44px;
+			display: inline-flex;
+			align-items: center;
+		}
+	}
 </style>

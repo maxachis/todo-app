@@ -288,6 +288,7 @@
 
 	.app-shell {
 		height: 100vh;
+		height: 100dvh;
 		display: grid;
 		grid-template-rows: auto 1fr auto;
 		overflow: hidden;
@@ -465,6 +466,12 @@
 	}
 
 	@media (max-width: 1023px) {
+		:global(html),
+		:global(body) {
+			height: auto;
+			overflow: visible;
+		}
+
 		.app-shell {
 			height: auto;
 			min-height: 100vh;
@@ -473,6 +480,10 @@
 
 		.mobile-only {
 			display: inline-flex;
+		}
+
+		.top-nav nav {
+			display: none;
 		}
 
 		.panels {
@@ -532,6 +543,22 @@
 			font-size: 0.8rem;
 			flex: 0 0 auto;
 			padding: 0.35rem 0.55rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.app-shell {
+			min-height: 100dvh;
+		}
+
+		.icon-btn,
+		.settings-toggle,
+		.theme-toggle {
+			min-height: 44px;
+			min-width: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
 		}
 	}
 </style>

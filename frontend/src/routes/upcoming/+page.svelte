@@ -282,4 +282,25 @@
 		color: var(--text-secondary);
 		font-weight: 500;
 	}
+
+	@media (max-width: 640px) {
+		.task-location {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			max-width: 160px;
+		}
+
+		.task-row {
+			grid-template-columns: 1fr;
+			gap: 0.25rem;
+		}
+
+		.task-meta {
+			flex-direction: row;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 0.35rem;
+		}
+	}
 </style>

@@ -256,4 +256,19 @@
 		color: var(--text-secondary);
 		font-weight: 500;
 	}
+
+	@media (max-width: 640px) {
+		.create-form {
+			grid-template-columns: 1fr;
+		}
+
+		.card-actions button {
+			min-height: 44px;
+			padding: 0.35rem 0.65rem;
+		}
+
+		.metrics {
+			flex-wrap: wrap;
+		}
+	}
 </style>

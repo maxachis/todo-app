@@ -10,7 +10,7 @@ The system SHALL use SvelteKit with `adapter-static` to produce a static SPA bui
 - **THEN** the SPA loads and fetches data from the Django API via client-side requests
 
 ### Requirement: Three-panel layout shell
-The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, and Timesheet pages. The navigation bar SHALL also include a settings cog button and a theme toggle control. The Import page SHALL NOT appear as a primary navigation tab; it SHALL be accessible via the settings dropdown menu.
+The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, and Timesheet pages. The navigation bar SHALL also include a settings cog button and a theme toggle control. The Import page SHALL NOT appear as a primary navigation tab; it SHALL be accessible via the settings dropdown menu. On phone viewports (640px and below), the app shell SHALL use `100dvh` (with `100vh` fallback) instead of `100vh` to account for mobile browser chrome resizing. All interactive elements in the navigation bar SHALL meet a 44px minimum touch target height on phone viewports.
 
 #### Scenario: Desktop layout shows all three panels
 - **WHEN** the viewport is wider than 1024px
@@ -39,6 +39,14 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 #### Scenario: Navigation bar includes theme toggle and settings cog
 - **WHEN** the navigation bar renders
 - **THEN** a settings cog button and theme toggle control are displayed in the right area of the navigation bar
+
+#### Scenario: Phone viewport uses dynamic viewport height
+- **WHEN** the viewport is 640px or narrower
+- **THEN** the app shell height uses `dvh` units (with `vh` fallback) so content is not hidden behind mobile browser chrome
+
+#### Scenario: Phone viewport touch targets in navbar
+- **WHEN** the viewport is 640px or narrower
+- **THEN** all navbar buttons (hamburger, settings cog, theme toggle, detail panel toggle) have a minimum touch target of 44px height
 
 ### Requirement: List sidebar navigation
 The system SHALL display all lists in the sidebar, ordered by position. Selecting a list SHALL load its content in the center panel.
@@ -111,7 +119,7 @@ The system SHALL display sections within a list, each collapsible, with tasks ne
 - **THEN** section drag does not initiate; dragging sections is only available from a handle in the section header
 
 ### Requirement: Task list rendering
-The system SHALL display tasks within sections, showing title, tags, due date, subtask count, pin button, and a recurrence indicator. Completed tasks SHALL appear in a separate "Completed" group at the bottom.
+The system SHALL display tasks within sections, showing title, tags, due date, subtask count, pin button, and a recurrence indicator. Completed tasks SHALL appear in a separate "Completed" group at the bottom. On phone viewports (640px and below), task row metadata SHALL wrap instead of overflowing, and interactive elements SHALL meet minimum touch target sizes.
 
 #### Scenario: Tasks render with metadata
 - **WHEN** a section is displayed
@@ -133,8 +141,16 @@ The system SHALL display tasks within sections, showing title, tags, due date, s
 - **WHEN** a task has subtasks
 - **THEN** subtasks are rendered nested below the parent with visual indentation, collapsible via a toggle
 
+#### Scenario: Phone viewport task row metadata wraps
+- **WHEN** the viewport is 640px or narrower and a task row has metadata (tags, due date, subtask count)
+- **THEN** the metadata section wraps to a second line instead of overflowing horizontally
+
+#### Scenario: Phone viewport task row touch targets
+- **WHEN** the viewport is 640px or narrower
+- **THEN** task row checkboxes and pin buttons have a minimum touch target of 44px
+
 ### Requirement: Task detail panel
-The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. A recurrence editor SHALL be displayed below the due date field. A "Linked People & Orgs" section SHALL be displayed below the tags section.
+The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. A recurrence editor SHALL be displayed below the due date field. A "Linked People & Orgs" section SHALL be displayed below the tags section. On phone viewports (640px and below), form elements and buttons SHALL be sized for touch interaction.
 
 #### Scenario: Selecting a task shows detail
 - **WHEN** the user clicks a task row
@@ -155,6 +171,10 @@ The system SHALL display a task's full details in the right panel when selected.
 #### Scenario: Parent task link
 - **WHEN** viewing a subtask's detail
 - **THEN** a link to the parent task is shown with a "jump to" action that scrolls to and highlights the parent in the center panel
+
+#### Scenario: Phone viewport detail panel touch targets
+- **WHEN** the viewport is 640px or narrower
+- **THEN** tag buttons, form inputs, and action buttons in the detail panel have a minimum touch target of 44px height
 
 ### Requirement: Live Markdown editor
 The system SHALL provide a block-based Markdown editor for task notes. Inactive blocks SHALL show rendered HTML; the active block SHALL show raw Markdown.
@@ -324,7 +344,7 @@ The system SHALL provide a searchable emoji picker modal for lists and sections.
 - **THEN** the picker closes without changing the emoji
 
 ### Requirement: Search across all lists
-The system SHALL provide a global search bar that queries the API with debounced input.
+The system SHALL provide a global search bar that queries the API with debounced input. On phone viewports (640px and below), the search input SHALL use fluid width instead of a fixed pixel width.
 
 #### Scenario: Debounced search
 - **WHEN** the user types in the search bar
@@ -341,6 +361,10 @@ The system SHALL provide a global search bar that queries the API with debounced
 #### Scenario: Close results
 - **WHEN** the user clicks outside the search dropdown
 - **THEN** the results close
+
+#### Scenario: Phone viewport search is fluid width
+- **WHEN** the viewport is 640px or narrower
+- **THEN** the search input uses fluid width (not fixed 220px) to fit within the available navbar space
 
 ### Requirement: Task pinning UI
 The system SHALL display a "Pinned" section at the top of the list when any tasks are pinned, and provide a pin toggle button on task rows.
@@ -381,7 +405,7 @@ The system SHALL provide export buttons that trigger file downloads from the API
 - **THEN** the browser downloads a file containing all lists in the selected format
 
 ### Requirement: Projects page
-The system SHALL provide a dedicated page at `/projects` for project management with CRUD operations and metrics display.
+The system SHALL provide a dedicated page at `/projects` for project management with CRUD operations and metrics display. On phone viewports (640px and below), the create form SHALL stack vertically and card action buttons SHALL be touch-sized.
 
 #### Scenario: Projects page displays cards
 - **WHEN** the user navigates to `/projects`
@@ -395,8 +419,16 @@ The system SHALL provide a dedicated page at `/projects` for project management 
 - **WHEN** the user clicks the active/inactive toggle on a project card
 - **THEN** the project's status flips and the UI updates
 
+#### Scenario: Phone viewport create form stacks vertically
+- **WHEN** the viewport is 640px or narrower
+- **THEN** the project create form fields stack vertically (single column) instead of side-by-side
+
+#### Scenario: Phone viewport card action buttons are touch-sized
+- **WHEN** the viewport is 640px or narrower
+- **THEN** project card action buttons have a minimum touch target of 44px height
+
 ### Requirement: Timesheet page
-The system SHALL provide a dedicated page at `/timesheet` for weekly time tracking with navigation and summaries.
+The system SHALL provide a dedicated page at `/timesheet` for weekly time tracking with navigation and summaries. On phone viewports (640px and below), the summary bar, entry form, week navigation, and entry rows SHALL wrap/stack to prevent horizontal overflow.
 
 #### Scenario: Weekly view with navigation
 - **WHEN** the user navigates to `/timesheet`
@@ -421,6 +453,22 @@ The system SHALL provide a dedicated page at `/timesheet` for weekly time tracki
 #### Scenario: Task selector by project
 - **WHEN** the user selects a project in the time entry form
 - **THEN** a task selector shows incomplete tasks from that project's linked lists
+
+#### Scenario: Phone viewport summary bar wraps
+- **WHEN** the viewport is 640px or narrower
+- **THEN** the summary bar items wrap to multiple lines instead of overflowing horizontally
+
+#### Scenario: Phone viewport entry form stacks
+- **WHEN** the viewport is 640px or narrower
+- **THEN** the time entry form fields stack vertically to fit the narrow viewport
+
+#### Scenario: Phone viewport week navigation fits
+- **WHEN** the viewport is 640px or narrower
+- **THEN** the week navigation (prev/next buttons and date range) fits within the viewport without overflow
+
+#### Scenario: Phone viewport entry rows wrap
+- **WHEN** the viewport is 640px or narrower
+- **THEN** entry row content (project, time, description, delete button) wraps to fit without horizontal overflow
 
 ### Requirement: Import page
 The system SHALL provide a dedicated page at `/import` for importing tasks from TickTick CSV files, the app's native JSON export, and the app's native CSV export.
@@ -519,3 +567,25 @@ The system SHALL extend the frontend Task type to include recurrence fields for 
 #### Scenario: UpdateTaskInput includes recurrence fields
 - **WHEN** the frontend update input type is defined
 - **THEN** the `UpdateTaskInput` interface includes optional `recurrence_type?: string` and `recurrence_rule?: object`
+
+### Requirement: Upcoming dashboard phone layout
+The system SHALL render the Upcoming dashboard without horizontal overflow on phone viewports (640px and below). Task location text SHALL be truncated with ellipsis when it exceeds available space.
+
+#### Scenario: Phone viewport location text truncation
+- **WHEN** the viewport is 640px or narrower and an upcoming task has a long location path (list name / section name)
+- **THEN** the location text is truncated with ellipsis instead of overflowing or wrapping awkwardly
+
+#### Scenario: Phone viewport upcoming task rows fit
+- **WHEN** the viewport is 640px or narrower
+- **THEN** upcoming task rows render without horizontal overflow, with metadata stacking if needed
+
+### Requirement: Relationships page phone layout
+The system SHALL render the Relationships page without text overflow on phone viewports (640px and below). Relationship titles SHALL be truncated with ellipsis and action buttons SHALL meet minimum touch target sizes.
+
+#### Scenario: Phone viewport relationship title truncation
+- **WHEN** the viewport is 640px or narrower and a relationship title (e.g., "Person A ↔ Person B") exceeds the card width
+- **THEN** the title is truncated with ellipsis
+
+#### Scenario: Phone viewport relationship action buttons are touch-sized
+- **WHEN** the viewport is 640px or narrower
+- **THEN** relationship card action buttons have a minimum touch target of 44px height

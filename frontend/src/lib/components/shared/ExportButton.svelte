@@ -103,4 +103,10 @@
 	.export-menu button:hover {
 		background: var(--bg-surface-hover);
 	}
+
+	@media (max-width: 1023px) {
+		.export-wrapper {
+			display: none;
+		}
+	}
 </style>

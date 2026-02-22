@@ -436,4 +436,28 @@
 	.pin-btn:not(.pinned) {
 		filter: grayscale(1);
 	}
+
+	@media (max-width: 640px) {
+		.meta {
+			white-space: normal;
+			flex-wrap: wrap;
+		}
+
+		.checkbox-wrap {
+			min-height: 44px;
+			min-width: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.pin-btn {
+			min-height: 44px;
+			min-width: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 1;
+		}
+	}
 </style>

@@ -372,4 +372,17 @@
 		padding: 0.25rem 0.5rem;
 		cursor: pointer;
 	}
+
+	@media (max-width: 640px) {
+		.title {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.actions button {
+			min-height: 44px;
+			padding: 0.35rem 0.65rem;
+		}
+	}
 </style>

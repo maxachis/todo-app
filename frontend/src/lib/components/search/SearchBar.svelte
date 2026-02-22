@@ -69,7 +69,8 @@
 		padding: 0.35rem 0.65rem;
 		font-size: 0.82rem;
 		font-family: var(--font-body);
-		width: 220px;
+		width: 100%;
+		max-width: 220px;
 		transition: all var(--transition);
 	}
 
@@ -82,5 +83,11 @@
 		border-color: var(--accent);
 		background: rgba(255, 255, 255, 0.12);
 		box-shadow: 0 0 0 2px rgba(180, 88, 40, 0.15);
+	}
+
+	@media (max-width: 640px) {
+		.search-input {
+			max-width: 140px;
+		}
 	}
 </style>

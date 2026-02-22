@@ -316,4 +316,38 @@
 	.entry-row:hover .delete-btn {
 		opacity: 1;
 	}
+
+	@media (max-width: 640px) {
+		.summary-bar {
+			flex-wrap: wrap;
+		}
+
+		.entry-form {
+			flex-direction: column;
+		}
+
+		.entry-form select,
+		.entry-form input,
+		.entry-form button {
+			width: 100%;
+		}
+
+		.week-nav {
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+
+		.week-label {
+			font-size: 0.8rem;
+			text-align: center;
+		}
+
+		.entry-row {
+			flex-wrap: wrap;
+		}
+
+		.delete-btn {
+			opacity: 1;
+		}
+	}
 </style>
