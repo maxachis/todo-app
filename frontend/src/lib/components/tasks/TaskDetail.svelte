@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { Tag, Task } from '$lib';
+	import type { Tag, Task, Person, Organization, TaskPersonLink, TaskOrganizationLink } from '$lib';
 	import { api } from '$lib';
 	import { updateTask, selectedTaskDetail, selectTask } from '$lib/stores/tasks';
 	import MarkdownEditor from '../shared/MarkdownEditor.svelte';
+	import LinkedEntities from '../shared/LinkedEntities.svelte';
 	import RecurrenceEditor from './RecurrenceEditor.svelte';
 
 	const task = $derived($selectedTaskDetail);
@@ -15,6 +16,11 @@
 	let tagInput = $state('');
 	let availableTags = $state<Tag[]>([]);
 
+	let linkedPeopleIds = $state<number[]>([]);
+	let linkedOrgIds = $state<number[]>([]);
+	let allPeople = $state<Person[]>([]);
+	let allOrgs = $state<Organization[]>([]);
+
 	$effect(() => {
 		if (task) {
 			titleValue = task.title;
@@ -22,8 +28,56 @@
 			priorityValue = task.priority;
 			notesValue = task.notes;
 			loadAvailableTags(task.id);
+			loadLinkedEntities(task.id);
 		}
 	});
+
+	async function loadLinkedEntities(taskId: number): Promise<void> {
+		const [personLinks, orgLinks, people, orgs] = await Promise.all([
+			api.taskLinks.people.list(taskId),
+			api.taskLinks.organizations.list(taskId),
+			api.people.getAll(),
+			api.organizations.getAll()
+		]);
+		linkedPeopleIds = personLinks.map((l) => l.person_id);
+		linkedOrgIds = orgLinks.map((l) => l.organization_id);
+		allPeople = people;
+		allOrgs = orgs;
+	}
+
+	async function addPersonLink(personId: number): Promise<void> {
+		if (!task) return;
+		await api.taskLinks.people.add(task.id, personId);
+		linkedPeopleIds = [...linkedPeopleIds, personId];
+	}
+
+	async function removePersonLink(personId: number): Promise<void> {
+		if (!task) return;
+		await api.taskLinks.people.remove(task.id, personId);
+		linkedPeopleIds = linkedPeopleIds.filter((id) => id !== personId);
+	}
+
+	async function addOrgLink(orgId: number): Promise<void> {
+		if (!task) return;
+		await api.taskLinks.organizations.add(task.id, orgId);
+		linkedOrgIds = [...linkedOrgIds, orgId];
+	}
+
+	async function removeOrgLink(orgId: number): Promise<void> {
+		if (!task) return;
+		await api.taskLinks.organizations.remove(task.id, orgId);
+		linkedOrgIds = linkedOrgIds.filter((id) => id !== orgId);
+	}
+
+	function personName(p: { id: number }): string {
+		const person = allPeople.find((x) => x.id === p.id);
+		return person ? `${person.first_name} ${person.last_name}`.trim() : `Person #${p.id}`;
+	}
+
+	function orgName(o: { id: number }): string {
+		const org = allOrgs.find((x) => x.id === o.id);
+		return org ? org.name : `Org #${o.id}`;
+	}
 
 	async function loadAvailableTags(taskId: number): Promise<void> {
 		availableTags = await api.tags.list(taskId);
@@ -160,6 +214,30 @@
 			</form>
 		</div>
 
+		<div class="field linked-section">
+			<label>Linked People &amp; Orgs</label>
+			{#if linkedPeopleIds.length === 0 && linkedOrgIds.length === 0 && allPeople.length === 0 && allOrgs.length === 0}
+				<p class="empty-links">No linked people or organizations</p>
+			{:else}
+				<LinkedEntities
+					label="People"
+					entities={allPeople}
+					linkedIds={linkedPeopleIds}
+					getDisplayName={personName}
+					onAdd={addPersonLink}
+					onRemove={removePersonLink}
+				/>
+				<LinkedEntities
+					label="Organizations"
+					entities={allOrgs}
+					linkedIds={linkedOrgIds}
+					getDisplayName={orgName}
+					onAdd={addOrgLink}
+					onRemove={removeOrgLink}
+				/>
+			{/if}
+		</div>
+
 		<div class="field">
 			<label for="detail-notes">Notes</label>
 			<div id="detail-notes">
@@ -286,6 +364,18 @@
 		background: var(--accent);
 		border-color: var(--accent);
 		color: white;
+	}
+
+	.empty-links {
+		color: var(--text-tertiary);
+		font-size: 0.82rem;
+		font-style: italic;
+		margin: 0;
+	}
+
+	.linked-section {
+		border-top: 1px solid var(--border-light);
+		padding-top: 0.6rem;
 	}
 
 	.placeholder {

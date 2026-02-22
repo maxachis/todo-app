@@ -11,6 +11,7 @@ import type {
   GraphData,
   ImportSummary,
   Interaction,
+  InteractionTaskLink,
   InteractionType,
   List,
   MoveInput,
@@ -25,6 +26,8 @@ import type {
   Section,
   Tag,
   Task,
+  TaskOrganizationLink,
+  TaskPersonLink,
   TimeEntry,
   TimesheetResponse,
   UpcomingTask,
@@ -197,5 +200,43 @@ export const api = {
   },
   graph: {
     get: () => apiRequest<GraphData>('/graph/')
+  },
+  taskLinks: {
+    people: {
+      list: (taskId: number) => apiRequest<TaskPersonLink[]>(`/tasks/${taskId}/people/`),
+      listByPerson: (personId: number) =>
+        apiRequest<TaskPersonLink[]>(`/people/${personId}/tasks/`),
+      add: (taskId: number, personId: number) =>
+        apiRequest<TaskPersonLink>(`/tasks/${taskId}/people/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: personId })
+        }),
+      remove: (taskId: number, personId: number) =>
+        apiRequest<void>(`/tasks/${taskId}/people/${personId}/`, { method: 'DELETE' })
+    },
+    organizations: {
+      list: (taskId: number) =>
+        apiRequest<TaskOrganizationLink[]>(`/tasks/${taskId}/organizations/`),
+      listByOrg: (organizationId: number) =>
+        apiRequest<TaskOrganizationLink[]>(`/organizations/${organizationId}/tasks/`),
+      add: (taskId: number, organizationId: number) =>
+        apiRequest<TaskOrganizationLink>(`/tasks/${taskId}/organizations/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: organizationId })
+        }),
+      remove: (taskId: number, organizationId: number) =>
+        apiRequest<void>(`/tasks/${taskId}/organizations/${organizationId}/`, { method: 'DELETE' })
+    },
+    interactions: {
+      list: (interactionId: number) =>
+        apiRequest<InteractionTaskLink[]>(`/interactions/${interactionId}/tasks/`),
+      add: (interactionId: number, taskId: number) =>
+        apiRequest<InteractionTaskLink>(`/interactions/${interactionId}/tasks/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: taskId })
+        }),
+      remove: (interactionId: number, taskId: number) =>
+        apiRequest<void>(`/interactions/${interactionId}/tasks/${taskId}/`, { method: 'DELETE' })
+    }
   }
 };

@@ -264,6 +264,27 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface TaskPersonLink {
+  id: number;
+  task_id: number;
+  person_id: number;
+  created_at: string;
+}
+
+export interface TaskOrganizationLink {
+  id: number;
+  task_id: number;
+  organization_id: number;
+  created_at: string;
+}
+
+export interface InteractionTaskLink {
+  id: number;
+  interaction_id: number;
+  task_id: number;
+  created_at: string;
+}
+
 export interface CreateListInput {
   name: string;
   emoji?: string;

@@ -30,7 +30,12 @@
 		{ href: '/upcoming', label: 'Upcoming' },
 		{ href: '/projects', label: 'Projects' },
 		{ href: '/timesheet', label: 'Timesheet' },
-		{ href: '/import', label: 'Import' }
+		{ href: '/import', label: 'Import' },
+		{ href: '/people', label: 'People' },
+		{ href: '/organizations', label: 'Orgs' },
+		{ href: '/interactions', label: 'Interactions' },
+		{ href: '/relationships', label: 'Relationships' },
+		{ href: '/graph', label: 'Graph' }
 	];
 </script>
 
@@ -379,8 +384,9 @@
 			left: 0;
 			right: 0;
 			bottom: 0;
-			display: grid;
-			grid-template-columns: repeat(4, 1fr);
+			display: flex;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
 			background: var(--bg-nav);
 			border-top: 1px solid rgba(255, 255, 255, 0.08);
 			padding: 0.6rem 0.4rem;
@@ -389,6 +395,8 @@
 		.mobile-tabs a {
 			text-align: center;
 			font-size: 0.8rem;
+			flex: 0 0 auto;
+			padding: 0.35rem 0.55rem;
 		}
 	}
 </style>
