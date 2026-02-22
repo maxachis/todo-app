@@ -1,15 +1,66 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Person, type Task, type List } from '$lib';
+	import { api, type Person, type Task, type List, type InteractionType } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
+	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
 	let people: Person[] = $state([]);
 	let selected: Person | null = $state(null);
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
+	let interactionTypes: InteractionType[] = $state([]);
 
-	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' = $state('last_name');
+	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' | 'follow_up_status' = $state('last_name');
 	let sortDirection: 'asc' | 'desc' = $state('asc');
+
+	// Quick-log form state
+	let quickLogTypeId = $state<number | null>(null);
+	let quickLogDate = $state(todayStr());
+	let quickLogNotes = $state('');
+
+	type FollowUpTier = 'overdue' | 'due-soon' | 'on-track' | 'no-cadence';
+
+	function todayStr(): string {
+		const now = new Date();
+		const y = now.getFullYear();
+		const m = String(now.getMonth() + 1).padStart(2, '0');
+		const d = String(now.getDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
+
+	function daysSince(dateStr: string | null): number | null {
+		if (!dateStr) return null;
+		const then = new Date(dateStr + 'T00:00:00');
+		const now = new Date();
+		now.setHours(0, 0, 0, 0);
+		return Math.floor((now.getTime() - then.getTime()) / (1000 * 60 * 60 * 24));
+	}
+
+	function followUpTier(person: Person): FollowUpTier {
+		const cadence = person.follow_up_cadence_days;
+		if (cadence == null || cadence <= 0) return 'no-cadence';
+		const days = daysSince(person.last_interaction_date);
+		if (days == null) return 'overdue'; // has cadence, never contacted
+		if (days > cadence) return 'overdue';
+		if (days > cadence * 0.8) return 'due-soon';
+		return 'on-track';
+	}
+
+	function followUpLabel(person: Person): string {
+		const cadence = person.follow_up_cadence_days;
+		if (cadence == null || cadence <= 0) return '';
+		const days = daysSince(person.last_interaction_date);
+		if (days == null) return `never / ${cadence}d`;
+		return `${days}d / ${cadence}d`;
+	}
+
+	function overdueRatio(person: Person): number {
+		const cadence = person.follow_up_cadence_days;
+		if (cadence == null || cadence <= 0) return -1; // sort to bottom
+		const days = daysSince(person.last_interaction_date);
+		if (days == null) return Infinity; // never contacted, sort to top
+		return days / cadence;
+	}
 
 	let sortedPeople: Person[] = $derived.by(() => {
 		const dir = sortDirection === 'asc' ? 1 : -1;
@@ -21,6 +72,16 @@
 				if (aVal == null) return 1;
 				if (bVal == null) return -1;
 				return (aVal - bVal) * dir;
+			}
+			if (sortField === 'follow_up_status') {
+				const aRatio = overdueRatio(a);
+				const bRatio = overdueRatio(b);
+				// No-cadence people always at bottom
+				if (aRatio === -1 && bRatio === -1) return 0;
+				if (aRatio === -1) return 1;
+				if (bRatio === -1) return -1;
+				// Default desc for status (most overdue first), flip for asc
+				return (bRatio - aRatio) * dir;
 			}
 			const aStr = a[sortField] ?? '';
 			const bStr = b[sortField] ?? '';
@@ -53,6 +114,7 @@
 
 	onMount(() => {
 		loadPeople();
+		api.interactionTypes.getAll().then((types) => (interactionTypes = types));
 	});
 
 	function selectPerson(person: Person): void {
@@ -64,6 +126,9 @@
 		editLinkedin = person.linkedin_url;
 		editNotes = person.notes;
 		editCadence = person.follow_up_cadence_days?.toString() ?? '';
+		quickLogTypeId = null;
+		quickLogDate = todayStr();
+		quickLogNotes = '';
 		loadLinkedTasks(person.id);
 	}
 
@@ -147,6 +212,26 @@
 			selected = null;
 		}
 	}
+
+	async function quickLogInteraction(event: SubmitEvent): Promise<void> {
+		event.preventDefault();
+		if (!selected || !quickLogTypeId || !quickLogDate) return;
+		await api.interactions.create({
+			person_id: selected.id,
+			interaction_type_id: quickLogTypeId,
+			date: quickLogDate,
+			notes: quickLogNotes
+		});
+		quickLogTypeId = null;
+		quickLogDate = todayStr();
+		quickLogNotes = '';
+		await loadPeople();
+	}
+
+	function formatDate(dateStr: string): string {
+		const d = new Date(dateStr + 'T00:00:00');
+		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+	}
 </script>
 
 <section class="network-page">
@@ -172,6 +257,7 @@
 					<option value="last_name">Last Name</option>
 					<option value="first_name">First Name</option>
 					<option value="follow_up_cadence_days">Follow Up Days</option>
+					<option value="follow_up_status">Follow-up Status</option>
 				</select>
 				<button
 					class="sort-direction"
@@ -186,10 +272,14 @@
 			<div class="list">
 				{#each sortedPeople as person (person.id)}
 					<button class="list-item" class:active={selected?.id === person.id} onclick={() => selectPerson(person)}>
-						<div class="title">{person.last_name}, {person.first_name}</div>
-						{#if person.follow_up_cadence_days}
-							<div class="meta">Follow up: {person.follow_up_cadence_days} days</div>
-						{/if}
+						<div class="list-item-row">
+							<div class="title">{person.last_name}, {person.first_name}</div>
+							{#if followUpTier(person) !== 'no-cadence'}
+								<span class="status-badge status-{followUpTier(person)}">
+									{followUpLabel(person)}
+								</span>
+							{/if}
+						</div>
 					</button>
 				{/each}
 			</div>
@@ -211,6 +301,20 @@
 						{/if}
 					</div>
 				{/if}
+
+				{#if selected.follow_up_cadence_days}
+					<div class="follow-up-summary">
+						{#if selected.last_interaction_date}
+							<span class="last-interaction">Last interaction: {formatDate(selected.last_interaction_date)}{selected.last_interaction_type ? ` \u2013 ${selected.last_interaction_type}` : ''}</span>
+						{:else}
+							<span class="last-interaction">No interactions recorded</span>
+						{/if}
+						{#if followUpTier(selected) === 'overdue'}
+							<span class="overdue-warning">Overdue for follow-up</span>
+						{/if}
+					</div>
+				{/if}
+
 				<div class="detail-form">
 					<label>
 						<span>First name</span>
@@ -242,6 +346,21 @@
 					</label>
 					<button class="primary" onclick={savePerson}>Save</button>
 				</div>
+
+				<div class="quick-log-section">
+					<h3>Quick Log Interaction</h3>
+					<form class="quick-log-form" onsubmit={quickLogInteraction}>
+						<TypeaheadSelect
+							options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
+							placeholder="Interaction type"
+							bind:value={quickLogTypeId}
+						/>
+						<input type="date" bind:value={quickLogDate} />
+						<textarea bind:value={quickLogNotes} placeholder="Notes (optional)" rows="2"></textarea>
+						<button type="submit">+ Log</button>
+					</form>
+				</div>
+
 				<div class="linked-tasks-section">
 					<LinkedEntities
 						label="Linked Tasks"
@@ -384,14 +503,47 @@
 		border-color: var(--accent);
 	}
 
+	.list-item-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
 	.title {
 		font-weight: 600;
 		color: var(--text-primary);
 	}
 
-	.meta {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
+	.status-badge {
+		font-size: 0.7rem;
+		font-weight: 600;
+		padding: 0.15rem 0.4rem;
+		border-radius: var(--radius-sm);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.status-overdue {
+		background: var(--error-bg);
+		color: var(--error);
+		border: 1px solid var(--error-border);
+	}
+
+	.status-due-soon {
+		background: rgba(200, 155, 60, 0.1);
+		color: #8a6914;
+		border: 1px solid rgba(200, 155, 60, 0.3);
+	}
+
+	:global(:root[data-theme='dark']) .status-due-soon {
+		color: #c9a84c;
+	}
+
+	.status-on-track {
+		background: var(--success-bg);
+		color: var(--success);
+		border: 1px solid var(--success-border);
 	}
 
 	.detail-header {
@@ -416,6 +568,28 @@
 
 	.contact-links a:hover {
 		text-decoration: underline;
+	}
+
+	.follow-up-summary {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+		padding: 0.5rem 0.65rem;
+		border-radius: var(--radius-sm);
+		background: var(--bg-surface-hover);
+		font-size: 0.82rem;
+	}
+
+	.last-interaction {
+		color: var(--text-secondary);
+	}
+
+	.overdue-warning {
+		font-weight: 600;
+		color: var(--error);
+		font-size: 0.78rem;
 	}
 
 	.detail-form {
@@ -454,6 +628,54 @@
 		border-radius: var(--radius-sm);
 		padding: 0.35rem 0.6rem;
 		cursor: pointer;
+	}
+
+	.quick-log-section {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-light);
+	}
+
+	.quick-log-section h3 {
+		margin: 0 0 0.5rem;
+		font-family: var(--font-display);
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.quick-log-form {
+		display: grid;
+		gap: 0.4rem;
+	}
+
+	.quick-log-form input,
+	.quick-log-form textarea {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.4rem 0.6rem;
+		font-family: var(--font-body);
+		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
+	}
+
+	.quick-log-form button {
+		border: 1px solid var(--border);
+		background: var(--bg-surface);
+		color: var(--text-primary);
+		border-radius: var(--radius-sm);
+		padding: 0.4rem 0.75rem;
+		cursor: pointer;
+		font-family: var(--font-body);
+		font-size: 0.85rem;
+		transition: all var(--transition);
+	}
+
+	.quick-log-form button:hover {
+		background: var(--accent);
+		color: white;
+		border-color: var(--accent);
 	}
 
 	.linked-tasks-section {

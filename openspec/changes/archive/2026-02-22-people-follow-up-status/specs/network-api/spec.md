@@ -1,3 +1,5 @@
+## MODIFIED Requirements
+
 ### Requirement: Network API endpoints for people
 The system SHALL expose JSON API endpoints to create, read, update, and delete people under the `/api/` prefix. The create and update schemas SHALL accept optional `email` and `linkedin_url` fields. The response schema SHALL include `email`, `linkedin_url`, `last_interaction_date`, and `last_interaction_type` fields. The `last_interaction_date` SHALL be the date of the most recent Interaction record for the person (null if no interactions). The `last_interaction_type` SHALL be the name of the interaction type of the most recent Interaction record for the person (null if no interactions).
 
@@ -28,24 +30,3 @@ The system SHALL expose JSON API endpoints to create, read, update, and delete p
 #### Scenario: Person with interactions returns most recent
 - **WHEN** a client sends GET for a person who has interactions on Jan 10 (Email) and Jan 20 (DM)
 - **THEN** `last_interaction_date` is "2026-01-20" and `last_interaction_type` is "DM"
-
-### Requirement: Network API endpoints for organizations and types
-The system SHALL expose JSON API endpoints to create, read, update, and delete organizations, org types, and interaction types.
-
-#### Scenario: Create an organization
-- **WHEN** a client sends POST to `/api/organizations/` with organization fields and an org type
-- **THEN** the server creates the organization and responds with status 201 and the organization object
-
-### Requirement: Network API endpoints for interactions and relationships
-The system SHALL expose JSON API endpoints to create, read, update, and delete interactions and relationship records.
-
-#### Scenario: Create an interaction
-- **WHEN** a client sends POST to `/api/interactions/` with person, type, date, and notes
-- **THEN** the server creates the interaction and responds with status 201 and the interaction object
-
-### Requirement: Network API endpoints for task links
-The system SHALL expose JSON API endpoints to create and remove links between tasks and people, organizations, and interactions.
-
-#### Scenario: Link a task to a person
-- **WHEN** a client sends POST to `/api/tasks/:id/people/` with a person id
-- **THEN** the server creates the link and responds with status 201

@@ -1,3 +1,4 @@
+from django.db.models import Max, OuterRef, Subquery
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -7,9 +8,21 @@ from network.api.schemas import (
     PersonSchema,
     PersonUpdateInput,
 )
-from network.models import Person
+from network.models import Interaction, InteractionType, Person
 
 router = Router(tags=["network-people"])
+
+
+def _annotate_people(qs):
+    latest_type = (
+        Interaction.objects.filter(person=OuterRef("pk"))
+        .order_by("-date")
+        .values("interaction_type__name")[:1]
+    )
+    return qs.annotate(
+        last_interaction_date=Max("interaction__date"),
+        last_interaction_type=Subquery(latest_type),
+    )
 
 
 def _serialize_person(person: Person) -> PersonSchema:
@@ -22,6 +35,8 @@ def _serialize_person(person: Person) -> PersonSchema:
         linkedin_url=person.linkedin_url,
         notes=person.notes,
         follow_up_cadence_days=person.follow_up_cadence_days,
+        last_interaction_date=getattr(person, "last_interaction_date", None),
+        last_interaction_type=getattr(person, "last_interaction_type", None),
         created_at=person.created_at,
         updated_at=person.updated_at,
     )
@@ -29,7 +44,9 @@ def _serialize_person(person: Person) -> PersonSchema:
 
 @router.get("/people/", response=list[PersonSchema])
 def list_people(request):
-    people = Person.objects.order_by("last_name", "first_name", "id")
+    people = _annotate_people(
+        Person.objects.order_by("last_name", "first_name", "id")
+    )
     return [_serialize_person(person) for person in people]
 
 
@@ -56,7 +73,7 @@ def create_person(request, payload: PersonCreateInput):
 
 @router.get("/people/{person_id}/", response=PersonSchema)
 def get_person(request, person_id: int):
-    person = get_object_or_404(Person, pk=person_id)
+    person = _annotate_people(Person.objects.all()).get(pk=person_id)
     return _serialize_person(person)
 
 
@@ -92,6 +109,8 @@ def update_person(request, person_id: int, payload: PersonUpdateInput):
         person.follow_up_cadence_days = payload.follow_up_cadence_days
 
     person.save()
+    # Re-fetch with annotations to include last_interaction fields
+    person = _annotate_people(Person.objects.all()).get(pk=person.pk)
     return _serialize_person(person)
 
 

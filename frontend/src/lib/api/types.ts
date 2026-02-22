@@ -149,6 +149,8 @@ export interface Person {
   linkedin_url: string;
   notes: string;
   follow_up_cadence_days: number | null;
+  last_interaction_date: string | null;
+  last_interaction_type: string | null;
   created_at: string;
   updated_at: string;
 }

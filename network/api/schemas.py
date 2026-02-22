@@ -39,6 +39,8 @@ class PersonSchema(Schema):
     linkedin_url: str
     notes: str
     follow_up_cadence_days: Optional[int]
+    last_interaction_date: Optional[date]
+    last_interaction_type: Optional[str]
     created_at: datetime
     updated_at: datetime
 
