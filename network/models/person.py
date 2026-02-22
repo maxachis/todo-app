@@ -4,6 +4,8 @@ class Person(models.Model):
     first_name = models.CharField(max_length=255)
     middle_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, blank=True)
+    linkedin_url = models.CharField(max_length=500, blank=True)
     notes = models.TextField(
         blank=True
     )

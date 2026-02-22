@@ -35,6 +35,8 @@ class PersonSchema(Schema):
     first_name: str
     middle_name: str
     last_name: str
+    email: str
+    linkedin_url: str
     notes: str
     follow_up_cadence_days: Optional[int]
     created_at: datetime
@@ -45,6 +47,8 @@ class PersonCreateInput(Schema):
     first_name: str
     middle_name: str = ""
     last_name: str
+    email: str = ""
+    linkedin_url: str = ""
     notes: str = ""
     follow_up_cadence_days: Optional[int] = None
 
@@ -53,6 +57,8 @@ class PersonUpdateInput(Schema):
     first_name: Optional[str] = None
     middle_name: Optional[str] = None
     last_name: Optional[str] = None
+    email: Optional[str] = None
+    linkedin_url: Optional[str] = None
     notes: Optional[str] = None
     follow_up_cadence_days: Optional[int] = None
 

@@ -8,15 +8,39 @@
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
 
+	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' = $state('last_name');
+	let sortDirection: 'asc' | 'desc' = $state('asc');
+
+	let sortedPeople: Person[] = $derived.by(() => {
+		const dir = sortDirection === 'asc' ? 1 : -1;
+		return [...people].sort((a, b) => {
+			if (sortField === 'follow_up_cadence_days') {
+				const aVal = a.follow_up_cadence_days;
+				const bVal = b.follow_up_cadence_days;
+				if (aVal == null && bVal == null) return 0;
+				if (aVal == null) return 1;
+				if (bVal == null) return -1;
+				return (aVal - bVal) * dir;
+			}
+			const aStr = a[sortField] ?? '';
+			const bStr = b[sortField] ?? '';
+			return aStr.localeCompare(bStr) * dir;
+		});
+	});
+
 	let newFirst = $state('');
 	let newMiddle = $state('');
 	let newLast = $state('');
+	let newEmail = $state('');
+	let newLinkedin = $state('');
 	let newNotes = $state('');
 	let newCadence = $state('');
 
 	let editFirst = $state('');
 	let editMiddle = $state('');
 	let editLast = $state('');
+	let editEmail = $state('');
+	let editLinkedin = $state('');
 	let editNotes = $state('');
 	let editCadence = $state('');
 
@@ -36,6 +60,8 @@
 		editFirst = person.first_name;
 		editMiddle = person.middle_name;
 		editLast = person.last_name;
+		editEmail = person.email;
+		editLinkedin = person.linkedin_url;
 		editNotes = person.notes;
 		editCadence = person.follow_up_cadence_days?.toString() ?? '';
 		loadLinkedTasks(person.id);
@@ -83,15 +109,17 @@
 			first_name: newFirst.trim(),
 			last_name: newLast.trim(),
 			middle_name: newMiddle.trim(),
+			email: newEmail.trim(),
+			linkedin_url: newLinkedin.trim(),
 			notes: newNotes.trim(),
 			follow_up_cadence_days: newCadence ? Number(newCadence) : null
 		});
-		people = [...people, person].sort((a, b) =>
-			`${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
-		);
+		people = [...people, person];
 		newFirst = '';
 		newMiddle = '';
 		newLast = '';
+		newEmail = '';
+		newLinkedin = '';
 		newNotes = '';
 		newCadence = '';
 	}
@@ -102,6 +130,8 @@
 			first_name: editFirst.trim(),
 			last_name: editLast.trim(),
 			middle_name: editMiddle.trim(),
+			email: editEmail.trim(),
+			linkedin_url: editLinkedin.trim(),
 			notes: editNotes,
 			follow_up_cadence_days: editCadence ? Number(editCadence) : null
 		});
@@ -130,13 +160,31 @@
 				<input bind:value={newFirst} placeholder="First name" />
 				<input bind:value={newMiddle} placeholder="Middle name" />
 				<input bind:value={newLast} placeholder="Last name" />
+				<input bind:value={newEmail} type="email" placeholder="Email" />
+				<input bind:value={newLinkedin} placeholder="LinkedIn URL" />
 				<input bind:value={newCadence} placeholder="Follow-up cadence (days)" />
 				<textarea bind:value={newNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Person</button>
 			</form>
 
+			<div class="sort-bar">
+				<select bind:value={sortField}>
+					<option value="last_name">Last Name</option>
+					<option value="first_name">First Name</option>
+					<option value="follow_up_cadence_days">Follow Up Days</option>
+				</select>
+				<button
+					class="sort-direction"
+					type="button"
+					onclick={() => (sortDirection = sortDirection === 'asc' ? 'desc' : 'asc')}
+					title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+				>
+					{sortDirection === 'asc' ? '\u2191' : '\u2193'}
+				</button>
+			</div>
+
 			<div class="list">
-				{#each people as person (person.id)}
+				{#each sortedPeople as person (person.id)}
 					<button class="list-item" class:active={selected?.id === person.id} onclick={() => selectPerson(person)}>
 						<div class="title">{person.last_name}, {person.first_name}</div>
 						{#if person.follow_up_cadence_days}
@@ -153,6 +201,16 @@
 					<h2>{selected.last_name}, {selected.first_name}</h2>
 					<button class="danger" onclick={() => selected && deletePerson(selected)}>Delete</button>
 				</div>
+				{#if selected.email || selected.linkedin_url}
+					<div class="contact-links">
+						{#if selected.email}
+							<a href="mailto:{selected.email}">{selected.email}</a>
+						{/if}
+						{#if selected.linkedin_url}
+							<a href={selected.linkedin_url} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+						{/if}
+					</div>
+				{/if}
 				<div class="detail-form">
 					<label>
 						<span>First name</span>
@@ -165,6 +223,14 @@
 					<label>
 						<span>Last name</span>
 						<input bind:value={editLast} />
+					</label>
+					<label>
+						<span>Email</span>
+						<input bind:value={editEmail} type="email" />
+					</label>
+					<label>
+						<span>LinkedIn URL</span>
+						<input bind:value={editLinkedin} />
 					</label>
 					<label>
 						<span>Follow-up cadence (days)</span>
@@ -262,6 +328,42 @@
 		border-color: var(--accent);
 	}
 
+	.sort-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.sort-bar select {
+		flex: 1;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.3rem 0.5rem;
+		font-family: var(--font-body);
+		font-size: 0.8rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
+	}
+
+	.sort-direction {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		background: var(--bg-surface);
+		color: var(--text-primary);
+		padding: 0.3rem 0.5rem;
+		cursor: pointer;
+		font-size: 0.85rem;
+		line-height: 1;
+		transition: all var(--transition);
+	}
+
+	.sort-direction:hover {
+		background: var(--accent);
+		color: white;
+		border-color: var(--accent);
+	}
+
 	.list {
 		display: grid;
 		gap: 0.5rem;
@@ -298,6 +400,22 @@
 		justify-content: space-between;
 		gap: 0.5rem;
 		margin-bottom: 0.75rem;
+	}
+
+	.contact-links {
+		display: flex;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+		font-size: 0.85rem;
+	}
+
+	.contact-links a {
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	.contact-links a:hover {
+		text-decoration: underline;
 	}
 
 	.detail-form {

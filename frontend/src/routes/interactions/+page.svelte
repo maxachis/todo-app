@@ -11,8 +11,6 @@
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
 
-	let newTypeName = $state('');
-
 	let newPersonId = $state<number | null>(null);
 	let newTypeId = $state<number | null>(null);
 	let newDate = $state('');
@@ -88,15 +86,10 @@
 		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
-	async function createInteractionType(event: SubmitEvent): Promise<void> {
-		event.preventDefault();
-		if (!newTypeName.trim()) return;
-		const created = await api.interactionTypes.create({ name: newTypeName.trim() });
+	async function handleCreateInteractionType(name: string): Promise<{ id: number; label: string }> {
+		const created = await api.interactionTypes.create({ name });
 		interactionTypes = [...interactionTypes, created].sort((a, b) => a.name.localeCompare(b.name));
-		newTypeName = '';
-		if (!newTypeId) {
-			newTypeId = created.id;
-		}
+		return { id: created.id, label: created.name };
 	}
 
 	async function createInteraction(event: SubmitEvent): Promise<void> {
@@ -144,11 +137,6 @@
 
 	<div class="network-grid">
 		<div class="panel list-panel">
-			<form class="create-form" onsubmit={createInteractionType}>
-				<input bind:value={newTypeName} placeholder="New interaction type" />
-				<button type="submit">+ Type</button>
-			</form>
-
 			<form class="create-form" onsubmit={createInteraction}>
 				<TypeaheadSelect
 					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
@@ -159,6 +147,7 @@
 					options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
 					placeholder="Interaction type"
 					bind:value={newTypeId}
+					onCreate={handleCreateInteractionType}
 				/>
 				<input type="date" bind:value={newDate} />
 				<textarea bind:value={newNotes} placeholder="Notes"></textarea>
@@ -200,6 +189,7 @@
 							options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
 							placeholder="Interaction type"
 							bind:value={editTypeId}
+							onCreate={handleCreateInteractionType}
 						/>
 					</label>
 					<label>

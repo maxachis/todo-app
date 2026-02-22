@@ -10,7 +10,7 @@ The system SHALL use SvelteKit with `adapter-static` to produce a static SPA bui
 - **THEN** the SPA loads and fetches data from the Django API via client-side requests
 
 ### Requirement: Three-panel layout shell
-The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, and Import pages. The navigation bar SHALL also include a theme toggle control.
+The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, and Timesheet pages. The navigation bar SHALL also include a settings cog button and a theme toggle control. The Import page SHALL NOT appear as a primary navigation tab; it SHALL be accessible via the settings dropdown menu.
 
 #### Scenario: Desktop layout shows all three panels
 - **WHEN** the viewport is wider than 1024px
@@ -30,15 +30,15 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 
 #### Scenario: Bottom tab bar on mobile
 - **WHEN** the viewport is narrower than 1024px
-- **THEN** a bottom tab bar shows navigation links for Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, and Import
+- **THEN** a bottom tab bar shows navigation links for Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, and Timesheet (Import is NOT included)
 
 #### Scenario: Non-task routes hide task side panels
 - **WHEN** the user navigates to People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, or Import routes
 - **THEN** the list sidebar and task detail panel are not shown
 
-#### Scenario: Navigation bar includes theme toggle
+#### Scenario: Navigation bar includes theme toggle and settings cog
 - **WHEN** the navigation bar renders
-- **THEN** a theme toggle control is displayed between the navigation links and the search bar
+- **THEN** a settings cog button and theme toggle control are displayed in the right area of the navigation bar
 
 ### Requirement: List sidebar navigation
 The system SHALL display all lists in the sidebar, ordered by position. Selecting a list SHALL load its content in the center panel.

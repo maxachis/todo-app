@@ -145,6 +145,8 @@ export interface Person {
   first_name: string;
   middle_name: string;
   last_name: string;
+  email: string;
+  linkedin_url: string;
   notes: string;
   follow_up_cadence_days: number | null;
   created_at: string;
@@ -155,6 +157,8 @@ export interface CreatePersonInput {
   first_name: string;
   last_name: string;
   middle_name?: string;
+  email?: string;
+  linkedin_url?: string;
   notes?: string;
   follow_up_cadence_days?: number | null;
 }
@@ -163,6 +167,8 @@ export interface UpdatePersonInput {
   first_name?: string;
   last_name?: string;
   middle_name?: string;
+  email?: string;
+  linkedin_url?: string;
   notes?: string;
   follow_up_cadence_days?: number | null;
 }

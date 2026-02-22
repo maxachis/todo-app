@@ -3,17 +3,20 @@
 		options,
 		placeholder = '',
 		onSelect,
+		onCreate,
 		value = $bindable<number | null>(null)
 	}: {
 		options: { id: number; label: string }[];
 		placeholder?: string;
 		onSelect?: (id: number) => void;
+		onCreate?: (name: string) => Promise<{ id: number; label: string }>;
 		value?: number | null;
 	} = $props();
 
 	let inputText = $state('');
 	let isOpen = $state(false);
 	let highlightIndex = $state(-1);
+	let creating = $state(false);
 	let container: HTMLDivElement;
 	let inputEl: HTMLInputElement;
 
@@ -24,6 +27,19 @@
 			? options.filter((o) => o.label.toLowerCase().includes(inputText.toLowerCase()))
 			: options
 	);
+
+	const hasExactMatch = $derived(
+		inputText.trim() !== '' &&
+			options.some((o) => o.label.toLowerCase() === inputText.trim().toLowerCase())
+	);
+
+	const showCreateOption = $derived(
+		onCreate !== undefined && inputText.trim() !== '' && !hasExactMatch
+	);
+
+	// Total navigable items: filtered options + optional create item
+	const totalItems = $derived(filtered.length + (showCreateOption ? 1 : 0));
+	const createIndex = $derived(filtered.length); // create item is always last
 
 	const selectedLabel = $derived(
 		isBoundMode && value != null
@@ -40,7 +56,7 @@
 	});
 
 	function open() {
-		if (filtered.length > 0) {
+		if (filtered.length > 0 || showCreateOption) {
 			isOpen = true;
 			highlightIndex = -1;
 		}
@@ -64,12 +80,23 @@
 		close();
 	}
 
+	async function handleCreate() {
+		if (!onCreate || !inputText.trim() || creating) return;
+		creating = true;
+		try {
+			const newOpt = await onCreate(inputText.trim());
+			selectOption(newOpt);
+		} finally {
+			creating = false;
+		}
+	}
+
 	function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
 		inputText = target.value;
 		displayText = target.value;
 		highlightIndex = -1;
-		if (inputText && filtered.length > 0) {
+		if (inputText && (filtered.length > 0 || showCreateOption)) {
 			isOpen = true;
 		} else if (!inputText && options.length > 0) {
 			isOpen = true;
@@ -96,17 +123,25 @@
 		switch (e.key) {
 			case 'ArrowDown':
 				e.preventDefault();
-				highlightIndex = (highlightIndex + 1) % filtered.length;
+				if (totalItems > 0) {
+					highlightIndex = (highlightIndex + 1) % totalItems;
+				}
 				break;
 			case 'ArrowUp':
 				e.preventDefault();
-				highlightIndex = (highlightIndex - 1 + filtered.length) % filtered.length;
+				if (totalItems > 0) {
+					highlightIndex = (highlightIndex - 1 + totalItems) % totalItems;
+				}
 				break;
 			case 'Enter':
 				e.preventDefault();
-				if (filtered.length > 0) {
+				if (totalItems > 0) {
 					const idx = highlightIndex >= 0 ? highlightIndex : 0;
-					selectOption(filtered[idx]);
+					if (idx === createIndex && showCreateOption) {
+						handleCreate();
+					} else if (idx < filtered.length) {
+						selectOption(filtered[idx]);
+					}
 				}
 				break;
 			case 'Escape':
@@ -167,7 +202,7 @@
 		aria-controls="typeahead-listbox"
 		autocomplete="off"
 	/>
-	{#if isOpen && filtered.length > 0}
+	{#if isOpen && (filtered.length > 0 || showCreateOption)}
 		<ul class="typeahead-dropdown" role="listbox" id="typeahead-listbox">
 			{#each filtered as opt, i (opt.id)}
 				<li
@@ -182,6 +217,19 @@
 					{opt.label}
 				</li>
 			{/each}
+			{#if showCreateOption}
+				<li
+					id={optionId(createIndex)}
+					class="typeahead-option typeahead-create"
+					class:highlighted={highlightIndex === createIndex}
+					role="option"
+					aria-selected={highlightIndex === createIndex}
+					onmousedown={(e) => { e.preventDefault(); handleCreate(); }}
+					onmouseenter={() => (highlightIndex = createIndex)}
+				>
+					Create "{inputText.trim()}"
+				</li>
+			{/if}
 		</ul>
 	{/if}
 </div>
@@ -230,5 +278,11 @@
 	.typeahead-option.highlighted {
 		background: var(--accent-light, var(--bg-surface-hover));
 		color: var(--text-primary);
+	}
+
+	.typeahead-create {
+		font-style: italic;
+		color: var(--accent);
+		border-top: 1px solid var(--border-light, var(--border));
 	}
 </style>

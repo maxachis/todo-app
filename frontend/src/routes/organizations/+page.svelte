@@ -14,8 +14,6 @@
 	let newOrgNotes = $state('');
 	let newOrgTypeId = $state<number | null>(null);
 
-	let newTypeName = $state('');
-
 	let editName = $state('');
 	let editNotes = $state('');
 	let editOrgTypeId = $state<number | null>(null);
@@ -75,15 +73,10 @@
 		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
-	async function createOrgType(event: SubmitEvent): Promise<void> {
-		event.preventDefault();
-		if (!newTypeName.trim()) return;
-		const created = await api.orgTypes.create({ name: newTypeName.trim() });
+	async function handleCreateOrgType(name: string): Promise<{ id: number; label: string }> {
+		const created = await api.orgTypes.create({ name });
 		orgTypes = [...orgTypes, created].sort((a, b) => a.name.localeCompare(b.name));
-		newTypeName = '';
-		if (!newOrgTypeId) {
-			newOrgTypeId = created.id;
-		}
+		return { id: created.id, label: created.name };
 	}
 
 	async function createOrganization(event: SubmitEvent): Promise<void> {
@@ -127,17 +120,13 @@
 
 	<div class="network-grid">
 		<div class="panel list-panel">
-			<form class="create-form" onsubmit={createOrgType}>
-				<input bind:value={newTypeName} placeholder="New org type" />
-				<button type="submit">+ Type</button>
-			</form>
-
 			<form class="create-form" onsubmit={createOrganization}>
 				<input bind:value={newOrgName} placeholder="Organization name" />
 				<TypeaheadSelect
 					options={orgTypes.map((t) => ({ id: t.id, label: t.name }))}
 					placeholder="Org type"
 					bind:value={newOrgTypeId}
+					onCreate={handleCreateOrgType}
 				/>
 				<textarea bind:value={newOrgNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Organization</button>
@@ -170,6 +159,7 @@
 							options={orgTypes.map((t) => ({ id: t.id, label: t.name }))}
 							placeholder="Org type"
 							bind:value={editOrgTypeId}
+							onCreate={handleCreateOrgType}
 						/>
 					</label>
 					<label>

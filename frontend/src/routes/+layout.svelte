@@ -19,6 +19,8 @@
 	let { children } = $props();
 	let sidebarOpen = $state(false);
 	let detailOpen = $state(false);
+	let settingsOpen = $state(false);
+	let settingsRef: HTMLDivElement | undefined = $state();
 	let innerWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1200);
 	const isTasksRoute = $derived($page.url.pathname === '/');
 
@@ -43,16 +45,36 @@
 		{ href: '/upcoming', label: 'Upcoming' },
 		{ href: '/projects', label: 'Projects' },
 		{ href: '/timesheet', label: 'Timesheet' },
-		{ href: '/import', label: 'Import' },
 		{ href: '/people', label: 'People' },
 		{ href: '/organizations', label: 'Orgs' },
 		{ href: '/interactions', label: 'Interactions' },
 		{ href: '/relationships', label: 'Relationships' },
 		{ href: '/graph', label: 'Graph' }
 	];
+
+	const settingsItems = [
+		{ href: '/import', label: 'Import' }
+	];
+
+	function handleSettingsClickOutside(event: MouseEvent) {
+		if (settingsRef && !settingsRef.contains(event.target as Node)) {
+			settingsOpen = false;
+		}
+	}
+
+	function handleSettingsKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape' && settingsOpen) {
+			settingsOpen = false;
+		}
+	}
+
+	$effect(() => {
+		$page.url.pathname;
+		settingsOpen = false;
+	});
 </script>
 
-<svelte:window bind:innerWidth />
+<svelte:window bind:innerWidth onclick={handleSettingsClickOutside} onkeydown={handleSettingsKeydown} />
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
@@ -77,6 +99,18 @@
 				&#8942;
 			</button>
 		{/if}
+		<div class="settings-wrapper" bind:this={settingsRef}>
+			<button class="settings-toggle" onclick={() => (settingsOpen = !settingsOpen)} aria-label="Settings" title="Settings">
+				&#9881;&#65039;
+			</button>
+			{#if settingsOpen}
+				<div class="settings-dropdown">
+					{#each settingsItems as item}
+						<a href={item.href} class:active={$page.url.pathname === item.href}>{item.label}</a>
+					{/each}
+				</div>
+			{/if}
+		</div>
 		<button class="theme-toggle" onclick={cycleTheme} aria-label="Theme: {$themePreference}" title="Theme: {$themePreference}">
 			{themeIcons[$themePreference]}
 		</button>
@@ -291,6 +325,63 @@
 	}
 
 	a.active {
+		color: var(--text-on-dark);
+		background: rgba(255, 255, 255, 0.1);
+		font-weight: 600;
+	}
+
+	.settings-wrapper {
+		position: relative;
+	}
+
+	.settings-toggle {
+		background: transparent;
+		border: 1px solid var(--border-nav);
+		border-radius: var(--radius-sm);
+		padding: 0.25rem 0.45rem;
+		font-size: 0.9rem;
+		cursor: pointer;
+		line-height: 1;
+		transition: background var(--transition);
+	}
+
+	.settings-toggle:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.settings-dropdown {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		margin-top: 0.4rem;
+		background: var(--bg-nav);
+		border: 1px solid var(--border-nav);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-md);
+		padding: 0.35rem;
+		min-width: 8rem;
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.settings-dropdown a {
+		color: var(--text-on-dark-muted);
+		text-decoration: none;
+		font-weight: 500;
+		font-size: 0.875rem;
+		padding: 0.4rem 0.65rem;
+		border-radius: var(--radius-sm);
+		transition: color var(--transition), background var(--transition);
+		white-space: nowrap;
+	}
+
+	.settings-dropdown a:hover {
+		color: var(--text-on-dark);
+		background: rgba(255, 255, 255, 0.06);
+	}
+
+	.settings-dropdown a.active {
 		color: var(--text-on-dark);
 		background: rgba(255, 255, 255, 0.1);
 		font-weight: 600;

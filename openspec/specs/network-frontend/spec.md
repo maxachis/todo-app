@@ -6,7 +6,7 @@ The system SHALL provide Svelte routes and navigation entries for People, Organi
 - **THEN** the People view loads in the Svelte app without full-page reload
 
 ### Requirement: Network list and detail views
-The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. The Interactions page SHALL include an inline form for creating new interaction types, following the same pattern as org type creation on the Organizations page.
+The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback.
 
 #### Scenario: View person detail with linked tasks
 - **WHEN** a user selects a person from the list
@@ -24,9 +24,13 @@ The system SHALL provide list and detail views for people, organizations, and in
 - **WHEN** a person, organization, or interaction detail view is displayed
 - **THEN** the "Linked Tasks" section provides a typeahead input to search and link new tasks and a remove button on each linked task to unlink it
 
-#### Scenario: Create interaction type inline on Interactions page
-- **WHEN** a user enters a type name and submits the type creation form on the Interactions page
-- **THEN** the new interaction type is created and appears in the interaction type dropdown
+#### Scenario: Create org type inline via typeahead on Organizations page
+- **WHEN** a user types a name into the org type typeahead (in the create or edit form) that does not match any existing org type
+- **THEN** a "Create [typed name]" option appears, and selecting it creates the org type via the API, adds it to the local type list, and selects it in the typeahead
+
+#### Scenario: Create interaction type inline via typeahead on Interactions page
+- **WHEN** a user types a name into the interaction type typeahead (in the create or edit form) that does not match any existing interaction type
+- **THEN** a "Create [typed name]" option appears, and selecting it creates the interaction type via the API, adds it to the local type list, and selects it in the typeahead
 
 #### Scenario: Select person via typeahead in interaction create form
 - **WHEN** a user types into the person field of the interaction create form
@@ -85,6 +89,43 @@ The system SHALL provide typed API client methods for updating existing person-t
 #### Scenario: Update organization-to-person relationship
 - **WHEN** the client calls `api.relationships.organizations.update(id, { notes })`
 - **THEN** a PUT request is sent to `/relationships/organizations/{id}/` with the payload and the response is typed as `RelationshipOrganizationPerson`
+
+### Requirement: People create form includes email and LinkedIn fields
+The People page create form SHALL include optional text inputs for email and LinkedIn URL, placed after the name fields and before follow-up cadence.
+
+#### Scenario: Create person with email and LinkedIn
+- **WHEN** the user fills in the create form including email and LinkedIn fields and submits
+- **THEN** the person is created with those contact fields via the API
+
+#### Scenario: Create person without contact fields
+- **WHEN** the user submits the create form with email and LinkedIn fields empty
+- **THEN** the person is created without contact information
+
+### Requirement: People edit form includes email and LinkedIn fields
+The People page detail/edit panel SHALL include text inputs for email and LinkedIn URL, reflecting the person's current values.
+
+#### Scenario: Edit person email
+- **WHEN** the user changes the email field in the edit form and saves
+- **THEN** the updated email is sent to the API and persisted
+
+#### Scenario: Edit person LinkedIn URL
+- **WHEN** the user changes the LinkedIn URL field in the edit form and saves
+- **THEN** the updated LinkedIn URL is sent to the API and persisted
+
+### Requirement: People detail view displays contact fields as clickable links
+The People page detail panel SHALL display a non-empty email as a clickable `mailto:` link and a non-empty LinkedIn URL as a clickable external link opening in a new tab.
+
+#### Scenario: Display email as mailto link
+- **WHEN** a person has a non-empty email and is selected in the detail panel
+- **THEN** the email is rendered as a clickable `mailto:` link
+
+#### Scenario: Display LinkedIn as external link
+- **WHEN** a person has a non-empty LinkedIn URL and is selected in the detail panel
+- **THEN** the LinkedIn URL is rendered as a clickable link that opens in a new tab
+
+#### Scenario: Empty contact fields are not displayed as links
+- **WHEN** a person has empty email and LinkedIn fields
+- **THEN** no contact links are shown in the detail panel
 
 ### Requirement: Graph visualization parity
 The system SHALL present the network graph in Svelte with equivalent behavior to the existing network app visualization.
