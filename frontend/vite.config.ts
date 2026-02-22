@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
 	return {
 		plugins: [sveltekit()],
 		server: {
+			watch: {
+				usePolling: true
+			},
 			proxy: {
 				'/api': {
 					target: apiTarget,

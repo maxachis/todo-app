@@ -10,11 +10,19 @@ The system SHALL use SvelteKit with `adapter-static` to produce a static SPA bui
 - **THEN** the SPA loads and fetches data from the Django API via client-side requests
 
 ### Requirement: Three-panel layout shell
-The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, and Import pages. The navigation bar SHALL also include a theme toggle control.
+The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet, and Import pages. The navigation bar SHALL also include a theme toggle control.
 
 #### Scenario: Desktop layout shows all three panels
 - **WHEN** the viewport is wider than 1024px
 - **THEN** the sidebar, center panel, and detail panel are all visible simultaneously
+
+#### Scenario: Desktop layout includes resize handles
+- **WHEN** the viewport is wider than 1024px and the user is on the Tasks route
+- **THEN** draggable resize handles are rendered between the sidebar and center panel, and between the center panel and detail panel
+
+#### Scenario: Desktop panel widths are user-adjustable
+- **WHEN** the user drags a resize handle on the Tasks route
+- **THEN** the grid column widths update to reflect the dragged position, with the center panel using remaining space
 
 #### Scenario: Mobile layout collapses panels
 - **WHEN** the viewport is narrower than 1024px
@@ -126,11 +134,15 @@ The system SHALL display tasks within sections, showing title, tags, due date, s
 - **THEN** subtasks are rendered nested below the parent with visual indentation, collapsible via a toggle
 
 ### Requirement: Task detail panel
-The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. A recurrence editor SHALL be displayed below the due date field.
+The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. A recurrence editor SHALL be displayed below the due date field. A "Linked People & Orgs" section SHALL be displayed below the tags section.
 
 #### Scenario: Selecting a task shows detail
 - **WHEN** the user clicks a task row
-- **THEN** the right panel displays the task's title, notes, due date, priority, tags, parent link, and recurrence settings
+- **THEN** the right panel displays the task's title, notes, due date, priority, tags, parent link, recurrence settings, and linked people & organizations
+
+#### Scenario: Linked section appears in detail panel
+- **WHEN** a task is selected
+- **THEN** the detail panel includes a "Linked People & Orgs" section after the tags section, showing linked entities with add/remove controls
 
 #### Scenario: Auto-save on blur
 - **WHEN** the user edits the title, due date, or notes and then blurs the field

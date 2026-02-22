@@ -69,10 +69,10 @@ class TestTaskPersonLinking:
         linked_section = detail.locator(".linked-section")
         expect(linked_section).to_be_visible()
 
-        # Select the person from dropdown and add
-        people_select = linked_section.locator("select").first
-        people_select.select_option(str(person.id))
-        linked_section.locator("button.add-btn").first.click()
+        # Type into the typeahead to find the person and select
+        typeahead_input = linked_section.locator('.typeahead-input').first
+        typeahead_input.fill("Alice")
+        linked_section.locator('.typeahead-option').first.click()
 
         # Person should appear in the linked list
         expect(linked_section).to_contain_text("Alice Smith")
@@ -109,10 +109,10 @@ class TestPersonTaskLinking:
         linked_section = detail.locator(".linked-tasks-section")
         expect(linked_section).to_be_visible()
 
-        # Select a task from dropdown and add
-        task_select = linked_section.locator("select")
-        task_select.select_option(str(tasks[0].id))
-        linked_section.locator("button.add-btn").click()
+        # Type into the typeahead to find the task and select
+        typeahead_input = linked_section.locator('.typeahead-input')
+        typeahead_input.fill("Buy groceries")
+        linked_section.locator('.typeahead-option').first.click()
 
         # Task title should appear
         expect(linked_section).to_contain_text("Buy groceries")

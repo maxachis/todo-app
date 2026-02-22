@@ -238,12 +238,15 @@
 		padding: 0.4rem 0.6rem;
 		font-family: var(--font-body);
 		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.create-form button,
 	.detail-form button {
 		border: 1px solid var(--border);
 		background: var(--bg-surface);
+		color: var(--text-primary);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.75rem;
 		cursor: pointer;
@@ -316,6 +319,8 @@
 		padding: 0.4rem 0.6rem;
 		font-family: var(--font-body);
 		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.detail-form .primary {

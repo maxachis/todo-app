@@ -166,7 +166,9 @@ export const api = {
       apiRequest<OrgType>('/org-types/', { method: 'POST', body: JSON.stringify(payload) })
   },
   interactionTypes: {
-    getAll: () => apiRequest<InteractionType[]>('/interaction-types/')
+    getAll: () => apiRequest<InteractionType[]>('/interaction-types/'),
+    create: (payload: { name: string }) =>
+      apiRequest<InteractionType>('/interaction-types/', { method: 'POST', body: JSON.stringify(payload) })
   },
   interactions: {
     getAll: () => apiRequest<Interaction[]>('/interactions/'),
@@ -185,6 +187,11 @@ export const api = {
           method: 'POST',
           body: JSON.stringify(payload)
         }),
+      update: (id: number, payload: { notes?: string }) =>
+        apiRequest<RelationshipPersonPerson>(`/relationships/people/${id}/`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        }),
       remove: (id: number) => apiRequest<void>(`/relationships/people/${id}/`, { method: 'DELETE' })
     },
     organizations: {
@@ -192,6 +199,11 @@ export const api = {
       create: (payload: { organization_id: number; person_id: number; notes?: string }) =>
         apiRequest<RelationshipOrganizationPerson>('/relationships/organizations/', {
           method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      update: (id: number, payload: { notes?: string }) =>
+        apiRequest<RelationshipOrganizationPerson>(`/relationships/organizations/${id}/`, {
+          method: 'PUT',
           body: JSON.stringify(payload)
         }),
       remove: (id: number) =>

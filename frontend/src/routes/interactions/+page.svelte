@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api, type Interaction, type InteractionType, type Person, type List } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
+	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
 	let interactions: Interaction[] = $state([]);
 	let people: Person[] = $state([]);
@@ -9,6 +10,8 @@
 	let selected: Interaction | null = $state(null);
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
+
+	let newTypeName = $state('');
 
 	let newPersonId = $state<number | null>(null);
 	let newTypeId = $state<number | null>(null);
@@ -85,6 +88,17 @@
 		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
+	async function createInteractionType(event: SubmitEvent): Promise<void> {
+		event.preventDefault();
+		if (!newTypeName.trim()) return;
+		const created = await api.interactionTypes.create({ name: newTypeName.trim() });
+		interactionTypes = [...interactionTypes, created].sort((a, b) => a.name.localeCompare(b.name));
+		newTypeName = '';
+		if (!newTypeId) {
+			newTypeId = created.id;
+		}
+	}
+
 	async function createInteraction(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		if (!newPersonId || !newTypeId || !newDate) return;
@@ -130,19 +144,22 @@
 
 	<div class="network-grid">
 		<div class="panel list-panel">
+			<form class="create-form" onsubmit={createInteractionType}>
+				<input bind:value={newTypeName} placeholder="New interaction type" />
+				<button type="submit">+ Type</button>
+			</form>
+
 			<form class="create-form" onsubmit={createInteraction}>
-				<select bind:value={newPersonId}>
-					<option value={null} disabled selected>Person</option>
-					{#each people as person (person.id)}
-						<option value={person.id}>{person.last_name}, {person.first_name}</option>
-					{/each}
-				</select>
-				<select bind:value={newTypeId}>
-					<option value={null} disabled selected>Interaction type</option>
-					{#each interactionTypes as type (type.id)}
-						<option value={type.id}>{type.name}</option>
-					{/each}
-				</select>
+				<TypeaheadSelect
+					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					placeholder="Person"
+					bind:value={newPersonId}
+				/>
+				<TypeaheadSelect
+					options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
+					placeholder="Interaction type"
+					bind:value={newTypeId}
+				/>
 				<input type="date" bind:value={newDate} />
 				<textarea bind:value={newNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Interaction</button>
@@ -171,19 +188,19 @@
 				<div class="detail-form">
 					<label>
 						<span>Person</span>
-						<select bind:value={editPersonId}>
-							{#each people as person (person.id)}
-								<option value={person.id}>{person.last_name}, {person.first_name}</option>
-							{/each}
-						</select>
+						<TypeaheadSelect
+							options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+							placeholder="Person"
+							bind:value={editPersonId}
+						/>
 					</label>
 					<label>
 						<span>Interaction type</span>
-						<select bind:value={editTypeId}>
-							{#each interactionTypes as type (type.id)}
-								<option value={type.id}>{type.name}</option>
-							{/each}
-						</select>
+						<TypeaheadSelect
+							options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
+							placeholder="Interaction type"
+							bind:value={editTypeId}
+						/>
 					</label>
 					<label>
 						<span>Date</span>
@@ -250,7 +267,6 @@
 		margin-bottom: 0.75rem;
 	}
 
-	.create-form select,
 	.create-form input,
 	.create-form textarea {
 		border: 1px solid var(--border);
@@ -258,12 +274,15 @@
 		padding: 0.4rem 0.6rem;
 		font-family: var(--font-body);
 		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.create-form button,
 	.detail-form button {
 		border: 1px solid var(--border);
 		background: var(--bg-surface);
+		color: var(--text-primary);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.75rem;
 		cursor: pointer;
@@ -330,13 +349,14 @@
 	}
 
 	label input,
-	label textarea,
-	label select {
+	label textarea {
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.6rem;
 		font-family: var(--font-body);
 		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.detail-form .primary {

@@ -4,8 +4,10 @@
 	import TaskDetail from '$lib/components/tasks/TaskDetail.svelte';
 	import ToastContainer from '$lib/components/shared/ToastContainer.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
+	import ResizeHandle from '$lib/components/shared/ResizeHandle.svelte';
 	import { page } from '$app/stores';
 	import { selectedTaskStore } from '$lib/stores/tasks';
+	import { sidebarWidth, detailWidth, savePanelWidths, clampWidths } from '$lib/stores/panelWidths';
 	import { themePreference, cycleTheme, type ThemePreference } from '$lib/stores/theme';
 
 	const themeIcons: Record<ThemePreference, string> = {
@@ -17,7 +19,18 @@
 	let { children } = $props();
 	let sidebarOpen = $state(false);
 	let detailOpen = $state(false);
+	let innerWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1200);
 	const isTasksRoute = $derived($page.url.pathname === '/');
+
+	const panelGridStyle = $derived(
+		isTasksRoute
+			? `grid-template-columns: ${$sidebarWidth}px 6px 1fr 6px ${$detailWidth}px`
+			: ''
+	);
+
+	$effect(() => {
+		clampWidths(innerWidth);
+	});
 
 	$effect(() => {
 		if ($selectedTaskStore !== null) {
@@ -38,6 +51,8 @@
 		{ href: '/graph', label: 'Graph' }
 	];
 </script>
+
+<svelte:window bind:innerWidth />
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
@@ -67,11 +82,15 @@
 		</button>
 	</header>
 
-	<main class="panels" class:single-panel={!isTasksRoute}>
+	<main class="panels" class:single-panel={!isTasksRoute} style={panelGridStyle}>
 		{#if isTasksRoute}
 			<aside id="sidebar" class:open={sidebarOpen}>
 				<ListSidebar />
 			</aside>
+			<ResizeHandle
+				onDrag={(delta) => sidebarWidth.update((w) => Math.max(180, w + delta))}
+				onDragEnd={savePanelWidths}
+			/>
 		{/if}
 
 		<section id="center-panel" class="center-panel">
@@ -79,6 +98,10 @@
 		</section>
 
 		{#if isTasksRoute}
+			<ResizeHandle
+				onDrag={(delta) => detailWidth.update((w) => Math.max(220, w - delta))}
+				onDragEnd={savePanelWidths}
+			/>
 			<section id="detail-panel" class="detail-panel" class:open={detailOpen}>
 				<div class="detail-header">
 					<strong>Task Detail</strong>
@@ -287,14 +310,13 @@
 
 	.panels {
 		display: grid;
-		grid-template-columns: 300px 1fr 320px;
-		gap: 0.875rem;
+		column-gap: 0.5rem;
 		padding: 0.875rem;
 		min-height: 0;
 	}
 
 	.panels.single-panel {
-		grid-template-columns: 1fr;
+		grid-template-columns: 1fr !important;
 	}
 
 	aside,
@@ -356,8 +378,12 @@
 		}
 
 		.panels {
-			grid-template-columns: 1fr;
+			grid-template-columns: 1fr !important;
 			padding-bottom: 5rem;
+		}
+
+		.panels :global(.resize-handle) {
+			display: none;
 		}
 
 		aside {

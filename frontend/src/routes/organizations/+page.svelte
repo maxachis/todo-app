@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api, type Organization, type OrgType, type List } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
+	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
 	let organizations: Organization[] = $state([]);
 	let orgTypes: OrgType[] = $state([]);
@@ -133,12 +134,11 @@
 
 			<form class="create-form" onsubmit={createOrganization}>
 				<input bind:value={newOrgName} placeholder="Organization name" />
-				<select bind:value={newOrgTypeId}>
-					<option value={null} disabled selected>Org type</option>
-					{#each orgTypes as type (type.id)}
-						<option value={type.id}>{type.name}</option>
-					{/each}
-				</select>
+				<TypeaheadSelect
+					options={orgTypes.map((t) => ({ id: t.id, label: t.name }))}
+					placeholder="Org type"
+					bind:value={newOrgTypeId}
+				/>
 				<textarea bind:value={newOrgNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Organization</button>
 			</form>
@@ -166,11 +166,11 @@
 					</label>
 					<label>
 						<span>Org type</span>
-						<select bind:value={editOrgTypeId}>
-							{#each orgTypes as type (type.id)}
-								<option value={type.id}>{type.name}</option>
-							{/each}
-						</select>
+						<TypeaheadSelect
+							options={orgTypes.map((t) => ({ id: t.id, label: t.name }))}
+							placeholder="Org type"
+							bind:value={editOrgTypeId}
+						/>
 					</label>
 					<label>
 						<span>Notes</span>
@@ -234,19 +234,21 @@
 	}
 
 	.create-form input,
-	.create-form select,
 	.create-form textarea {
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.6rem;
 		font-family: var(--font-body);
 		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.create-form button,
 	.detail-form button {
 		border: 1px solid var(--border);
 		background: var(--bg-surface);
+		color: var(--text-primary);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.75rem;
 		cursor: pointer;
@@ -313,13 +315,14 @@
 	}
 
 	label input,
-	label textarea,
-	label select {
+	label textarea {
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.6rem;
 		font-family: var(--font-body);
 		font-size: 0.85rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.detail-form .primary {

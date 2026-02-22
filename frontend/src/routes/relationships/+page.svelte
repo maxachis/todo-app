@@ -7,6 +7,7 @@
 		type RelationshipOrganizationPerson,
 		type RelationshipPersonPerson
 	} from '$lib';
+	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
 	let people: Person[] = $state([]);
 	let organizations: Organization[] = $state([]);
@@ -20,6 +21,47 @@
 	let newOrgId = $state<number | null>(null);
 	let newOrgPersonId = $state<number | null>(null);
 	let newOrgNotes = $state('');
+
+	let editingId = $state<number | null>(null);
+	let editingType = $state<'person' | 'org' | null>(null);
+	let editingNotes = $state('');
+
+	function startEdit(id: number, type: 'person' | 'org', currentNotes: string): void {
+		editingId = id;
+		editingType = type;
+		editingNotes = currentNotes;
+	}
+
+	function cancelEdit(): void {
+		editingId = null;
+		editingType = null;
+		editingNotes = '';
+	}
+
+	async function saveEdit(): Promise<void> {
+		if (editingId === null || editingType === null) return;
+		const id = editingId;
+		const notes = editingNotes;
+		const type = editingType;
+		cancelEdit();
+		if (type === 'person') {
+			const updated = await api.relationships.people.update(id, { notes });
+			personRelationships = personRelationships.map((r) => (r.id === id ? updated : r));
+		} else {
+			const updated = await api.relationships.organizations.update(id, { notes });
+			orgRelationships = orgRelationships.map((r) => (r.id === id ? updated : r));
+		}
+	}
+
+	function handleEditKeydown(event: KeyboardEvent): void {
+		if (event.key === 'Escape') {
+			cancelEdit();
+		}
+	}
+
+	function autofocus(node: HTMLTextAreaElement): void {
+		node.focus();
+	}
 
 	async function loadData(): Promise<void> {
 		people = await api.people.getAll();
@@ -92,18 +134,16 @@
 		<div class="panel">
 			<h2>Person ↔ Person</h2>
 			<form class="create-form" onsubmit={createPersonRelationship}>
-				<select bind:value={newPerson1Id}>
-					<option value={null} disabled selected>Person A</option>
-					{#each people as person (person.id)}
-						<option value={person.id}>{person.last_name}, {person.first_name}</option>
-					{/each}
-				</select>
-				<select bind:value={newPerson2Id}>
-					<option value={null} disabled selected>Person B</option>
-					{#each people as person (person.id)}
-						<option value={person.id}>{person.last_name}, {person.first_name}</option>
-					{/each}
-				</select>
+				<TypeaheadSelect
+					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					placeholder="Person A"
+					bind:value={newPerson1Id}
+				/>
+				<TypeaheadSelect
+					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					placeholder="Person B"
+					bind:value={newPerson2Id}
+				/>
 				<textarea bind:value={newPersonNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Relationship</button>
 			</form>
@@ -112,10 +152,26 @@
 				{#each personRelationships as rel (rel.id)}
 					<div class="list-item">
 						<div class="title">{personLabel(rel.person_1_id)} ↔ {personLabel(rel.person_2_id)}</div>
-						{#if rel.notes}
-							<div class="meta">{rel.notes}</div>
+						{#if editingId === rel.id && editingType === 'person'}
+							<textarea
+								class="edit-notes"
+								bind:value={editingNotes}
+								onblur={saveEdit}
+								onkeydown={handleEditKeydown}
+								use:autofocus
+							></textarea>
+						{:else}
+							<button class="notes-btn" onclick={() => startEdit(rel.id, 'person', rel.notes || '')}>
+								{#if rel.notes}
+									<span class="meta">{rel.notes}</span>
+								{:else}
+									<span class="meta placeholder">&#9998; Add notes</span>
+								{/if}
+							</button>
 						{/if}
-						<button class="danger" onclick={() => deletePersonRelationship(rel.id)}>Delete</button>
+						<div class="actions">
+							<button class="danger" onclick={() => deletePersonRelationship(rel.id)}>Delete</button>
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -124,18 +180,16 @@
 		<div class="panel">
 			<h2>Organization → Person</h2>
 			<form class="create-form" onsubmit={createOrgRelationship}>
-				<select bind:value={newOrgId}>
-					<option value={null} disabled selected>Organization</option>
-					{#each organizations as org (org.id)}
-						<option value={org.id}>{org.name}</option>
-					{/each}
-				</select>
-				<select bind:value={newOrgPersonId}>
-					<option value={null} disabled selected>Person</option>
-					{#each people as person (person.id)}
-						<option value={person.id}>{person.last_name}, {person.first_name}</option>
-					{/each}
-				</select>
+				<TypeaheadSelect
+					options={organizations.map((o) => ({ id: o.id, label: o.name }))}
+					placeholder="Organization"
+					bind:value={newOrgId}
+				/>
+				<TypeaheadSelect
+					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					placeholder="Person"
+					bind:value={newOrgPersonId}
+				/>
 				<textarea bind:value={newOrgNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Relationship</button>
 			</form>
@@ -144,10 +198,26 @@
 				{#each orgRelationships as rel (rel.id)}
 					<div class="list-item">
 						<div class="title">{orgLabel(rel.organization_id)} → {personLabel(rel.person_id)}</div>
-						{#if rel.notes}
-							<div class="meta">{rel.notes}</div>
+						{#if editingId === rel.id && editingType === 'org'}
+							<textarea
+								class="edit-notes"
+								bind:value={editingNotes}
+								onblur={saveEdit}
+								onkeydown={handleEditKeydown}
+								use:autofocus
+							></textarea>
+						{:else}
+							<button class="notes-btn" onclick={() => startEdit(rel.id, 'org', rel.notes || '')}>
+								{#if rel.notes}
+									<span class="meta">{rel.notes}</span>
+								{:else}
+									<span class="meta placeholder">&#9998; Add notes</span>
+								{/if}
+							</button>
 						{/if}
-						<button class="danger" onclick={() => deleteOrgRelationship(rel.id)}>Delete</button>
+						<div class="actions">
+							<button class="danger" onclick={() => deleteOrgRelationship(rel.id)}>Delete</button>
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -200,18 +270,20 @@
 		gap: 0.5rem;
 	}
 
-	.create-form select,
 	.create-form textarea {
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
+		padding: 0.25rem 0.4rem;
 		font-family: var(--font-body);
-		font-size: 0.85rem;
+		font-size: 0.8rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.create-form button {
 		border: 1px solid var(--border);
 		background: var(--bg-surface);
+		color: var(--text-primary);
 		border-radius: var(--radius-sm);
 		padding: 0.4rem 0.75rem;
 		cursor: pointer;
@@ -249,6 +321,49 @@
 		color: var(--text-tertiary);
 	}
 
+	.notes-btn {
+		all: unset;
+		cursor: pointer;
+		display: block;
+		width: 100%;
+		border-bottom: 1px dashed var(--border, rgba(0, 0, 0, 0.15));
+		padding: 0.25rem 0.4rem;
+		border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+		transition: background 0.15s, border-color 0.15s;
+	}
+
+	.notes-btn:hover {
+		background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+		border-bottom-color: var(--accent, #4a90d9);
+	}
+
+	.notes-btn:focus-visible {
+		outline: 2px solid var(--accent, #4a90d9);
+		outline-offset: 1px;
+		border-radius: var(--radius-sm);
+	}
+
+	.placeholder {
+		font-style: italic;
+		color: var(--text-quaternary, var(--text-tertiary));
+		opacity: 0.7;
+	}
+
+	.edit-notes {
+		border: 1px solid var(--accent);
+		border-radius: var(--radius-sm);
+		padding: 0.4rem 0.6rem;
+		font-family: var(--font-body);
+		font-size: 0.85rem;
+		resize: vertical;
+		min-height: 2.5rem;
+	}
+
+	.actions {
+		display: flex;
+		gap: 0.35rem;
+	}
+
 	.danger {
 		border: 1px solid var(--error-border);
 		background: var(--error-bg);
@@ -256,6 +371,5 @@
 		border-radius: var(--radius-sm);
 		padding: 0.25rem 0.5rem;
 		cursor: pointer;
-		justify-self: start;
 	}
 </style>

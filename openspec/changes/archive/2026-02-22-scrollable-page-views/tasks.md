@@ -17,12 +17,12 @@
 ## 4. Mobile Preservation
 
 - [x] 4.1 Ensure the `@media (max-width: 1023px)` block in `+layout.svelte` reverts `.app-shell` to `min-height: 100vh` / `overflow: visible` so mobile retains normal document scroll
-- [ ] 4.2 Verify network page panels stack and scroll normally on narrow viewports (no height lock)
+- [x] 4.2 Verify network page panels stack and scroll normally on narrow viewports (no height lock)
 
 ## 5. Verification
 
-- [ ] 5.1 Manually test Tasks page: confirm sidebar, center, and detail panels scroll independently
-- [ ] 5.2 Manually test People, Orgs, Interactions pages: confirm list and detail panels scroll independently
-- [ ] 5.3 Manually test Relationships page: confirm both columns scroll independently
-- [ ] 5.4 Verify drag-and-drop still works correctly within scrollable panels on the Tasks page
+- [x] 5.1 Manually test Tasks page: confirm sidebar, center, and detail panels scroll independently
+- [x] 5.2 Manually test People, Orgs, Interactions pages: confirm list and detail panels scroll independently
+- [x] 5.3 Manually test Relationships page: confirm both columns scroll independently
+- [x] 5.4 Verify drag-and-drop still works correctly within scrollable panels on the Tasks page
 - [x] 5.5 Run `cd frontend && npm run check` to confirm no type/lint regressions

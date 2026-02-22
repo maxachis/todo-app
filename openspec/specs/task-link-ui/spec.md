@@ -73,13 +73,13 @@ The system SHALL display a "Linked People & Orgs" section in the task detail pan
 - **WHEN** a task is selected and has no linked people or organizations
 - **THEN** the section shows placeholder text such as "No linked people or organizations"
 
-#### Scenario: Add a person link via dropdown
-- **WHEN** the user clicks the add button in the linked people area and selects a person from the dropdown
-- **THEN** the person is linked to the task via the API and appears in the list immediately
+#### Scenario: Add a person link via typeahead
+- **WHEN** the user types into the add-person typeahead input and selects a person from the filtered results
+- **THEN** the person is linked to the task via the API, appears in the list immediately, and the typeahead input clears
 
-#### Scenario: Add an organization link via dropdown
-- **WHEN** the user clicks the add button in the linked organizations area and selects an organization from the dropdown
-- **THEN** the organization is linked to the task via the API and appears in the list immediately
+#### Scenario: Add an organization link via typeahead
+- **WHEN** the user types into the add-organization typeahead input and selects an organization from the filtered results
+- **THEN** the organization is linked to the task via the API, appears in the list immediately, and the typeahead input clears
 
 #### Scenario: Remove a person link
 - **WHEN** the user clicks the remove button next to a linked person
@@ -89,9 +89,9 @@ The system SHALL display a "Linked People & Orgs" section in the task detail pan
 - **WHEN** the user clicks the remove button next to a linked organization
 - **THEN** the link is removed via the API and the organization disappears from the list immediately
 
-#### Scenario: Dropdown excludes already-linked entities
-- **WHEN** the user opens the add-person or add-organization dropdown
-- **THEN** entities already linked to the task are excluded from the dropdown options
+#### Scenario: Typeahead excludes already-linked entities
+- **WHEN** the user focuses the add-person or add-organization typeahead input
+- **THEN** entities already linked to the task are excluded from the typeahead options
 
 #### Scenario: Links load when task is selected
 - **WHEN** the user selects a task in the center panel
