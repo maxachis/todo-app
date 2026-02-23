@@ -1,5 +1,5 @@
 ### Requirement: Task creation form includes optional due date input
-The task creation form SHALL include an optional date input field positioned between the title text input and the submit button. The date field SHALL use a native HTML date input (`<input type="date">`). When no date is selected, the form SHALL behave identically to the current title-only creation flow.
+The task creation form SHALL include an optional date input field positioned between the title text input and the submit button. The date field SHALL use a native HTML date input (`<input type="date">`). When no date is selected, the form SHALL behave identically to the current title-only creation flow. The date picker SHALL support being pre-filled programmatically by the smart date detection system.
 
 #### Scenario: Create task with a due date
 - **WHEN** user enters a title and selects a date in the inline date picker, then submits the form
@@ -12,6 +12,10 @@ The task creation form SHALL include an optional date input field positioned bet
 #### Scenario: Form resets after submission
 - **WHEN** a task is submitted (with or without a date)
 - **THEN** both the title input and the date input SHALL be cleared to their empty/default state
+
+#### Scenario: Date picker pre-filled by detection system
+- **WHEN** the smart date detection system detects a date in the title text
+- **THEN** the date picker value SHALL be set programmatically to the detected date
 
 ### Requirement: Create task API accepts optional due_date
 The `POST /sections/{section_id}/tasks/` endpoint SHALL accept an optional `due_date` field (ISO 8601 date string) in the request payload. When provided, the created task SHALL have its `due_date` field set to the given value. When omitted or null, the task SHALL be created with no due date.

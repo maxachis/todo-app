@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as chrono from 'chrono-node';
 	import { createTask } from '$lib/stores/tasks';
 
 	let {
@@ -12,6 +13,34 @@
 	let title = $state('');
 	let dueDate = $state('');
 
+	let detecting = $state(true);
+	let settingProgrammatically = false;
+
+	function formatDateForPicker(date: Date): string {
+		const y = date.getFullYear();
+		const m = String(date.getMonth() + 1).padStart(2, '0');
+		const d = String(date.getDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
+
+	function handleTitleInput(): void {
+		if (!detecting) return;
+
+		const parsed = chrono.parseDate(title);
+		if (parsed) {
+			settingProgrammatically = true;
+			dueDate = formatDateForPicker(parsed);
+			settingProgrammatically = false;
+		}
+		// If no date found, current picker value sticks
+	}
+
+	function handleDatePickerChange(): void {
+		if (settingProgrammatically) return;
+		// User manually interacted with picker — stop detecting
+		detecting = false;
+	}
+
 	async function submit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		const trimmed = title.trim();
@@ -23,18 +52,21 @@
 		});
 		title = '';
 		dueDate = '';
+		detecting = true;
 	}
 </script>
 
 <form class="create-form" data-section-id={sectionId} onsubmit={submit}>
 	<input
 		bind:value={title}
+		oninput={handleTitleInput}
 		placeholder={parentId !== null ? 'Add subtask...' : 'Add task...'}
 		class="task-input"
 	/>
 	<input
 		type="date"
 		bind:value={dueDate}
+		onchange={handleDatePickerChange}
 		class="date-input"
 		title="Due date"
 	/>
