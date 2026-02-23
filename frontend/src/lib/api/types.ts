@@ -322,6 +322,7 @@ export interface UpdateSectionInput {
 export interface CreateTaskInput {
   title: string;
   parent_id?: number | null;
+  due_date?: string | null;
 }
 
 export interface UpdateTaskInput {

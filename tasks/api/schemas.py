@@ -62,6 +62,7 @@ class TaskSchema(Schema):
 class TaskCreateInput(Schema):
     title: str
     parent_id: int | None = None
+    due_date: date | None = None
 
 
 class TaskUpdateInput(Schema):

@@ -32,6 +32,32 @@ class TaskAPITests(TestCase):
         data = response.json()
         self.assertEqual(data["parent_id"], parent.id)
 
+    def test_create_task_with_due_date(self):
+        response = self.client.post(
+            f"/api/sections/{self.section_a.id}/tasks/",
+            data=json.dumps({"title": "Dated task", "due_date": "2026-03-01"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["due_date"], "2026-03-01")
+        task = Task.objects.get(pk=data["id"])
+        self.assertEqual(task.due_date, date(2026, 3, 1))
+
+    def test_create_task_without_due_date(self):
+        response = self.client.post(
+            f"/api/sections/{self.section_a.id}/tasks/",
+            data=json.dumps({"title": "No date task"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertIsNone(data["due_date"])
+
     def test_get_task_detail(self):
         parent = Task.objects.create(section=self.section_a, title="Parent", notes="n", position=10)
         child = Task.objects.create(section=self.section_a, parent=parent, title="Child", position=10)

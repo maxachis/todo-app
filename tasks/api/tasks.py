@@ -52,6 +52,7 @@ def create_task(request, section_id: int, payload: TaskCreateInput):
         parent=parent,
         title=title,
         position=max_position + 10,
+        **({"due_date": payload.due_date} if payload.due_date is not None else {}),
     )
     return 201, _serialize_task(task)
 
