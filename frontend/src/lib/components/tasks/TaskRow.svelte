@@ -38,12 +38,13 @@
 		if (task.is_completed) {
 			await uncompleteTask(task.id);
 		} else {
-			await completeTask(task.id);
+			const result = await completeTask(task.id);
+			const nextOccurrenceId = result.next_occurrence_id ?? undefined;
 			addToast({
 				message: `"${task.title}" completed`,
 				type: 'success',
 				actionLabel: 'Undo',
-				onAction: () => uncompleteTask(task.id)
+				onAction: () => uncompleteTask(task.id, nextOccurrenceId)
 			});
 		}
 	}

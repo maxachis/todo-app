@@ -54,13 +54,18 @@ export async function deleteTask(taskId: number): Promise<void> {
 
 export async function completeTask(taskId: number): Promise<Task> {
   const updated = await api.tasks.complete(taskId);
-  await refreshListDetail();
+  const listId = get(selectedListStore);
+  if (listId !== null) {
+    replaceTaskInList(listId, updated.section_id, updated);
+    if (updated.next_occurrence) {
+      addTaskToSection(listId, updated.section_id, updated.next_occurrence);
+    }
+  }
   selectedTaskDetail.update((d) => (d?.id === taskId ? updated : d));
 
-  if (updated.next_occurrence_id && updated.recurrence_type !== 'none') {
-    const nextTask = await api.tasks.get(updated.next_occurrence_id);
-    const dateStr = nextTask.due_date
-      ? new Date(nextTask.due_date + 'T00:00:00').toLocaleDateString(undefined, {
+  if (updated.next_occurrence) {
+    const dateStr = updated.next_occurrence.due_date
+      ? new Date(updated.next_occurrence.due_date + 'T00:00:00').toLocaleDateString(undefined, {
           month: 'short',
           day: 'numeric'
         })
@@ -71,9 +76,19 @@ export async function completeTask(taskId: number): Promise<Task> {
   return updated;
 }
 
-export async function uncompleteTask(taskId: number): Promise<Task> {
+export async function uncompleteTask(taskId: number, deleteNextOccurrenceId?: number): Promise<Task> {
+  const listId = get(selectedListStore);
+  if (deleteNextOccurrenceId !== undefined) {
+    const detail = await api.tasks.get(deleteNextOccurrenceId).catch(() => null);
+    await api.tasks.remove(deleteNextOccurrenceId);
+    if (listId !== null && detail) {
+      removeTaskFromList(listId, detail.section_id, deleteNextOccurrenceId);
+    }
+  }
   const updated = await api.tasks.uncomplete(taskId);
-  await refreshListDetail();
+  if (listId !== null) {
+    replaceTaskInList(listId, updated.section_id, updated);
+  }
   selectedTaskDetail.update((d) => (d?.id === taskId ? updated : d));
   return updated;
 }

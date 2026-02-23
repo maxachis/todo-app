@@ -121,6 +121,9 @@ def complete_task(request, task_id: int):
     task.refresh_from_db()
     result = _serialize_task(task)
     result.next_occurrence_id = next_occurrence_id
+    if next_occurrence_id is not None:
+        next_task = get_object_or_404(Task, pk=next_occurrence_id)
+        result.next_occurrence = _serialize_task(next_task)
     return result
 
 

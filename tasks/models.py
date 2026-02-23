@@ -138,11 +138,6 @@ class Task(models.Model):
             next_due = compute_next_due_date(
                 self.recurrence_type, self.recurrence_rule, self.due_date
             )
-            max_pos = (
-                Task.objects.filter(section=self.section, parent=self.parent)
-                .aggregate(max_pos=models.Max("position"))["max_pos"]
-                or 0
-            )
             next_task = Task.objects.create(
                 section=self.section,
                 parent=self.parent,
@@ -151,7 +146,7 @@ class Task(models.Model):
                 priority=self.priority,
                 due_date=next_due,
                 due_time=self.due_time,
-                position=max_pos + 10,
+                position=self.position,
                 recurrence_type=self.recurrence_type,
                 recurrence_rule=self.recurrence_rule,
             )

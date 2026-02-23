@@ -57,6 +57,7 @@ class TaskSchema(Schema):
     recurrence_type: str = "none"
     recurrence_rule: dict = {}
     next_occurrence_id: int | None = None
+    next_occurrence: TaskSchema | None = None
 
 
 class TaskCreateInput(Schema):

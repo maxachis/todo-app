@@ -304,6 +304,14 @@ class TaskAPITests(TestCase):
         self.assertTrue(data["is_completed"])
         self.assertIsNotNone(data["next_occurrence_id"])
 
+        # Verify next_occurrence is returned inline
+        self.assertIsNotNone(data["next_occurrence"])
+        self.assertEqual(data["next_occurrence"]["id"], data["next_occurrence_id"])
+        self.assertEqual(data["next_occurrence"]["title"], "Daily task")
+        self.assertEqual(data["next_occurrence"]["due_date"], "2026-02-21")
+        self.assertEqual(data["next_occurrence"]["recurrence_type"], "daily")
+        self.assertFalse(data["next_occurrence"]["is_completed"])
+
         next_task = Task.objects.get(pk=data["next_occurrence_id"])
         self.assertEqual(next_task.title, "Daily task")
         self.assertEqual(next_task.due_date, date(2026, 2, 21))
@@ -325,6 +333,7 @@ class TaskAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIsNone(data["next_occurrence_id"])
+        self.assertIsNone(data["next_occurrence"])
 
     @patch("tasks.services.recurrence.date")
     def test_complete_recurring_task_copies_tags(self, mock_date):
@@ -350,3 +359,26 @@ class TaskAPITests(TestCase):
         data = response.json()
         next_task = Task.objects.get(pk=data["next_occurrence_id"])
         self.assertIn(tag, next_task.tags.all())
+
+    @patch("tasks.services.recurrence.date")
+    def test_complete_recurring_task_next_occurrence_same_position(self, mock_date):
+        mock_date.today.return_value = date(2026, 2, 20)
+        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+
+        task = Task.objects.create(
+            section=self.section_a, title="Positional", position=25,
+            due_date=date(2026, 2, 20),
+            recurrence_type="daily", recurrence_rule={},
+        )
+
+        response = self.client.post(
+            f"/api/tasks/{task.id}/complete/",
+            data="{}",
+            content_type="application/json",
+            **self._headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        next_task = Task.objects.get(pk=data["next_occurrence_id"])
+        self.assertEqual(next_task.position, 25)

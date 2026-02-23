@@ -23,6 +23,7 @@ export interface Task {
   recurrence_type: string;
   recurrence_rule: Record<string, unknown>;
   next_occurrence_id: number | null;
+  next_occurrence: Task | null;
 }
 
 export interface Section {
