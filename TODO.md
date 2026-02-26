@@ -9,6 +9,8 @@
 - [ ] When editing inputs on task content view and task detail view, the input transitions to a very bright font against a very bright background. Font should be black.
 - [ ] Once I've clicked on a task-add input, I can't use the up and down error keys to move to other tasks. Fix.
 - [ ] It's also not clear that you can edit Notes in Task Detail View, since they are automatically rendered as markdown. 
+- [ ] When adding interactions, pressing enter key in notes section should trigger submission.
+- [ ] Test that multiple interactions can be added at a time
 
 ## Regression
 
