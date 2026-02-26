@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as chrono from 'chrono-node';
-	import { createTask } from '$lib/stores/tasks';
+	import { createTask, selectTask } from '$lib/stores/tasks';
 
 	let {
 		sectionId,
@@ -41,6 +41,78 @@
 		detecting = false;
 	}
 
+	function handleFocus(): void {
+		selectTask(null);
+	}
+
+	function handleKeydown(event: KeyboardEvent): void {
+		if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+			event.preventDefault();
+			const input = event.currentTarget as HTMLInputElement;
+			const scope = input.closest('[data-keyboard-scope]');
+			if (!scope) return;
+
+			const allTasks = Array.from(
+				scope.querySelectorAll<HTMLElement>('[data-task-id]')
+			).filter((el) => !el.classList.contains('completed') && el.offsetParent !== null);
+
+			const form = input.closest('.create-form')!;
+			const formRect = form.getBoundingClientRect();
+
+			if (event.key === 'ArrowUp') {
+				// Find the last visible task that appears before this form in the DOM
+				for (let i = allTasks.length - 1; i >= 0; i--) {
+					if (allTasks[i].getBoundingClientRect().top < formRect.top) {
+						const taskId = Number(allTasks[i].dataset.taskId);
+						if (!Number.isNaN(taskId)) {
+							input.blur();
+							allTasks[i].focus();
+							selectTask(taskId);
+							allTasks[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+						}
+						return;
+					}
+				}
+			} else {
+				// Arrow Down: go to the next section's first task, or its input if empty
+				const allForms = Array.from(scope.querySelectorAll<HTMLElement>('.create-form'));
+				const currentFormIndex = allForms.indexOf(form as HTMLElement);
+				const nextForm = allForms[currentFormIndex + 1];
+				if (nextForm) {
+					// Find the first visible task in the next section
+					const nextSectionId = nextForm.dataset.sectionId;
+					const nextTask = allTasks.find(
+						(el) => el.dataset.sectionId === nextSectionId
+					);
+					if (nextTask) {
+						const taskId = Number(nextTask.dataset.taskId);
+						if (!Number.isNaN(taskId)) {
+							input.blur();
+							nextTask.focus();
+							selectTask(taskId);
+							nextTask.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+						}
+					} else {
+						// Next section has no tasks — focus its input
+						const nextInput = nextForm.querySelector<HTMLInputElement>('.task-input');
+						if (nextInput) {
+							input.blur();
+							nextInput.focus();
+							nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+						}
+					}
+				}
+			}
+		} else if (event.key === 'Escape') {
+			event.preventDefault();
+			event.stopPropagation();
+			title = '';
+			dueDate = '';
+			detecting = true;
+			(event.currentTarget as HTMLInputElement).blur();
+		}
+	}
+
 	async function submit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		const trimmed = title.trim();
@@ -60,6 +132,8 @@
 	<input
 		bind:value={title}
 		oninput={handleTitleInput}
+		onkeydown={handleKeydown}
+		onfocus={handleFocus}
 		placeholder={parentId !== null ? 'Add subtask...' : 'Add task...'}
 		class="task-input"
 	/>

@@ -21,6 +21,11 @@
 		return normalized.split(/\n\s*\n/);
 	});
 
+	const isEmpty = $derived(() => {
+		const b = blocks();
+		return b.length === 1 && !b[0].trim();
+	});
+
 	function startEdit(index: number): void {
 		editingIndex = index;
 		draft = blocks()[index] ?? '';
@@ -56,6 +61,21 @@
 					}
 				}}
 			></textarea>
+		{:else if isEmpty() && index === 0}
+			<div
+				class="block-placeholder"
+				role="button"
+				tabindex="0"
+				onclick={() => startEdit(0)}
+				onkeydown={(event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						startEdit(0);
+					}
+				}}
+			>
+				Click to add notes...
+			</div>
 		{:else}
 			<div
 				class="block-render"
@@ -89,6 +109,7 @@
 		font-size: 0.85rem;
 		font-family: var(--font-mono);
 		color: var(--text-primary);
+		background: var(--bg-input);
 		resize: vertical;
 	}
 
@@ -96,7 +117,27 @@
 		outline: none;
 	}
 
+	.block-placeholder {
+		border: 1px dashed var(--border-light);
+		border-radius: var(--radius-sm);
+		padding: 0.45rem 0.55rem;
+		cursor: text;
+		font-size: 0.88rem;
+		line-height: 1.6;
+		color: var(--text-muted);
+		font-style: italic;
+		transition: all var(--transition);
+	}
+
+	.block-placeholder:hover,
+	.block-placeholder:focus-visible {
+		border-color: var(--border-focus);
+		background: var(--bg-surface-hover);
+		outline: none;
+	}
+
 	.block-render {
+		position: relative;
 		border: 1px solid transparent;
 		border-radius: var(--radius-sm);
 		padding: 0.45rem 0.55rem;
@@ -107,9 +148,28 @@
 		color: var(--text-primary);
 	}
 
-	.block-render:hover {
+	.block-render::after {
+		content: '\270E';
+		position: absolute;
+		top: 0.3rem;
+		right: 0.4rem;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		opacity: 0;
+		transition: opacity var(--transition);
+		pointer-events: none;
+	}
+
+	.block-render:hover,
+	.block-render:focus-visible {
 		border-color: var(--border-light);
 		background: var(--bg-surface-hover);
+		outline: none;
+	}
+
+	.block-render:hover::after,
+	.block-render:focus-visible::after {
+		opacity: 1;
 	}
 
 	.block-render :global(p) {

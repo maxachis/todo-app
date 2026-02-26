@@ -5,7 +5,9 @@
 		createProject,
 		updateProject,
 		toggleProject,
-		deleteProject
+		deleteProject,
+		createProjectLink,
+		deleteProjectLink
 	} from '$lib/stores/projects';
 
 	let newName = $state('');
@@ -13,6 +15,9 @@
 	let editingId = $state<number | null>(null);
 	let editName = $state('');
 	let editDescription = $state('');
+	let addingLinkProjectId = $state<number | null>(null);
+	let newLinkDescriptor = $state('');
+	let newLinkUrl = $state('');
 
 	$effect(() => {
 		loadProjects();
@@ -42,6 +47,22 @@
 		if (!confirm('Delete this project? Lists will be unlinked, not deleted.')) return;
 		await deleteProject(id);
 	}
+
+	async function handleAddLink(projectId: number, event: SubmitEvent): Promise<void> {
+		event.preventDefault();
+		if (!newLinkDescriptor.trim() || !newLinkUrl.trim()) return;
+		await createProjectLink(projectId, {
+			descriptor: newLinkDescriptor.trim(),
+			url: newLinkUrl.trim()
+		});
+		newLinkDescriptor = '';
+		newLinkUrl = '';
+		addingLinkProjectId = null;
+	}
+
+	async function handleDeleteLink(projectId: number, linkId: number): Promise<void> {
+		await deleteProjectLink(projectId, linkId);
+	}
 </script>
 
 <section class="projects-page">
@@ -69,6 +90,26 @@
 					<h3>{project.name}</h3>
 					{#if project.description}
 						<p class="description">{project.description}</p>
+					{/if}
+					{#if project.links && project.links.length > 0}
+						<div class="project-links">
+							{#each project.links as link (link.id)}
+								<div class="link-row">
+									<a href={link.url} target="_blank" rel="noopener noreferrer">{link.descriptor}</a>
+									<button class="link-delete-btn" onclick={() => handleDeleteLink(project.id, link.id)}>&times;</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					{#if addingLinkProjectId === project.id}
+						<form class="add-link-form" onsubmit={(e) => handleAddLink(project.id, e)}>
+							<input bind:value={newLinkDescriptor} placeholder="Label (e.g. GitHub)" />
+							<input bind:value={newLinkUrl} placeholder="URL" />
+							<button type="submit">Add</button>
+							<button type="button" onclick={() => (addingLinkProjectId = null)}>Cancel</button>
+						</form>
+					{:else}
+						<button class="add-link-btn" onclick={() => { addingLinkProjectId = project.id; newLinkDescriptor = ''; newLinkUrl = ''; }}>+ Link</button>
 					{/if}
 					<div class="metrics">
 						<span>📊 {project.total_hours ?? 0}h logged</span>
@@ -230,6 +271,101 @@
 		background: var(--error-bg) !important;
 	}
 
+	.project-links {
+		display: grid;
+		gap: 0.2rem;
+	}
+
+	.link-row {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.link-row a {
+		font-size: 0.82rem;
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	.link-row a:hover {
+		text-decoration: underline;
+	}
+
+	.link-delete-btn {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font-size: 0.85rem;
+		color: var(--text-tertiary);
+		padding: 0 0.15rem;
+		line-height: 1;
+	}
+
+	.link-delete-btn:hover {
+		color: var(--error);
+	}
+
+	.add-link-btn {
+		border: 1px dashed var(--border);
+		background: none;
+		border-radius: var(--radius-sm);
+		padding: 0.2rem 0.5rem;
+		cursor: pointer;
+		font-size: 0.76rem;
+		font-family: var(--font-body);
+		color: var(--text-tertiary);
+		justify-self: start;
+		transition: all var(--transition);
+	}
+
+	.add-link-btn:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.add-link-form {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.25rem;
+	}
+
+	.add-link-form input {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.25rem 0.4rem;
+		font-size: 0.8rem;
+		font-family: var(--font-body);
+		color: var(--text-primary);
+		background: var(--bg-input);
+		min-width: 0;
+	}
+
+	.add-link-form input::placeholder {
+		color: var(--text-tertiary);
+	}
+
+	.add-link-form input:focus {
+		outline: none;
+		border-color: var(--border-focus);
+	}
+
+	.add-link-form button {
+		border: 1px solid var(--border);
+		background: var(--bg-surface);
+		border-radius: var(--radius-sm);
+		padding: 0.2rem 0.45rem;
+		cursor: pointer;
+		font-size: 0.78rem;
+		font-family: var(--font-body);
+		color: var(--text-secondary);
+		transition: all var(--transition);
+	}
+
+	.add-link-form button:hover {
+		background: var(--bg-surface-hover);
+	}
+
 	.edit-input {
 		border: 1px solid var(--border-focus);
 		border-radius: var(--radius-sm);
@@ -237,6 +373,7 @@
 		font-size: 0.88rem;
 		font-family: var(--font-body);
 		color: var(--text-primary);
+		background: var(--bg-input);
 	}
 
 	.edit-input:focus {

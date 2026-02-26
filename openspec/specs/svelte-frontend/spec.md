@@ -177,7 +177,7 @@ The system SHALL display a task's full details in the right panel when selected.
 - **THEN** tag buttons, form inputs, and action buttons in the detail panel have a minimum touch target of 44px height
 
 ### Requirement: Live Markdown editor
-The system SHALL provide a block-based Markdown editor for task notes. Inactive blocks SHALL show rendered HTML; the active block SHALL show raw Markdown.
+The system SHALL provide a block-based Markdown editor for task notes. Inactive blocks SHALL show rendered HTML; the active block SHALL show raw Markdown. The editor SHALL provide visual affordances indicating that content is editable.
 
 #### Scenario: Click to edit a block
 - **WHEN** the user clicks a rendered Markdown block in the notes area
@@ -194,6 +194,20 @@ The system SHALL provide a block-based Markdown editor for task notes. Inactive 
 #### Scenario: XSS sanitization
 - **WHEN** task notes contain script tags or event handler attributes
 - **THEN** the rendered HTML strips all dangerous content
+
+#### Scenario: Empty notes placeholder
+- **WHEN** the notes field has no content
+- **THEN** the editor SHALL display a muted placeholder text "Click to add notes..." that invites interaction
+- **AND** clicking the placeholder SHALL open the editor textarea for that block
+
+#### Scenario: Hover edit affordance on rendered blocks
+- **WHEN** the user hovers over a rendered Markdown block that has content
+- **THEN** a small pencil icon SHALL appear in the top-right corner of the block to indicate editability
+- **AND** the block border and background SHALL become visible to reinforce interactivity
+
+#### Scenario: Keyboard accessibility of edit affordance
+- **WHEN** a rendered Markdown block receives keyboard focus
+- **THEN** the same visual affordance (border, background) SHALL appear as on hover
 
 ### Requirement: Task completion with optimistic UI
 The system SHALL provide task completion with immediate visual feedback. Completing a parent SHALL cascade to non-completed subtasks. Completing a recurring task SHALL display a toast indicating the next occurrence.
@@ -428,7 +442,7 @@ The system SHALL provide a dedicated page at `/projects` for project management 
 - **THEN** project card action buttons have a minimum touch target of 44px height
 
 ### Requirement: Timesheet page
-The system SHALL provide a dedicated page at `/timesheet` for weekly time tracking with navigation and summaries. On phone viewports (640px and below), the summary bar, entry form, week navigation, and entry rows SHALL wrap/stack to prevent horizontal overflow.
+The system SHALL provide a dedicated page at `/timesheet` for weekly time tracking with navigation and summaries. The task selector SHALL use a hierarchical checkbox-based picker that displays tasks with indentation reflecting their parent-child nesting, replacing the native `<select multiple>`. Time entry rows SHALL display associated task names with hierarchy breadcrumbs instead of omitting task information. On phone viewports (640px and below), the summary bar, entry form, week navigation, and entry rows SHALL wrap/stack to prevent horizontal overflow.
 
 #### Scenario: Weekly view with navigation
 - **WHEN** the user navigates to `/timesheet`
@@ -450,9 +464,13 @@ The system SHALL provide a dedicated page at `/timesheet` for weekly time tracki
 - **WHEN** timesheet entries are listed
 - **THEN** each row shows the entry creation time in the user's local device time
 
-#### Scenario: Task selector by project
+#### Scenario: Task selector shows hierarchical tree by project
 - **WHEN** the user selects a project in the time entry form
-- **THEN** a task selector shows incomplete tasks from that project's linked lists
+- **THEN** a checkbox-based task picker shows incomplete tasks from that project's linked lists, indented by their nesting depth
+
+#### Scenario: Entry rows display associated task names
+- **WHEN** timesheet entries with linked tasks are listed
+- **THEN** each entry row displays task names with parent hierarchy breadcrumbs
 
 #### Scenario: Phone viewport summary bar wraps
 - **WHEN** the viewport is 640px or narrower
@@ -468,7 +486,7 @@ The system SHALL provide a dedicated page at `/timesheet` for weekly time tracki
 
 #### Scenario: Phone viewport entry rows wrap
 - **WHEN** the viewport is 640px or narrower
-- **THEN** entry row content (project, time, description, delete button) wraps to fit without horizontal overflow
+- **THEN** entry row content (project, time, description, tasks, delete button) wraps to fit without horizontal overflow
 
 ### Requirement: Import page
 The system SHALL provide a dedicated page at `/import` for importing tasks from TickTick CSV files, the app's native JSON export, and the app's native CSV export.

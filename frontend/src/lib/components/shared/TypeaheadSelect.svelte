@@ -50,7 +50,7 @@
 	let displayText = $state('');
 
 	$effect(() => {
-		if (isBoundMode && !isOpen && selectedLabel) {
+		if (isBoundMode && !isOpen) {
 			displayText = selectedLabel;
 		}
 	});

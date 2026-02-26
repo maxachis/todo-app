@@ -150,7 +150,7 @@
 					onCreate={handleCreateInteractionType}
 				/>
 				<input type="date" bind:value={newDate} />
-				<textarea bind:value={newNotes} placeholder="Notes"></textarea>
+				<textarea bind:value={newNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
 				<button type="submit">+ Interaction</button>
 			</form>
 

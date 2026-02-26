@@ -186,6 +186,7 @@
 	<section class="task-view">
 		<div
 			class="keyboard-scope"
+			data-keyboard-scope
 			use:keyboard={{
 				getCurrentTaskId: () => $selectedTaskStore,
 				onSelectTask: selectTask,

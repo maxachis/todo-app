@@ -49,7 +49,8 @@
 		{ href: '/organizations', label: 'Orgs' },
 		{ href: '/interactions', label: 'Interactions' },
 		{ href: '/relationships', label: 'Relationships' },
-		{ href: '/graph', label: 'Graph' }
+		{ href: '/graph', label: 'Graph' },
+		{ href: '/leads', label: 'Leads' }
 	];
 
 	const settingsItems = [

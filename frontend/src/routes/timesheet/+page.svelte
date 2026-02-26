@@ -79,6 +79,54 @@
 			minute: '2-digit'
 		});
 	}
+
+	interface FlatTask {
+		id: number;
+		title: string;
+		depth: number;
+	}
+
+	function flattenTaskTree(tasks: Task[], depth = 0): FlatTask[] {
+		const result: FlatTask[] = [];
+		for (const task of tasks) {
+			result.push({ id: task.id, title: task.title, depth: Math.min(depth, 3) });
+			if (task.subtasks?.length) {
+				result.push(...flattenTaskTree(task.subtasks, depth + 1));
+			}
+		}
+		return result;
+	}
+
+	let flatTasks = $derived(flattenTaskTree(projectTasks.filter((t) => !t.parent_id)));
+
+	function toggleTask(taskId: number): void {
+		if (newTaskIds.includes(taskId)) {
+			newTaskIds = newTaskIds.filter((id) => id !== taskId);
+		} else {
+			newTaskIds = [...newTaskIds, taskId];
+		}
+	}
+
+	function formatTaskBreadcrumb(detail: {
+		title: string;
+		parent_titles: string[];
+	}): string {
+		if (detail.parent_titles.length === 0) return detail.title;
+		const parent = detail.parent_titles[detail.parent_titles.length - 1];
+		return `${parent} \u203a ${detail.title}`;
+	}
+
+	function formatEntryTasks(
+		details: Array<{ id: number; title: string; parent_titles: string[] }>
+	): string {
+		const MAX_DISPLAY = 3;
+		const displayed = details.slice(0, MAX_DISPLAY).map(formatTaskBreadcrumb);
+		const remaining = details.length - MAX_DISPLAY;
+		if (remaining > 0) {
+			return displayed.join(', ') + `, +${remaining} more`;
+		}
+		return displayed.join(', ');
+	}
 </script>
 
 <section class="timesheet-page">
@@ -97,9 +145,9 @@
 
 	{#if $timesheetStore}
 		<div class="summary-bar">
-			<span class="total">Total: {$timesheetStore.summary.total_hours}h</span>
+			<span class="total">Total: {$timesheetStore.summary.total_hours}h ({$timesheetStore.summary.overall_total_hours}h total)</span>
 			{#each $timesheetStore.summary.per_project as item}
-				<span class="project-hours">{item.project_name}: {item.hours}h</span>
+				<span class="project-hours">{item.project_name}: {item.hours}h ({item.overall_hours}h total)</span>
 			{/each}
 		</div>
 
@@ -112,12 +160,23 @@
 			</select>
 			<input type="date" bind:value={newDate} />
 			<input bind:value={newDescription} placeholder="Description..." />
-			{#if projectTasks.length > 0}
-				<select bind:value={newTaskIds} multiple>
-					{#each projectTasks as task}
-						<option value={task.id}>{task.title}</option>
+			{#if flatTasks.length > 0}
+				<div class="task-picker">
+					{#each flatTasks as task}
+						<label
+							class="task-row"
+							class:subtask={task.depth > 0}
+							style="padding-left: {0.5 + task.depth * 1.25}rem"
+						>
+							<input
+								type="checkbox"
+								checked={newTaskIds.includes(task.id)}
+								onchange={() => toggleTask(task.id)}
+							/>
+							<span class="task-title">{task.title}</span>
+						</label>
 					{/each}
-				</select>
+				</div>
 			{/if}
 			<button type="submit">+ Entry</button>
 		</form>
@@ -132,6 +191,9 @@
 							<span class="entry-time">{formatTimeLocal(entry.created_at)}</span>
 							{#if entry.description}
 								<span class="entry-desc">{entry.description}</span>
+							{/if}
+							{#if entry.task_details?.length}
+								<span class="entry-tasks">{formatEntryTasks(entry.task_details)}</span>
 							{/if}
 							<button class="delete-btn" onclick={() => handleDelete(entry.id)}>&#10005;</button>
 						</div>
@@ -237,8 +299,38 @@
 		border-color: var(--border-focus);
 	}
 
-	.entry-form select[multiple] {
-		min-height: 4rem;
+	.task-picker {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		background: var(--bg-input);
+		max-height: 12rem;
+		overflow-y: auto;
+		width: 100%;
+	}
+
+	.task-row {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.25rem 0.5rem;
+		cursor: pointer;
+		font-size: 0.85rem;
+		font-family: var(--font-body);
+		color: var(--text-primary);
+		transition: background var(--transition);
+	}
+
+	.task-row:hover {
+		background: var(--bg-surface-hover);
+	}
+
+	.task-row.subtask .task-title {
+		color: var(--text-secondary);
+		font-size: 0.82rem;
+	}
+
+	.task-row input[type='checkbox'] {
+		flex-shrink: 0;
 	}
 
 	.entry-form button {
@@ -304,6 +396,15 @@
 		flex: 1;
 	}
 
+	.entry-tasks {
+		color: var(--text-secondary);
+		font-size: 0.8rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 20rem;
+	}
+
 	.delete-btn {
 		background: transparent;
 		border: none;
@@ -328,8 +429,14 @@
 
 		.entry-form select,
 		.entry-form input,
-		.entry-form button {
+		.entry-form button,
+		.task-picker {
 			width: 100%;
+		}
+
+		.entry-tasks {
+			white-space: normal;
+			max-width: none;
 		}
 
 		.week-nav {

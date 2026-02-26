@@ -70,13 +70,45 @@ export function keyboard(node: HTMLElement, options: KeyboardOptions) {
 
 		if ((event.key === 'ArrowDown' || event.key === 'j') && !event.ctrlKey) {
 			event.preventDefault();
-			const nextIndex = Math.min(elements.length - 1, currentIndex + 1);
-			await selectByIndex(nextIndex < 0 ? 0 : nextIndex);
+			const nextIndex = currentIndex + 1;
+			if (nextIndex >= elements.length || (currentElement && elements[nextIndex]?.dataset.sectionId !== currentElement.dataset.sectionId)) {
+				// Last task in section — focus the section's create-form input
+				const sectionId = currentElement?.dataset.sectionId;
+				if (sectionId) {
+					const form = node.querySelector<HTMLElement>(`.create-form[data-section-id="${sectionId}"] .task-input`);
+					if (form) {
+						await options.onSelectTask(null);
+						form.focus();
+						form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+						return;
+					}
+				}
+			}
+			const clampedIndex = Math.min(elements.length - 1, nextIndex);
+			await selectByIndex(clampedIndex < 0 ? 0 : clampedIndex);
 			return;
 		}
 
 		if ((event.key === 'ArrowUp' || event.key === 'k') && !event.ctrlKey) {
 			event.preventDefault();
+			if (currentIndex <= 0 || (currentElement && elements[currentIndex - 1]?.dataset.sectionId !== currentElement.dataset.sectionId)) {
+				// First task in section — focus the previous section's create-form input
+				const allForms = Array.from(node.querySelectorAll<HTMLElement>('.create-form'));
+				const currentSectionId = currentElement?.dataset.sectionId;
+				if (currentSectionId) {
+					const currentFormIndex = allForms.findIndex((f) => f.dataset.sectionId === currentSectionId);
+					const prevForm = allForms[currentFormIndex - 1];
+					if (prevForm) {
+						const prevInput = prevForm.querySelector<HTMLInputElement>('.task-input');
+						if (prevInput) {
+							await options.onSelectTask(null);
+							prevInput.focus();
+							prevInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+							return;
+						}
+					}
+				}
+			}
 			const prevIndex = Math.max(0, currentIndex - 1);
 			await selectByIndex(prevIndex);
 			return;

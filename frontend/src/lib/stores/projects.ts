@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-import { api, type CreateProjectInput, type Project, type UpdateProjectInput } from '$lib';
+import { api, type CreateProjectInput, type Project, type ProjectLink, type UpdateProjectInput } from '$lib';
 
 export const projectsStore = writable<Project[]>([]);
 
@@ -33,4 +33,24 @@ export async function toggleProject(projectId: number): Promise<Project> {
 export async function deleteProject(projectId: number): Promise<void> {
   await api.projects.remove(projectId);
   projectsStore.update((projects) => projects.filter((project) => project.id !== projectId));
+}
+
+function updateProjectLinks(projectId: number, fn: (links: ProjectLink[]) => ProjectLink[]): void {
+  projectsStore.update((projects) =>
+    projects.map((p) => (p.id === projectId ? { ...p, links: fn(p.links) } : p))
+  );
+}
+
+export async function createProjectLink(
+  projectId: number,
+  payload: { url: string; descriptor: string }
+): Promise<ProjectLink> {
+  const link = await api.projects.links.create(projectId, payload);
+  updateProjectLinks(projectId, (links) => [...links, link]);
+  return link;
+}
+
+export async function deleteProjectLink(projectId: number, linkId: number): Promise<void> {
+  await api.projects.links.remove(projectId, linkId);
+  updateProjectLinks(projectId, (links) => links.filter((l) => l.id !== linkId));
 }

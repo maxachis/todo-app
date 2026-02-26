@@ -375,6 +375,7 @@
 		font-size: 0.88rem;
 		font-family: var(--font-body);
 		color: var(--text-primary);
+		background: var(--bg-input);
 	}
 
 	.title-input:focus {

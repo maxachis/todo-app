@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 
 from tasks.api.schemas import TimeEntryCreateInput, TimeEntrySchema
-from tasks.models import Project, TimeEntry
+from tasks.models import Project, Task, TimeEntry
 
 router = Router(tags=["timesheet"])
 
@@ -48,25 +48,98 @@ def get_timesheet(request, week: str | None = None):
         .order_by("-date", "-created_at")
     )
 
+    # Collect all task IDs across entries and build a lookup for task details
+    all_task_ids: set[int] = set()
+    for entry in entries:
+        all_task_ids.update(entry.tasks.values_list("id", flat=True))
+
+    # Fetch all referenced tasks and their parents in bulk
+    task_lookup: dict[int, Task] = {}
+    if all_task_ids:
+        referenced_tasks = Task.objects.filter(id__in=all_task_ids).select_related(
+            "parent", "parent__parent", "parent__parent__parent"
+        )
+        for t in referenced_tasks:
+            task_lookup[t.id] = t
+
+    def _get_parent_titles(task: Task) -> list[str]:
+        titles: list[str] = []
+        current = task.parent
+        while current is not None:
+            titles.append(current.title)
+            current = current.parent
+        titles.reverse()
+        return titles
+
     grouped: dict[str, list[dict]] = {}
     for entry in entries:
         key = entry.date.isoformat()
+        task_ids = list(entry.tasks.values_list("id", flat=True))
+        task_details = []
+        for tid in task_ids:
+            task = task_lookup.get(tid)
+            if task:
+                task_details.append(
+                    {
+                        "id": task.id,
+                        "title": task.title,
+                        "parent_titles": _get_parent_titles(task),
+                    }
+                )
         grouped.setdefault(key, []).append(
             {
                 "id": entry.id,
                 "project_id": entry.project_id,
                 "project_name": entry.project.name,
                 "description": entry.description,
-                "task_ids": list(entry.tasks.values_list("id", flat=True)),
+                "task_ids": task_ids,
+                "task_details": task_details,
                 "created_at": entry.created_at.isoformat(),
             }
         )
 
-    project_hours = (
+    weekly_project_hours = (
         entries.values("project_id", "project__name")
         .annotate(hours=models.Count("id"))
         .order_by("-hours")
     )
+
+    # All-time hours per project and overall total
+    overall_project_hours = (
+        TimeEntry.objects.values("project_id", "project__name")
+        .annotate(overall_hours=models.Count("id"))
+    )
+    overall_lookup: dict[int, dict] = {
+        row["project_id"]: {"project_name": row["project__name"], "overall_hours": row["overall_hours"]}
+        for row in overall_project_hours
+    }
+    overall_total_hours = TimeEntry.objects.count()
+
+    # Build per_project: start with weekly-active projects, then add overall-only
+    weekly_ids: set[int] = set()
+    per_project: list[dict] = []
+    for row in weekly_project_hours:
+        pid = row["project_id"]
+        weekly_ids.add(pid)
+        per_project.append({
+            "project_id": pid,
+            "project_name": row["project__name"],
+            "hours": row["hours"],
+            "overall_hours": overall_lookup.get(pid, {}).get("overall_hours", 0),
+        })
+
+    # Include projects with zero weekly hours but nonzero overall hours
+    for pid, info in overall_lookup.items():
+        if pid not in weekly_ids:
+            per_project.append({
+                "project_id": pid,
+                "project_name": info["project_name"],
+                "hours": 0,
+                "overall_hours": info["overall_hours"],
+            })
+
+    # Sort: descending weekly hours, then descending overall hours
+    per_project.sort(key=lambda p: (-p["hours"], -p["overall_hours"]))
 
     return {
         "week_start": week_start.isoformat(),
@@ -74,14 +147,8 @@ def get_timesheet(request, week: str | None = None):
         "entries_by_date": grouped,
         "summary": {
             "total_hours": entries.count(),
-            "per_project": [
-                {
-                    "project_id": row["project_id"],
-                    "project_name": row["project__name"],
-                    "hours": row["hours"],
-                }
-                for row in project_hours
-            ],
+            "overall_total_hours": overall_total_hours,
+            "per_project": per_project,
         },
     }
 

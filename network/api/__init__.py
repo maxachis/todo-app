@@ -2,6 +2,7 @@ from network.api import (
     graph,
     interactions,
     interaction_types,
+    leads,
     organizations,
     org_types,
     people,
@@ -18,4 +19,5 @@ __all__ = [
     "relationships",
     "task_links",
     "graph",
+    "leads",
 ]

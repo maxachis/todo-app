@@ -15,6 +15,21 @@ class Project(models.Model):
         return self.name
 
 
+class ProjectLink(models.Model):
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="links"
+    )
+    url = models.CharField(max_length=2000)
+    descriptor = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.descriptor}: {self.url}"
+
+
 class List(models.Model):
     name = models.CharField(max_length=255)
     emoji = models.CharField(max_length=10, blank=True, default="")

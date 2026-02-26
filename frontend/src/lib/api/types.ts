@@ -44,6 +44,14 @@ export interface List {
   sections: Section[];
 }
 
+export interface ProjectLink {
+  id: number;
+  project_id: number;
+  url: string;
+  descriptor: string;
+  created_at: string;
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -54,6 +62,7 @@ export interface Project {
   linked_lists_count: number | null;
   total_tasks: number | null;
   completed_tasks: number | null;
+  links: ProjectLink[];
 }
 
 export interface TimeEntry {
@@ -106,6 +115,7 @@ export interface TimesheetSummaryItem {
   project_id: number;
   project_name: string;
   hours: number;
+  overall_hours: number;
 }
 
 export interface TimesheetResponse {
@@ -119,11 +129,13 @@ export interface TimesheetResponse {
       project_name: string;
       description: string;
       task_ids: number[];
+      task_details: Array<{ id: number; title: string; parent_titles: string[] }>;
       created_at: string;
     }>
   >;
   summary: {
     total_hours: number;
+    overall_total_hours: number;
     per_project: TimesheetSummaryItem[];
   };
 }
@@ -290,6 +302,42 @@ export interface TaskOrganizationLink {
 export interface InteractionTaskLink {
   id: number;
   interaction_id: number;
+  task_id: number;
+  created_at: string;
+}
+
+export interface Lead {
+  id: number;
+  title: string;
+  status: string;
+  notes: string;
+  person_id: number | null;
+  organization_id: number | null;
+  person_name: string | null;
+  organization_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateLeadInput {
+  title: string;
+  status?: string;
+  notes?: string;
+  person_id?: number | null;
+  organization_id?: number | null;
+}
+
+export interface UpdateLeadInput {
+  title?: string;
+  status?: string;
+  notes?: string;
+  person_id?: number | null;
+  organization_id?: number | null;
+}
+
+export interface LeadTaskLink {
+  id: number;
+  lead_id: number;
   task_id: number;
   created_at: string;
 }

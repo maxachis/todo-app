@@ -169,5 +169,41 @@ class InteractionTaskLinkSchema(Schema):
     created_at: datetime
 
 
+class LeadSchema(Schema):
+    id: int
+    title: str
+    status: str
+    notes: str
+    person_id: Optional[int]
+    organization_id: Optional[int]
+    person_name: Optional[str]
+    organization_name: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class LeadCreateInput(Schema):
+    title: str
+    status: str = "prospect"
+    notes: str = ""
+    person_id: Optional[int] = None
+    organization_id: Optional[int] = None
+
+
+class LeadUpdateInput(Schema):
+    title: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    person_id: Optional[int] = None
+    organization_id: Optional[int] = None
+
+
+class LeadTaskLinkSchema(Schema):
+    id: int
+    lead_id: int
+    task_id: int
+    created_at: datetime
+
+
 class LinkByIdInput(Schema):
     id: int

@@ -1,8 +1,8 @@
 ### Requirement: Network entities are first-class in the unified schema
-The system SHALL include models for people, organizations, organization types, interaction types, interactions, and relationships within the unified database.
+The system SHALL include models for people, organizations, organization types, interaction types, interactions, relationships, and leads within the unified database.
 
 #### Scenario: Network entities persist in unified database
-- **WHEN** a person, organization, or interaction is created
+- **WHEN** a person, organization, interaction, or lead is created
 - **THEN** the record is stored in the unified database alongside task data
 
 ### Requirement: Tasks can link to people, organizations, and interactions
@@ -33,3 +33,10 @@ The Person model SHALL include an optional `email` field (CharField, max 255, bl
 #### Scenario: Update person contact fields
 - **WHEN** a person's `email` or `linkedin_url` is updated
 - **THEN** the new values are persisted and the `updated_at` timestamp changes
+
+### Requirement: Tasks can link to leads
+The system SHALL provide an explicit link table to associate tasks with leads, following the same pattern as task-person and task-organization links.
+
+#### Scenario: Task linked to lead
+- **WHEN** a task is linked to a lead
+- **THEN** the link is persisted and retrievable from both the task and lead context

@@ -161,6 +161,7 @@
 		font-family: var(--font-body);
 		font-size: 0.88rem;
 		color: var(--text-primary);
+		background: var(--bg-input);
 	}
 
 	input:focus {

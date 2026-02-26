@@ -109,6 +109,10 @@ The system SHALL support a bound-value mode where selecting an option updates a 
 - **WHEN** the component is in bound-value mode and a `value` prop is provided on mount
 - **THEN** the input displays the label of the option matching that value
 
+#### Scenario: External value reset clears display text
+- **WHEN** the component is in bound-value mode with a selected value and the bound `value` prop is set to `null` externally (e.g., by a parent form resetting after submission)
+- **THEN** the input SHALL clear its display text to an empty string
+
 ### Requirement: Typeahead accessibility
 The system SHALL include ARIA attributes for screen reader compatibility on the typeahead component.
 

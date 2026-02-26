@@ -5,6 +5,24 @@ from datetime import date, datetime, time
 from ninja import Schema
 
 
+class ProjectLinkSchema(Schema):
+    id: int
+    project_id: int
+    url: str
+    descriptor: str
+    created_at: datetime
+
+
+class ProjectLinkCreateInput(Schema):
+    url: str
+    descriptor: str
+
+
+class ProjectLinkUpdateInput(Schema):
+    url: str | None = None
+    descriptor: str | None = None
+
+
 class ProjectSchema(Schema):
     id: int
     name: str
@@ -15,6 +33,7 @@ class ProjectSchema(Schema):
     linked_lists_count: int | None = None
     total_tasks: int | None = None
     completed_tasks: int | None = None
+    links: list[ProjectLinkSchema] = []
 
 
 class ProjectCreateInput(Schema):

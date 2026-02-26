@@ -1,6 +1,7 @@
 import { apiRequest } from './client';
 import type {
   CreateInteractionInput,
+  CreateLeadInput,
   CreateListInput,
   CreateOrganizationInput,
   CreatePersonInput,
@@ -13,6 +14,8 @@ import type {
   Interaction,
   InteractionTaskLink,
   InteractionType,
+  Lead,
+  LeadTaskLink,
   List,
   MoveInput,
   MoveTaskInput,
@@ -20,6 +23,7 @@ import type {
   OrgType,
   Person,
   Project,
+  ProjectLink,
   RelationshipOrganizationPerson,
   RelationshipPersonPerson,
   SearchResponse,
@@ -32,6 +36,7 @@ import type {
   TimesheetResponse,
   UpcomingTask,
   UpdateInteractionInput,
+  UpdateLeadInput,
   UpdateListInput,
   UpdateOrganizationInput,
   UpdatePersonInput,
@@ -130,7 +135,23 @@ export const api = {
       apiRequest<Project>(`/projects/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
     remove: (id: number) => apiRequest<void>(`/projects/${id}/`, { method: 'DELETE' }),
     toggle: (id: number) => apiRequest<Project>(`/projects/${id}/toggle/`, { method: 'POST' }),
-    getTasks: (id: number) => apiRequest<Task[]>(`/projects/${id}/tasks/`)
+    getTasks: (id: number) => apiRequest<Task[]>(`/projects/${id}/tasks/`),
+    links: {
+      list: (projectId: number) =>
+        apiRequest<ProjectLink[]>(`/projects/${projectId}/links/`),
+      create: (projectId: number, payload: { url: string; descriptor: string }) =>
+        apiRequest<ProjectLink>(`/projects/${projectId}/links/`, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      update: (projectId: number, linkId: number, payload: { url?: string; descriptor?: string }) =>
+        apiRequest<ProjectLink>(`/projects/${projectId}/links/${linkId}/`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        }),
+      remove: (projectId: number, linkId: number) =>
+        apiRequest<void>(`/projects/${projectId}/links/${linkId}/`, { method: 'DELETE' })
+    }
   },
   upcoming: {
     get: () => apiRequest<UpcomingTask[]>('/upcoming/')
@@ -210,6 +231,15 @@ export const api = {
         apiRequest<void>(`/relationships/organizations/${id}/`, { method: 'DELETE' })
     }
   },
+  leads: {
+    getAll: () => apiRequest<Lead[]>('/leads/'),
+    get: (id: number) => apiRequest<Lead>(`/leads/${id}/`),
+    create: (payload: CreateLeadInput) =>
+      apiRequest<Lead>('/leads/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdateLeadInput) =>
+      apiRequest<Lead>(`/leads/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/leads/${id}/`, { method: 'DELETE' })
+  },
   graph: {
     get: () => apiRequest<GraphData>('/graph/')
   },
@@ -249,6 +279,17 @@ export const api = {
         }),
       remove: (interactionId: number, taskId: number) =>
         apiRequest<void>(`/interactions/${interactionId}/tasks/${taskId}/`, { method: 'DELETE' })
+    },
+    leads: {
+      listByLead: (leadId: number) =>
+        apiRequest<LeadTaskLink[]>(`/leads/${leadId}/tasks/`),
+      add: (leadId: number, taskId: number) =>
+        apiRequest<LeadTaskLink>(`/leads/${leadId}/tasks/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: taskId })
+        }),
+      remove: (leadId: number, taskId: number) =>
+        apiRequest<void>(`/leads/${leadId}/tasks/${taskId}/`, { method: 'DELETE' })
     }
   }
 };

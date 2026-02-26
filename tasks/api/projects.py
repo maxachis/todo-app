@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 
-from tasks.api.schemas import ProjectCreateInput, ProjectSchema, ProjectUpdateInput, TaskSchema
+from tasks.api.schemas import ProjectCreateInput, ProjectLinkSchema, ProjectSchema, ProjectUpdateInput, TaskSchema
 from tasks.api.tasks import _serialize_task
 from tasks.models import Project, Task
 
@@ -23,10 +23,20 @@ def _project_queryset():
             filter=Q(lists__sections__tasks__is_completed=True),
             distinct=True,
         ),
-    ).order_by("position")
+    ).prefetch_related("links").order_by("position")
 
 
 def _serialize_project(project: Project) -> ProjectSchema:
+    links = [
+        ProjectLinkSchema(
+            id=link.id,
+            project_id=link.project_id,
+            url=link.url,
+            descriptor=link.descriptor,
+            created_at=link.created_at,
+        )
+        for link in project.links.all()
+    ]
     return ProjectSchema(
         id=project.id,
         name=project.name,
@@ -37,6 +47,7 @@ def _serialize_project(project: Project) -> ProjectSchema:
         linked_lists_count=getattr(project, "linked_lists_count", 0),
         total_tasks=getattr(project, "total_tasks", 0),
         completed_tasks=getattr(project, "completed_tasks", 0),
+        links=links,
     )
 
 
