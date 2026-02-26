@@ -322,6 +322,55 @@ class TestKeyboard:
         page.keyboard.press("ArrowUp")
         expect(page.locator("#detail-title")).to_have_value("Read a book")
 
+    def test_arrow_up_through_section_to_prev_input(self, page, base_url, seed_list):
+        """Navigate up through multiple tasks in section 2, then across boundary to section 1 input."""
+        task_list, section1 = seed_list
+        Task.objects.create(section=section1, title="S1 Task", position=10)
+        section2 = Section.objects.create(list=task_list, name="Section 2", position=20)
+        Task.objects.create(section=section2, title="S2 First", position=10)
+        Task.objects.create(section=section2, title="S2 Second", position=20)
+        Task.objects.create(section=section2, title="S2 Third", position=30)
+
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        # Click the last task in section 2
+        s2_tasks = page.locator(f'.task-row[data-section-id="{section2.id}"]')
+        s2_tasks.last.click()
+        s2_tasks.last.focus()
+        expect(page.locator("#detail-title")).to_have_value("S2 Third")
+
+        # Navigate up through section 2
+        page.keyboard.press("ArrowUp")
+        expect(page.locator("#detail-title")).to_have_value("S2 Second")
+
+        page.keyboard.press("ArrowUp")
+        expect(page.locator("#detail-title")).to_have_value("S2 First")
+
+        # One more ArrowUp should go to section 1's input, NOT section 1's last task
+        page.keyboard.press("ArrowUp")
+        input1 = page.locator(f'.create-form[data-section-id="{section1.id}"] .task-input')
+        expect(input1).to_be_focused()
+        expect(page.locator(".task-row.selected")).to_have_count(0)
+
+    def test_arrow_up_from_empty_section_input_goes_to_prev_section_input(self, page, base_url, seed_list):
+        task_list, section1 = seed_list
+        Task.objects.create(section=section1, title="Task A", position=10)
+        section2 = Section.objects.create(list=task_list, name="Empty Section", position=20)
+
+        page.goto(base_url)
+        page.locator(f'[data-list-id="{task_list.id}"]').click()
+
+        # Focus the empty section's input
+        input2 = page.locator(f'.create-form[data-section-id="{section2.id}"] .task-input')
+        input2.click()
+
+        # Arrow Up should go to section 1's input, NOT section 1's task
+        page.keyboard.press("ArrowUp")
+        input1 = page.locator(f'.create-form[data-section-id="{section1.id}"] .task-input')
+        expect(input1).to_be_focused()
+        expect(page.locator(".task-row.selected")).to_have_count(0)
+
     def test_escape_clears_add_input(self, page, base_url, seed_list):
         task_list, section = seed_list
         Task.objects.create(section=section, title="Some task", position=10)

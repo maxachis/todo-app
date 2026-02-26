@@ -60,9 +60,26 @@
 			const formRect = form.getBoundingClientRect();
 
 			if (event.key === 'ArrowUp') {
+				const currentSectionId = (form as HTMLElement).dataset.sectionId;
 				// Find the last visible task that appears before this form in the DOM
 				for (let i = allTasks.length - 1; i >= 0; i--) {
 					if (allTasks[i].getBoundingClientRect().top < formRect.top) {
+						// If this task is in a different section (our section is empty),
+						// go to that section's input instead
+						if (allTasks[i].dataset.sectionId !== currentSectionId) {
+							const allForms = Array.from(scope.querySelectorAll<HTMLElement>('.create-form'));
+							const currentFormIndex = allForms.indexOf(form as HTMLElement);
+							const prevForm = allForms[currentFormIndex - 1];
+							if (prevForm) {
+								const prevInput = prevForm.querySelector<HTMLInputElement>('.task-input');
+								if (prevInput) {
+									input.blur();
+									prevInput.focus();
+									prevInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+									return;
+								}
+							}
+						}
 						const taskId = Number(allTasks[i].dataset.taskId);
 						if (!Number.isNaN(taskId)) {
 							input.blur();

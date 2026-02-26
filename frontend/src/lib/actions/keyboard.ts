@@ -64,6 +64,7 @@ export function keyboard(node: HTMLElement, options: KeyboardOptions) {
 			if (!target) return;
 			const targetId = toId(target.dataset.taskId ?? null);
 			if (targetId === null) return;
+			target.focus();
 			await options.onSelectTask(targetId);
 			scrollIntoView(target);
 		};

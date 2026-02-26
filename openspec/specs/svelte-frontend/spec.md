@@ -290,6 +290,14 @@ The system SHALL support full keyboard navigation for tasks. Navigation state SH
 - **WHEN** the user clicks a task row and then presses Arrow Up or Arrow Down
 - **THEN** keyboard navigation applies immediately without requiring an additional focus click
 
+#### Scenario: Arrow key navigation from task-add input
+- **WHEN** the user is focused on a task-add input ("Add task..." or "Add subtask...") and presses Arrow Up or Arrow Down
+- **THEN** the input SHALL be blurred and keyboard navigation SHALL select the nearest task in the pressed direction immediately, without requiring a second keypress
+
+#### Scenario: Escape in task-add input
+- **WHEN** the user is focused on a task-add input and presses Escape
+- **THEN** any typed text SHALL be cleared and the input SHALL be blurred
+
 #### Scenario: Tab indent / Shift+Tab outdent
 - **WHEN** the user presses Tab on a focused task
 - **THEN** the task becomes a subtask of the previous sibling; Shift+Tab promotes it
