@@ -3,7 +3,7 @@
 # Designed to run via systemd timer. Logs to journald.
 set -euo pipefail
 
-APP_DIR="/opt/todoapp"
+APP_DIR="/opt/nexus"
 
 # Fetch latest without merging
 git -C "${APP_DIR}" fetch origin main --quiet

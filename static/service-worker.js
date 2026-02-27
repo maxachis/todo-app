@@ -1,7 +1,7 @@
-// Service Worker — ToDo App (PWA)
+// Service Worker — Nexus (PWA)
 // Network-first for HTML/HTMX, cache-first for static assets.
 
-var CACHE_NAME = "todo-v1";
+var CACHE_NAME = "nexus-v1";
 var SHELL_ASSETS = [
   "/static/css/style.css",
   "/static/js/app.js",

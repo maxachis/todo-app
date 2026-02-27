@@ -1,4 +1,4 @@
-# ToDo App — Specification
+# Nexus — Specification
 
 ## 1. Overview
 

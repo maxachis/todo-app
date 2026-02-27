@@ -1,19 +1,11 @@
-- [ ] Add more emojis
-- [ ] Finish setting up docker files. 
-- [ ] What if you could automatically pick up emails from outlook and associate them with specific contacts?
-- [ ] What if you could mark certain emails to check for follow-up later?
-- [ ] Be able to add Project Links with short descriptors for each -- one-to-many relationship between project and project links
-- [ ] We need a cleaner interface for associating tasks in Timesheet (for one, it's hard to see what is and is not a task, subtask, or subsubtask) -- and we need the option of linking multiple tasks at once. 
-- [ ] Additionally, in Timesheet, I cannot view what tasks were linked after I enter them. 
-- [ ] For timesheet, I'd like to see all hours accounted for a project this week, but also all hours overall.
-- [ ] When editing inputs on task content view and task detail view, the input transitions to a very bright font against a very bright background. Font should be black.
-- [ ] Once I've clicked on a task-add input, I can't use the up and down error keys to move to other tasks. Fix.
-- [ ] It's also not clear that you can edit Notes in Task Detail View, since they are automatically rendered as markdown. 
-- [ ] When adding interactions, pressing enter key in notes section should trigger submission.
-- [ ] Test that multiple interactions can be added at a time
+
+
+- [ ] Should I add hints somewhere for shortcut keys on each page?
+- [ ] On interactions, allow Ctrl + Up/Down to move between different elements.
+- [ ] Task: Typing "Tab" or "Shift+Tab" to promote/demote a task disables keying up and down
 
 ## Regression
-
+That 
 
 # TODO
 

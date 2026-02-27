@@ -11,7 +11,7 @@ error() { echo -e "\n\033[1;31mERROR:\033[0m $*" >&2; exit 1; }
 [[ $# -eq 1 ]] || error "Usage: bash configure-caddy.sh <tailscale-hostname>"
 
 HOSTNAME="$1"
-APP_DIR="/opt/todoapp"
+APP_DIR="/opt/nexus"
 
 info "Generating Tailscale TLS certs for ${HOSTNAME}"
 mkdir -p /etc/caddy/certs
@@ -28,6 +28,6 @@ info "Updating ALLOWED_HOSTS in .env"
 sed -i "s|^ALLOWED_HOSTS=.*|ALLOWED_HOSTS=${HOSTNAME}|" "${APP_DIR}/.env"
 
 info "Restarting services"
-systemctl restart caddy todoapp
+systemctl restart caddy nexus
 
 info "Done! Visit https://${HOSTNAME}"

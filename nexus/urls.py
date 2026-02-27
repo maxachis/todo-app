@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views.static import serve
 
-import todoapp.settings as settings
+import nexus.settings as settings
 from tasks.api import api
 
 urlpatterns = [

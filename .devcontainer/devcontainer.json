@@ -1,5 +1,5 @@
 {
-  "name": "ToDo App",
+  "name": "Nexus",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -12,7 +12,9 @@
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached,readonly"
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached,readonly",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh/,target=/home/node/.config/gh/,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/Desktop/coding-projects/claude-toolbox,target=${localEnv:HOME}${localEnv:USERPROFILE}/Desktop/coding-projects/claude-toolbox,type=bind,consistency=cached"
   ],
   "runArgs": [
     "--cap-add=NET_ADMIN",
@@ -29,6 +31,7 @@
       }
     }
   },
+  "initializeCommand": "token=$(gh auth token 2>/dev/null) && echo \"GH_TOKEN=$token\" > .devcontainer/.env.secrets || : > .devcontainer/.env.secrets; mkdir -p \"${HOME}/Desktop/coding-projects/claude-toolbox\"",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand",

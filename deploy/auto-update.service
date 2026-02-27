@@ -1,6 +1,6 @@
 [Unit]
-Description=ToDo App Auto-Update Check
+Description=Nexus Auto-Update Check
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/bash /opt/todoapp/deploy/auto-update.sh
+ExecStart=/usr/bin/bash /opt/nexus/deploy/auto-update.sh

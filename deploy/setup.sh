@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# setup.sh — Provision a fresh Ubuntu VPS for the ToDo app
+# setup.sh — Provision a fresh Ubuntu VPS for Nexus
 # Run as root: bash setup.sh
 set -euo pipefail
 
-APP_DIR="/opt/todoapp"
-APP_USER="todoapp"
+APP_DIR="/opt/nexus"
+APP_USER="nexus"
 REPO_URL="https://github.com/maxachis/todo-app.git"
 LITESTREAM_VERSION="0.3.13"
 PYTHON_VERSION="3.13"
@@ -111,7 +111,7 @@ sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
 # ─── 11. Install config files ─────────────────────────────────────────────────
 
 info "Installing config files"
-cp "${APP_DIR}/deploy/todoapp.service" /etc/systemd/system/todoapp.service
+cp "${APP_DIR}/deploy/nexus.service" /etc/systemd/system/nexus.service
 cp "${APP_DIR}/deploy/litestream.yml" /etc/litestream.yml
 cp "${APP_DIR}/deploy/litestream.service" /etc/systemd/system/litestream.service
 cp "${APP_DIR}/deploy/auto-update.service" /etc/systemd/system/auto-update.service
@@ -135,7 +135,7 @@ ufw --force enable
 
 info "Enabling and starting services"
 systemctl enable --now litestream
-systemctl enable --now todoapp
+systemctl enable --now nexus
 systemctl enable --now caddy
 systemctl enable --now auto-update.timer
 
@@ -146,7 +146,7 @@ echo ""
 echo "Next steps:"
 echo "  1. Run 'tailscale up' and authorize the machine"
 echo "  2. Get your hostname: tailscale status"
-echo "  3. Run: bash /opt/todoapp/deploy/configure-caddy.sh <hostname>.your-tailnet.ts.net"
-echo "  4. Configure R2 credentials in /opt/todoapp/.env for Litestream backups"
+echo "  3. Run: bash /opt/nexus/deploy/configure-caddy.sh <hostname>.your-tailnet.ts.net"
+echo "  4. Configure R2 credentials in /opt/nexus/.env for Litestream backups"
 echo "  5. Restart Litestream: systemctl restart litestream"
 echo ""

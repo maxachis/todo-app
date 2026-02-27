@@ -1,9 +1,9 @@
 [Unit]
 Description=Litestream SQLite Replication
-Before=todoapp.service
+Before=nexus.service
 
 [Service]
-EnvironmentFile=/opt/todoapp/.env
+EnvironmentFile=/opt/nexus/.env
 ExecStart=/usr/bin/litestream replicate -config /etc/litestream.yml
 Restart=on-failure
 RestartSec=5

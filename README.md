@@ -1,6 +1,6 @@
-# ToDo App
+# Nexus
 
-A multi-list task management application built with Django, HTMX, and SortableJS.
+A personal operations hub — tasks, CRM, projects, timesheets, network graph — built with SvelteKit and Django.
 
 ## SSH From Device with Private Key
 
@@ -11,7 +11,7 @@ ssh root@178.156.197.32
 ## Location In Server
 
 ```
-/opt/todoapp
+/opt/nexus
 ```
 
 ## Features
@@ -130,5 +130,3 @@ static/
 Export endpoints:
 - Single list: `/lists/<id>/export/<json|csv|md>/`
 - All lists: `/export/<json|csv|md>/`
-
-

@@ -1,8 +1,8 @@
-# CLAUDE.md - ToDo App
+# CLAUDE.md - Nexus
 
 ## Project Overview
 
-Single-user task manager with integrated network/CRM features, built as a SvelteKit SPA frontend + Django JSON API backend.
+Personal operations hub (tasks, CRM, projects, timesheets, network graph), built as a SvelteKit SPA frontend + Django JSON API backend.
 
 - Frontend: SvelteKit (SPA, static adapter) in `frontend/` — TypeScript throughout
 - Backend: Django + Django Ninja API in `tasks/api/` and `network/api/`
@@ -106,7 +106,7 @@ e2e/
   test_*.py
 
 deploy/
-  nginx.todoapp.conf
+  nginx.nexus.conf
   update.sh
 ```
 

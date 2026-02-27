@@ -13,7 +13,7 @@ import django
 import pytest
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "todoapp.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "nexus.settings")
 django.setup()
 
 from tasks.models import List, Section, Tag, Task

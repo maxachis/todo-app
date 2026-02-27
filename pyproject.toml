@@ -1,5 +1,5 @@
 [project]
-name = "todoapp"
+name = "nexus"
 version = "0.1.0"
 description = "Multi-list task management app"
 requires-python = ">=3.13"
@@ -19,7 +19,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "todoapp.settings"
+DJANGO_SETTINGS_MODULE = "nexus.settings"
 pythonpath = ["."]
 addopts = "--basetemp=codex_pytest_tmp/run"
 markers = [

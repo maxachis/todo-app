@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # run-manage.sh — Run manage.py with .env loaded
 # Handles special chars (parens, $, etc.) in values.
-# Usage: bash /opt/todoapp/deploy/run-manage.sh <command> [args...]
+# Usage: bash /opt/nexus/deploy/run-manage.sh <command> [args...]
 set -euo pipefail
 
-APP_DIR="/opt/todoapp"
+APP_DIR="/opt/nexus"
 
 ENV_ARGS=()
 while IFS='=' read -r key value; do
