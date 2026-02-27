@@ -109,6 +109,7 @@
 					{#each settingsItems as item}
 						<a href={item.href} class:active={$page.url.pathname === item.href}>{item.label}</a>
 					{/each}
+					<a href="/api/export/full/" download="nexus-backup.json" onclick={() => (settingsOpen = false)}>Export Database</a>
 				</div>
 			{/if}
 		</div>

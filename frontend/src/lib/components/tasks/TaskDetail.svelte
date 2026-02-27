@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Tag, Task, Person, Organization, TaskPersonLink, TaskOrganizationLink } from '$lib';
 	import { api } from '$lib';
-	import { updateTask, selectedTaskDetail, selectTask } from '$lib/stores/tasks';
+	import { updateTask, selectedTaskDetail, selectTask, refreshTask } from '$lib/stores/tasks';
 	import MarkdownEditor from '../shared/MarkdownEditor.svelte';
 	import LinkedEntities from '../shared/LinkedEntities.svelte';
 	import RecurrenceEditor from './RecurrenceEditor.svelte';
@@ -116,13 +116,13 @@
 		if (!task || !tagInput.trim()) return;
 		await api.tasks.addTag(task.id, tagInput.trim());
 		tagInput = '';
-		await selectTask(task.id);
+		await refreshTask(task.id);
 	}
 
 	async function removeTag(tagId: number): Promise<void> {
 		if (!task) return;
 		await api.tasks.removeTag(task.id, tagId);
-		await selectTask(task.id);
+		await refreshTask(task.id);
 	}
 
 	function jumpToParent(): void {

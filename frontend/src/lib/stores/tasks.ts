@@ -22,6 +22,15 @@ export async function selectTask(taskId: number | null): Promise<void> {
   }
 }
 
+export async function refreshTask(taskId: number): Promise<void> {
+  const task = await api.tasks.get(taskId);
+  const listId = get(selectedListStore);
+  if (listId !== null) {
+    replaceTaskInList(listId, task.section_id, task);
+  }
+  selectedTaskDetail.update((current) => (current?.id === taskId ? task : current));
+}
+
 export async function createTask(sectionId: number, payload: CreateTaskInput): Promise<Task> {
   const created = await api.tasks.create(sectionId, payload);
   const listId = get(selectedListStore);

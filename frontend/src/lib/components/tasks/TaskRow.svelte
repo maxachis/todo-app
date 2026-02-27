@@ -194,6 +194,7 @@
 		<input
 			class="title-input"
 			bind:value={title}
+			onclick={(e) => e.stopPropagation()}
 			onblur={commitEdit}
 			onkeydown={(e) => {
 				if (e.key === 'Enter') commitEdit();

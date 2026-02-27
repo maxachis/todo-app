@@ -15,11 +15,18 @@ The system SHALL provide a reusable TypeaheadSelect Svelte component that replac
 
 #### Scenario: No matches found without onCreate
 - **WHEN** the user types text that matches no options AND no `onCreate` callback is provided
-- **THEN** the dropdown is hidden (no empty-state message displayed)
+- **THEN** the dropdown SHALL remain open and display a non-selectable "No match found — add it first" message
+- **AND** the typed text SHALL be preserved in the input
 
 #### Scenario: No matches found with onCreate
 - **WHEN** the user types non-empty text that matches no options AND an `onCreate` callback is provided
 - **THEN** the dropdown remains open showing only the "Create [typed text]" item
+
+#### Scenario: No-match message is not selectable
+- **WHEN** the "No match found" message is displayed in the dropdown
+- **THEN** the message SHALL NOT be selectable via click or keyboard navigation
+- **AND** the message SHALL NOT be included in the keyboard-navigable item count
+- **AND** the message SHALL have `role="status"` (not `role="option"`)
 
 #### Scenario: Dropdown closes on blur
 - **WHEN** the user clicks outside the typeahead component
@@ -34,7 +41,7 @@ The system SHALL support an optional `onCreate` callback on TypeaheadSelect that
 
 #### Scenario: Create option does not appear without onCreate
 - **WHEN** the user types text into a TypeaheadSelect that does NOT have an `onCreate` callback AND no existing option matches
-- **THEN** the dropdown is hidden (existing behavior unchanged)
+- **THEN** the dropdown remains open with a "No match found — add it first" message (no "Create" item shown)
 
 #### Scenario: Create option does not appear when exact match exists
 - **WHEN** the user types text that exactly matches (case-insensitive) an existing option's label AND `onCreate` is provided

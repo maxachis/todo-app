@@ -15,12 +15,12 @@ router = Router(tags=["network-people"])
 
 def _annotate_people(qs):
     latest_type = (
-        Interaction.objects.filter(person=OuterRef("pk"))
+        Interaction.objects.filter(people=OuterRef("pk"))
         .order_by("-date")
         .values("interaction_type__name")[:1]
     )
     return qs.annotate(
-        last_interaction_date=Max("interaction__date"),
+        last_interaction_date=Max("interactions__date"),
         last_interaction_type=Subquery(latest_type),
     )
 

@@ -11,12 +11,12 @@
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
 
-	let newPersonId = $state<number | null>(null);
+	let newPersonIds = $state<number[]>([]);
 	let newTypeId = $state<number | null>(null);
 	let newDate = $state('');
 	let newNotes = $state('');
 
-	let editPersonId = $state<number | null>(null);
+	let editPersonIds = $state<number[]>([]);
 	let editTypeId = $state<number | null>(null);
 	let editDate = $state('');
 	let editNotes = $state('');
@@ -38,13 +38,25 @@
 		return people.find((person) => person.id === id);
 	}
 
+	function personLabel(id: number): string {
+		const p = findPerson(id);
+		return p ? `${p.last_name}, ${p.first_name}` : `Person #${id}`;
+	}
+
+	function formatPeopleNames(personIds: number[]): string {
+		if (personIds.length === 0) return 'No people';
+		const names = personIds.map((id) => personLabel(id));
+		if (names.length <= 3) return names.join('; ');
+		return `${names.slice(0, 2).join('; ')} +${names.length - 2} more`;
+	}
+
 	function findType(id: number): InteractionType | undefined {
 		return interactionTypes.find((type) => type.id === id);
 	}
 
 	function selectInteraction(item: Interaction): void {
 		selected = item;
-		editPersonId = item.person_id;
+		editPersonIds = [...item.person_ids];
 		editTypeId = item.interaction_type_id;
 		editDate = item.date;
 		editNotes = item.notes;
@@ -92,26 +104,46 @@
 		return { id: created.id, label: created.name };
 	}
 
+	function addNewPerson(id: number): void {
+		if (!newPersonIds.includes(id)) {
+			newPersonIds = [...newPersonIds, id];
+		}
+	}
+
+	function removeNewPerson(id: number): void {
+		newPersonIds = newPersonIds.filter((pid) => pid !== id);
+	}
+
+	function addEditPerson(id: number): void {
+		if (!editPersonIds.includes(id)) {
+			editPersonIds = [...editPersonIds, id];
+		}
+	}
+
+	function removeEditPerson(id: number): void {
+		editPersonIds = editPersonIds.filter((pid) => pid !== id);
+	}
+
 	async function createInteraction(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newPersonId || !newTypeId || !newDate) return;
+		if (newPersonIds.length === 0 || !newTypeId || !newDate) return;
 		const created = await api.interactions.create({
-			person_id: newPersonId,
+			person_ids: newPersonIds,
 			interaction_type_id: newTypeId,
 			date: newDate,
 			notes: newNotes
 		});
 		interactions = [created, ...interactions];
-		newPersonId = null;
+		newPersonIds = [];
 		newTypeId = null;
 		newDate = '';
 		newNotes = '';
 	}
 
 	async function saveInteraction(): Promise<void> {
-		if (!selected || !editPersonId || !editTypeId || !editDate) return;
+		if (!selected || editPersonIds.length === 0 || !editTypeId || !editDate) return;
 		const updated = await api.interactions.update(selected.id, {
-			person_id: editPersonId,
+			person_ids: editPersonIds,
 			interaction_type_id: editTypeId,
 			date: editDate,
 			notes: editNotes
@@ -138,11 +170,23 @@
 	<div class="network-grid">
 		<div class="panel list-panel">
 			<form class="create-form" onsubmit={createInteraction}>
-				<TypeaheadSelect
-					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
-					placeholder="Person"
-					bind:value={newPersonId}
-				/>
+				<div class="people-select">
+					<TypeaheadSelect
+						options={people.filter((p) => !newPersonIds.includes(p.id)).map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+						placeholder="Add person..."
+						onSelect={addNewPerson}
+					/>
+					{#if newPersonIds.length > 0}
+						<div class="chips">
+							{#each newPersonIds as pid (pid)}
+								<span class="chip">
+									{personLabel(pid)}
+									<button type="button" class="chip-remove" onclick={() => removeNewPerson(pid)}>&times;</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
 				<TypeaheadSelect
 					options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
 					placeholder="Interaction type"
@@ -158,7 +202,7 @@
 				{#each interactions as item (item.id)}
 					<button class="list-item" class:active={selected?.id === item.id} onclick={() => selectInteraction(item)}>
 						<div class="title">
-							{findPerson(item.person_id)?.last_name ?? 'Person'}, {findPerson(item.person_id)?.first_name ?? ''}
+							{formatPeopleNames(item.person_ids)}
 						</div>
 						<div class="meta">
 							{findType(item.interaction_type_id)?.name ?? 'Type'} · {item.date}
@@ -171,18 +215,28 @@
 		<div class="panel detail-panel">
 			{#if selected}
 				<div class="detail-header">
-					<h2>{findPerson(selected.person_id)?.last_name}, {findPerson(selected.person_id)?.first_name}</h2>
+					<h2>{formatPeopleNames(selected.person_ids)}</h2>
 					<button class="danger" onclick={() => selected && deleteInteraction(selected)}>Delete</button>
 				</div>
 				<div class="detail-form">
-					<label>
-						<span>Person</span>
+					<div class="field-group">
+						<span class="field-label">People</span>
 						<TypeaheadSelect
-							options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
-							placeholder="Person"
-							bind:value={editPersonId}
+							options={people.filter((p) => !editPersonIds.includes(p.id)).map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+							placeholder="Add person..."
+							onSelect={addEditPerson}
 						/>
-					</label>
+						{#if editPersonIds.length > 0}
+							<div class="chips">
+								{#each editPersonIds as pid (pid)}
+									<span class="chip">
+										{personLabel(pid)}
+										<button type="button" class="chip-remove" onclick={() => removeEditPerson(pid)}>&times;</button>
+									</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
 					<label>
 						<span>Interaction type</span>
 						<TypeaheadSelect
@@ -268,7 +322,7 @@
 		color: var(--text-primary);
 	}
 
-	.create-form button,
+	.create-form button[type="submit"],
 	.detail-form button {
 		border: 1px solid var(--border);
 		background: var(--bg-surface);
@@ -281,11 +335,59 @@
 		transition: all var(--transition);
 	}
 
-	.create-form button:hover,
+	.create-form button[type="submit"]:hover,
 	.detail-form button:hover {
 		background: var(--accent);
 		color: white;
 		border-color: var(--accent);
+	}
+
+	.people-select {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		background: var(--accent-light, var(--bg-surface-hover, #e8f0fe));
+		border: 1px solid var(--border-light, var(--border));
+		border-radius: var(--radius-sm);
+		padding: 0.2rem 0.4rem;
+		font-size: 0.75rem;
+		color: var(--text-primary);
+	}
+
+	.chip-remove {
+		all: unset;
+		cursor: pointer;
+		font-size: 0.85rem;
+		line-height: 1;
+		color: var(--text-tertiary);
+		padding: 0 0.1rem;
+	}
+
+	.chip-remove:hover {
+		color: var(--error, #dc3545);
+	}
+
+	.field-group {
+		display: grid;
+		gap: 0.25rem;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+
+	.field-label {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
 	}
 
 	.list {

@@ -10,7 +10,7 @@ The system SHALL display a cog/settings icon button in the top navigation bar, p
 - **THEN** the cog button is visible in the top navigation bar
 
 ### Requirement: Settings dropdown menu
-The system SHALL open a dropdown menu when the cog button is clicked. The dropdown SHALL contain navigation links for utility actions, starting with an "Import" link.
+The system SHALL open a dropdown menu when the cog button is clicked. The dropdown SHALL contain navigation links for utility actions, starting with an "Import" link, and an "Export Database" action that triggers a full database download.
 
 #### Scenario: Clicking cog opens dropdown
 - **WHEN** the user clicks the cog button
@@ -27,6 +27,14 @@ The system SHALL open a dropdown menu when the cog button is clicked. The dropdo
 #### Scenario: Active state on Import route
 - **WHEN** the user is on the `/import` route
 - **THEN** the "Import" link in the dropdown is visually marked as active
+
+#### Scenario: Dropdown contains Export Database action
+- **WHEN** the dropdown menu is open
+- **THEN** the menu contains an "Export Database" action below the "Import" link
+
+#### Scenario: Clicking Export Database triggers download
+- **WHEN** the user clicks the "Export Database" action in the dropdown
+- **THEN** the browser initiates a file download from `/api/export/full/` and the dropdown closes
 
 ### Requirement: Dropdown dismissal
 The system SHALL close the settings dropdown when the user clicks outside, presses Escape, or navigates to a new page.

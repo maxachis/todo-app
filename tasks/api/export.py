@@ -1,12 +1,24 @@
 from __future__ import annotations
 
-from django.http import Http404, HttpResponseBadRequest
+import json
+
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from ninja import Router
 
 from tasks.models import List
+from tasks.services.full_export import export_full_database
 from tasks.views.export import _export_response
 
 router = Router(tags=["export"])
+
+
+@router.get("/export/full/")
+def export_full(request):
+    data = export_full_database()
+    content = json.dumps(data, indent=2)
+    response = HttpResponse(content, content_type="application/json")
+    response["Content-Disposition"] = 'attachment; filename="nexus-backup.json"'
+    return response
 
 
 def _normalize_format(fmt: str) -> str:

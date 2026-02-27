@@ -217,7 +217,7 @@
 		event.preventDefault();
 		if (!selected || !quickLogTypeId || !quickLogDate) return;
 		await api.interactions.create({
-			person_id: selected.id,
+			person_ids: [selected.id],
 			interaction_type_id: quickLogTypeId,
 			date: quickLogDate,
 			notes: quickLogNotes

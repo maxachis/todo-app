@@ -37,6 +37,10 @@
 		onCreate !== undefined && inputText.trim() !== '' && !hasExactMatch
 	);
 
+	const showNoMatch = $derived(
+		onCreate === undefined && inputText.trim() !== '' && filtered.length === 0
+	);
+
 	// Total navigable items: filtered options + optional create item
 	const totalItems = $derived(filtered.length + (showCreateOption ? 1 : 0));
 	const createIndex = $derived(filtered.length); // create item is always last
@@ -56,7 +60,7 @@
 	});
 
 	function open() {
-		if (filtered.length > 0 || showCreateOption) {
+		if (filtered.length > 0 || showCreateOption || showNoMatch) {
 			isOpen = true;
 			highlightIndex = -1;
 		}
@@ -96,7 +100,7 @@
 		inputText = target.value;
 		displayText = target.value;
 		highlightIndex = -1;
-		if (inputText && (filtered.length > 0 || showCreateOption)) {
+		if (inputText && (filtered.length > 0 || showCreateOption || showNoMatch)) {
 			isOpen = true;
 		} else if (!inputText && options.length > 0) {
 			isOpen = true;
@@ -202,7 +206,7 @@
 		aria-controls="typeahead-listbox"
 		autocomplete="off"
 	/>
-	{#if isOpen && (filtered.length > 0 || showCreateOption)}
+	{#if isOpen && (filtered.length > 0 || showCreateOption || showNoMatch)}
 		<ul class="typeahead-dropdown" role="listbox" id="typeahead-listbox">
 			{#each filtered as opt, i (opt.id)}
 				<li
@@ -228,6 +232,11 @@
 					onmouseenter={() => (highlightIndex = createIndex)}
 				>
 					Create "{inputText.trim()}"
+				</li>
+			{/if}
+			{#if showNoMatch}
+				<li class="typeahead-option typeahead-no-match" role="status">
+					No match found — add it first
 				</li>
 			{/if}
 		</ul>
@@ -284,5 +293,11 @@
 		font-style: italic;
 		color: var(--accent);
 		border-top: 1px solid var(--border-light, var(--border));
+	}
+
+	.typeahead-no-match {
+		font-style: italic;
+		color: var(--text-muted, #999);
+		cursor: default;
 	}
 </style>

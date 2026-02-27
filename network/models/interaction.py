@@ -3,9 +3,10 @@ from django.utils import timezone
 
 
 class Interaction(models.Model):
-    person = models.ForeignKey(
+    people = models.ManyToManyField(
         to="network.Person",
-        on_delete=models.CASCADE,
+        related_name="interactions",
+        blank=True,
     )
     interaction_type = models.ForeignKey(
         to="network.InteractionType",
@@ -19,9 +20,9 @@ class Interaction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.person} {self.interaction_type} {self.date}"
+        return f"{self.interaction_type} {self.date}"
 
     class Meta:
         indexes = [
-            models.Index(fields=["person", "-date", "-id"]),
+            models.Index(fields=["-date", "-id"]),
         ]

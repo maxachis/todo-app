@@ -221,7 +221,7 @@ export interface InteractionType {
 
 export interface Interaction {
   id: number;
-  person_id: number;
+  person_ids: number[];
   interaction_type_id: number;
   date: string;
   notes: string;
@@ -230,14 +230,14 @@ export interface Interaction {
 }
 
 export interface CreateInteractionInput {
-  person_id: number;
+  person_ids: number[];
   interaction_type_id: number;
   date: string;
   notes?: string;
 }
 
 export interface UpdateInteractionInput {
-  person_id?: number;
+  person_ids?: number[];
   interaction_type_id?: number;
   date?: string;
   notes?: string;

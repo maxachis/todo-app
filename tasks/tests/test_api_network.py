@@ -66,7 +66,7 @@ class NetworkAPITests(TestCase):
             "/api/interactions/",
             data=json.dumps(
                 {
-                    "person_id": person_id,
+                    "person_ids": [person_id],
                     "interaction_type_id": interaction_type_id,
                     "date": "2026-02-18",
                 }
@@ -75,6 +75,7 @@ class NetworkAPITests(TestCase):
             **self._headers(),
         )
         self.assertEqual(interaction_response.status_code, 201)
+        self.assertEqual(interaction_response.json()["person_ids"], [person_id])
 
         list_people = self.client.get("/api/people/")
         self.assertEqual(list_people.status_code, 200)
@@ -96,11 +97,11 @@ class NetworkAPITests(TestCase):
         person_b = Person.objects.create(first_name="Alan", middle_name="", last_name="Turing")
         organization = Organization.objects.create(name="Bletchley", org_type=org_type)
         interaction = Interaction.objects.create(
-            person=person_a,
             interaction_type=interaction_type,
             date="2026-02-18",
             notes="",
         )
+        interaction.people.add(person_a)
 
         list_obj = List.objects.create(name="Work", emoji="", position=10)
         section = Section.objects.create(list=list_obj, name="Todo", emoji="", position=10)
@@ -150,3 +151,85 @@ class NetworkAPITests(TestCase):
         self.assertTrue(RelationshipOrganizationPerson.objects.exists())
         self.assertTrue(TaskPerson.objects.filter(task=task, person=person_a).exists())
         self.assertTrue(TaskOrganization.objects.filter(task=task, organization=organization).exists())
+
+    def test_interaction_multi_person_crud(self):
+        """Test creating, reading, and updating interactions with multiple people."""
+        it = InteractionType.objects.create(name="Meeting")
+        p1 = Person.objects.create(first_name="Alice", middle_name="", last_name="A")
+        p2 = Person.objects.create(first_name="Bob", middle_name="", last_name="B")
+        p3 = Person.objects.create(first_name="Carol", middle_name="", last_name="C")
+
+        # Create with multiple people
+        resp = self.client.post(
+            "/api/interactions/",
+            data=json.dumps({
+                "person_ids": [p1.id, p2.id, p3.id],
+                "interaction_type_id": it.id,
+                "date": "2026-02-27",
+            }),
+            content_type="application/json",
+            **self._headers(),
+        )
+        self.assertEqual(resp.status_code, 201)
+        body = resp.json()
+        self.assertEqual(sorted(body["person_ids"]), sorted([p1.id, p2.id, p3.id]))
+        interaction_id = body["id"]
+
+        # Get single
+        get_resp = self.client.get(f"/api/interactions/{interaction_id}/")
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertEqual(sorted(get_resp.json()["person_ids"]), sorted([p1.id, p2.id, p3.id]))
+
+        # List
+        list_resp = self.client.get("/api/interactions/")
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertEqual(len(list_resp.json()), 1)
+        self.assertEqual(sorted(list_resp.json()[0]["person_ids"]), sorted([p1.id, p2.id, p3.id]))
+
+        # Update people to a different set
+        update_resp = self.client.put(
+            f"/api/interactions/{interaction_id}/",
+            data=json.dumps({"person_ids": [p1.id]}),
+            content_type="application/json",
+            **self._headers(),
+        )
+        self.assertEqual(update_resp.status_code, 200)
+        self.assertEqual(update_resp.json()["person_ids"], [p1.id])
+
+        # Update without person_ids leaves them unchanged
+        update_resp2 = self.client.put(
+            f"/api/interactions/{interaction_id}/",
+            data=json.dumps({"notes": "Updated notes"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+        self.assertEqual(update_resp2.status_code, 200)
+        self.assertEqual(update_resp2.json()["person_ids"], [p1.id])
+        self.assertEqual(update_resp2.json()["notes"], "Updated notes")
+
+    def test_people_last_interaction_with_m2m(self):
+        """Test that last_interaction_date/type works correctly with M2M."""
+        it_meeting = InteractionType.objects.create(name="Meeting")
+        it_email = InteractionType.objects.create(name="Email")
+        p1 = Person.objects.create(first_name="Alice", middle_name="", last_name="A")
+        p2 = Person.objects.create(first_name="Bob", middle_name="", last_name="B")
+
+        # Create an older interaction with p1 only
+        i1 = Interaction.objects.create(interaction_type=it_email, date="2026-01-10")
+        i1.people.add(p1)
+
+        # Create a newer interaction with both p1 and p2
+        i2 = Interaction.objects.create(interaction_type=it_meeting, date="2026-02-20")
+        i2.people.add(p1, p2)
+
+        # Check p1: latest is the meeting on Feb 20
+        resp1 = self.client.get(f"/api/people/{p1.id}/")
+        self.assertEqual(resp1.status_code, 200)
+        self.assertEqual(resp1.json()["last_interaction_date"], "2026-02-20")
+        self.assertEqual(resp1.json()["last_interaction_type"], "Meeting")
+
+        # Check p2: latest is the meeting on Feb 20
+        resp2 = self.client.get(f"/api/people/{p2.id}/")
+        self.assertEqual(resp2.status_code, 200)
+        self.assertEqual(resp2.json()["last_interaction_date"], "2026-02-20")
+        self.assertEqual(resp2.json()["last_interaction_type"], "Meeting")
