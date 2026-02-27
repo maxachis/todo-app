@@ -7,7 +7,7 @@ User=nexus
 Group=nexus
 WorkingDirectory=/opt/nexus
 EnvironmentFile=/opt/nexus/.env
-ExecStart=/opt/nexus/venv/bin/gunicorn nexus.wsgi:application --bind 127.0.0.1:8000 --workers 2
+ExecStart=/opt/nexus/.venv/bin/gunicorn nexus.wsgi:application --bind 127.0.0.1:8000 --workers 2
 Restart=on-failure
 RestartSec=5
 

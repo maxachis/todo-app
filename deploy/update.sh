@@ -18,7 +18,8 @@ info "Fixing file ownership"
 chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
 
 info "Installing dependencies"
-"${APP_DIR}/venv/bin/pip" install --quiet django markdown bleach gunicorn django-ninja pydantic
+cd "${APP_DIR}"
+uv sync --frozen
 
 info "Building frontend"
 sudo -u "${APP_USER}" bash -lc "cd '${APP_DIR}/frontend' && npm install && npm run build"
@@ -32,9 +33,9 @@ while IFS='=' read -r key value; do
 done < "${APP_DIR}/.env"
 
 sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
-    "${APP_DIR}/venv/bin/python" "${APP_DIR}/manage.py" migrate --noinput
+    "${APP_DIR}/.venv/bin/python" "${APP_DIR}/manage.py" migrate --noinput
 sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
-    "${APP_DIR}/venv/bin/python" "${APP_DIR}/manage.py" collectstatic --noinput
+    "${APP_DIR}/.venv/bin/python" "${APP_DIR}/manage.py" collectstatic --noinput
 
 info "Restarting app"
 systemctl restart nexus
