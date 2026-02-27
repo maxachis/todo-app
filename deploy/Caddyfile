@@ -1,12 +1,22 @@
 HOSTNAME_PLACEHOLDER {
     tls /etc/caddy/certs/tailscale.crt /etc/caddy/certs/tailscale.key
 
+    handle /api/* {
+        reverse_proxy localhost:8000
+    }
+
+    handle /admin/* {
+        reverse_proxy localhost:8000
+    }
+
     handle_path /static/* {
         root * /opt/nexus/staticfiles
         file_server
     }
 
     handle {
-        reverse_proxy localhost:8000
+        root * /opt/nexus/frontend/build
+        try_files {path} /index.html
+        file_server
     }
 }
