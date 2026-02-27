@@ -39,6 +39,6 @@ sudo -u "${APP_USER}" env "${ENV_ARGS[@]}" \
 
 info "Restarting app"
 systemctl restart nexus
-systemctl reload nginx || true
+systemctl reload caddy || true
 
 info "Done! App is live."
