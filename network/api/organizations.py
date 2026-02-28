@@ -35,6 +35,11 @@ def create_organization(request, payload: OrganizationCreateInput):
     if not name:
         raise HttpError(422, {"name": ["This field may not be blank."]})
 
+    if Organization.objects.filter(name__iexact=name).exists():
+        raise HttpError(
+            409, f"An organization named {name} already exists."
+        )
+
     org_type = get_object_or_404(OrgType, pk=payload.org_type_id)
     organization = Organization.objects.create(
         name=name,

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { addToast } from '$lib/stores/toast';
+
 	let {
 		options,
 		placeholder = '',
@@ -160,21 +162,63 @@
 				}
 				break;
 			case 'Tab':
-				close();
+				handleBlur();
 				break;
 		}
 	}
 
+	function handleBlur() {
+		if (onSelect) {
+			// Action mode: clear input
+			inputText = '';
+			displayText = '';
+			close();
+			return;
+		}
+
+		const trimmed = inputText.trim();
+
+		// Nothing typed or same as current selection — just close
+		if (!trimmed || trimmed.toLowerCase() === selectedLabel.toLowerCase()) {
+			close();
+			return;
+		}
+
+		// Exact match with an existing option — auto-select it
+		const exactMatch = options.find(
+			(o) => o.label.toLowerCase() === trimmed.toLowerCase()
+		);
+		if (exactMatch) {
+			selectOption(exactMatch);
+			return;
+		}
+
+		// Unmatched text with onCreate available — auto-create
+		if (onCreate && !creating) {
+			creating = true;
+			close();
+			onCreate(trimmed)
+				.then((newOpt) => {
+					selectOption(newOpt);
+				})
+				.finally(() => {
+					creating = false;
+				});
+			return;
+		}
+
+		// Unmatched text, no onCreate — revert with toast
+		if (!onCreate) {
+			addToast({ message: `No match found for "${trimmed}"`, type: 'info' });
+		}
+		displayText = selectedLabel;
+		inputText = '';
+		close();
+	}
+
 	function handleClickOutside(e: MouseEvent) {
 		if (container && !container.contains(e.target as Node)) {
-			close();
-			if (onSelect) {
-				inputText = '';
-				displayText = '';
-			} else if (selectedLabel) {
-				displayText = selectedLabel;
-				inputText = '';
-			}
+			handleBlur();
 		}
 	}
 

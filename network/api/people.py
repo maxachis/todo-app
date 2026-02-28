@@ -59,6 +59,13 @@ def create_person(request, payload: PersonCreateInput):
     if not last_name:
         raise HttpError(422, {"last_name": ["This field may not be blank."]})
 
+    if Person.objects.filter(
+        first_name__iexact=first_name, last_name__iexact=last_name
+    ).exists():
+        raise HttpError(
+            409, f"A person named {first_name} {last_name} already exists."
+        )
+
     person = Person.objects.create(
         first_name=first_name,
         middle_name=payload.middle_name.strip(),

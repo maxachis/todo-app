@@ -146,6 +146,8 @@
 	onclick={handleClick}
 	ondblclick={startEdit}
 	onkeydown={(e) => {
+		const el = e.target as HTMLElement | null;
+		if (el?.closest('input, textarea, select, [contenteditable="true"]')) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			handleClick(e as unknown as MouseEvent);

@@ -165,7 +165,7 @@ class TestKeyboard:
                 const scope = document.querySelector('.keyboard-scope');
                 const selected = document.querySelector(`.task-row[data-task-id="${id}"]`);
                 selected?.focus();
-                scope?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+                selected?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
             }""",
             task_id,
         )

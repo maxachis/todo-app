@@ -285,7 +285,7 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 - **THEN** both moved and non-moved items remain visible in the list (no disappearing rows/sections)
 
 ### Requirement: Keyboard navigation
-The system SHALL support full keyboard navigation for tasks. Navigation state SHALL be managed in a Svelte store.
+The system SHALL support full keyboard navigation for tasks. Navigation state SHALL be managed in a Svelte store. Destructive single-key shortcuts ("x" for complete, "Delete" for delete) SHALL only fire when the keyboard event originates from within a task row element (`[data-task-id]`). Non-destructive navigation shortcuts (j/k, arrow keys, Tab/Shift+Tab, Ctrl+arrows, Escape) SHALL continue to work from any focused element within the keyboard scope.
 
 #### Scenario: Arrow key navigation
 - **WHEN** the user presses Arrow Up or Arrow Down (or j/k)
@@ -327,13 +327,21 @@ The system SHALL support full keyboard navigation for tasks. Navigation state SH
 - **WHEN** a task is selected and the user presses Tab or Shift+Tab outside text-entry fields
 - **THEN** browser focus traversal does not run, and task indent/outdent is applied immediately
 
-#### Scenario: Complete with x key
-- **WHEN** the user presses x on a focused task
+#### Scenario: Complete with x key when focused on task row
+- **WHEN** the user presses "x" and focus is on a task row element (`[data-task-id]`)
 - **THEN** the task is completed (same behavior as clicking the checkbox)
 
-#### Scenario: Delete with Delete key
-- **WHEN** the user presses Delete on a focused task
+#### Scenario: x key ignored when focus is not on task row
+- **WHEN** the user presses "x" and focus is NOT on a task row element (e.g., focus is on a section header, button, or any other element inside the keyboard scope)
+- **THEN** the keystroke SHALL be ignored and no task SHALL be completed
+
+#### Scenario: Delete with Delete key when focused on task row
+- **WHEN** the user presses Delete and focus is on a task row element (`[data-task-id]`)
 - **THEN** a confirmation dialog appears; confirming deletes the task
+
+#### Scenario: Delete key ignored when focus is not on task row
+- **WHEN** the user presses Delete and focus is NOT on a task row element
+- **THEN** the keystroke SHALL be ignored and no task SHALL be deleted
 
 #### Scenario: Escape clears selection
 - **WHEN** the user presses Escape

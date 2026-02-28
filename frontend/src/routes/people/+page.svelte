@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, type Person, type Task, type List, type InteractionType } from '$lib';
+	import { ApiError } from '$lib/api/client';
+	import { addToast } from '$lib/stores/toast';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
@@ -170,23 +172,32 @@
 	async function createPerson(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		if (!newFirst.trim() || !newLast.trim()) return;
-		const person = await api.people.create({
-			first_name: newFirst.trim(),
-			last_name: newLast.trim(),
-			middle_name: newMiddle.trim(),
-			email: newEmail.trim(),
-			linkedin_url: newLinkedin.trim(),
-			notes: newNotes.trim(),
-			follow_up_cadence_days: newCadence ? Number(newCadence) : null
-		});
-		people = [...people, person];
-		newFirst = '';
-		newMiddle = '';
-		newLast = '';
-		newEmail = '';
-		newLinkedin = '';
-		newNotes = '';
-		newCadence = '';
+		try {
+			const person = await api.people.create({
+				first_name: newFirst.trim(),
+				last_name: newLast.trim(),
+				middle_name: newMiddle.trim(),
+				email: newEmail.trim(),
+				linkedin_url: newLinkedin.trim(),
+				notes: newNotes.trim(),
+				follow_up_cadence_days: newCadence ? Number(newCadence) : null
+			});
+			people = [...people, person];
+			newFirst = '';
+			newMiddle = '';
+			newLast = '';
+			newEmail = '';
+			newLinkedin = '';
+			newNotes = '';
+			newCadence = '';
+		} catch (err) {
+			if (err instanceof ApiError && err.status === 409) {
+				const detail = (err.body as { detail?: string })?.detail ?? 'A person with that name already exists.';
+				addToast({ message: detail, type: 'error' });
+				return;
+			}
+			throw err;
+		}
 	}
 
 	async function savePerson(): Promise<void> {

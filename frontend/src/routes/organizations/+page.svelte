@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, type Organization, type OrgType, type List } from '$lib';
+	import { ApiError } from '$lib/api/client';
+	import { addToast } from '$lib/stores/toast';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
@@ -82,14 +84,23 @@
 	async function createOrganization(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		if (!newOrgName.trim() || !newOrgTypeId) return;
-		const created = await api.organizations.create({
-			name: newOrgName.trim(),
-			org_type_id: newOrgTypeId,
-			notes: newOrgNotes.trim()
-		});
-		organizations = [...organizations, created].sort((a, b) => a.name.localeCompare(b.name));
-		newOrgName = '';
-		newOrgNotes = '';
+		try {
+			const created = await api.organizations.create({
+				name: newOrgName.trim(),
+				org_type_id: newOrgTypeId,
+				notes: newOrgNotes.trim()
+			});
+			organizations = [...organizations, created].sort((a, b) => a.name.localeCompare(b.name));
+			newOrgName = '';
+			newOrgNotes = '';
+		} catch (err) {
+			if (err instanceof ApiError && err.status === 409) {
+				const detail = (err.body as { detail?: string })?.detail ?? 'An organization with that name already exists.';
+				addToast({ message: detail, type: 'error' });
+				return;
+			}
+			throw err;
+		}
 	}
 
 	async function saveOrganization(): Promise<void> {

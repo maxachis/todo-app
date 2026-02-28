@@ -144,7 +144,7 @@
 					placeholder="Person B"
 					bind:value={newPerson2Id}
 				/>
-				<textarea bind:value={newPersonNotes} placeholder="Notes"></textarea>
+				<textarea bind:value={newPersonNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
 				<button type="submit">+ Relationship</button>
 			</form>
 
@@ -190,7 +190,7 @@
 					placeholder="Person"
 					bind:value={newOrgPersonId}
 				/>
-				<textarea bind:value={newOrgNotes} placeholder="Notes"></textarea>
+				<textarea bind:value={newOrgNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
 				<button type="submit">+ Relationship</button>
 			</form>
 

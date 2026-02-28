@@ -141,13 +141,13 @@ export function keyboard(node: HTMLElement, options: KeyboardOptions) {
 			return;
 		}
 
-		if (event.key === 'x' && currentId !== null) {
+		if (event.key === 'x' && currentId !== null && eventElement !== null) {
 			event.preventDefault();
 			await options.onCompleteTask(currentId);
 			return;
 		}
 
-		if (event.key === 'Delete' && currentId !== null) {
+		if (event.key === 'Delete' && currentId !== null && eventElement !== null) {
 			event.preventDefault();
 			if (confirm('Delete this task?')) {
 				await options.onDeleteTask(currentId);
