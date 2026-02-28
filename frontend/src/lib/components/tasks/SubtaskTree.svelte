@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Task } from '$lib';
-	import { moveTaskWithOptions, refreshTasksView, taskDragLockedStore, setTaskDragLocked } from '$lib/stores/tasks';
+	import { moveTaskWithOptions, moveTask, refreshTasksView, taskDragLockedStore, setTaskDragLocked, draggedTaskIdStore, nestIntentStore } from '$lib/stores/tasks';
 	import { addToast } from '$lib/stores/toast';
 	import DragContainer from '../dnd/DragContainer.svelte';
 	import DragItem from '../dnd/DragItem.svelte';
@@ -32,12 +32,35 @@
 			.sort((a, b) => a.position - b.position);
 	});
 
-	function handleConsider(event: CustomEvent<{ items: Task[] }>): void {
+	function handleConsider(event: CustomEvent<{ items: Task[]; info: { id: string } }>): void {
 		sortableSubtasks = event.detail.items as Task[];
+		draggedTaskIdStore.set(Number(event.detail.info.id));
 	}
 
-	async function handleFinalize(event: CustomEvent<{ items: Task[] }>): Promise<void> {
+	async function handleFinalize(event: CustomEvent<{ items: Task[]; info: { id: string } }>): Promise<void> {
+		const nestIntent = $nestIntentStore;
+		draggedTaskIdStore.set(null);
+		nestIntentStore.set(null);
+
 		if ($taskDragLockedStore) return;
+		const draggedId = Number(event.detail.info.id);
+
+		if (nestIntent) {
+			setTaskDragLocked(true);
+			try {
+				await moveTask(draggedId, {
+					section_id: nestIntent.targetSectionId,
+					parent_id: nestIntent.targetTaskId,
+					position: 0
+				});
+			} catch {
+				addToast({ message: 'Subtask nesting failed. Reverted.', type: 'error' });
+			} finally {
+				setTimeout(() => setTaskDragLocked(false), 180);
+			}
+			return;
+		}
+
 		const previous = [...sortableSubtasks];
 		sortableSubtasks = event.detail.items as Task[];
 		setTaskDragLocked(true);

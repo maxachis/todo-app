@@ -22,6 +22,57 @@
 	let newOrgPersonId = $state<number | null>(null);
 	let newOrgNotes = $state('');
 
+	let filterPersonId = $state<number | null>(null);
+	let filterOrgId = $state<number | null>(null);
+
+	const filteredPersonRelationships = $derived(
+		filterPersonId
+			? personRelationships.filter(
+					(r) => r.person_1_id === filterPersonId || r.person_2_id === filterPersonId
+				)
+			: personRelationships
+	);
+
+	const filteredOrgRelationships = $derived(
+		filterOrgId
+			? orgRelationships.filter((r) => r.organization_id === filterOrgId)
+			: orgRelationships
+	);
+
+	const connectedPersonIds = $derived(
+		newPerson1Id
+			? personRelationships
+					.filter((r) => r.person_1_id === newPerson1Id || r.person_2_id === newPerson1Id)
+					.map((r) => (r.person_1_id === newPerson1Id ? r.person_2_id : r.person_1_id))
+			: []
+	);
+
+	const availablePersonBOptions = $derived(
+		people
+			.filter((p) => p.id !== newPerson1Id && !connectedPersonIds.includes(p.id))
+			.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))
+	);
+
+	const connectedOrgPersonIds = $derived(
+		newOrgId
+			? orgRelationships.filter((r) => r.organization_id === newOrgId).map((r) => r.person_id)
+			: []
+	);
+
+	const availableOrgPersonOptions = $derived(
+		people
+			.filter((p) => !connectedOrgPersonIds.includes(p.id))
+			.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))
+	);
+
+	$effect(() => {
+		filterPersonId = newPerson1Id;
+	});
+
+	$effect(() => {
+		filterOrgId = newOrgId;
+	});
+
 	let editingId = $state<number | null>(null);
 	let editingType = $state<'person' | 'org' | null>(null);
 	let editingNotes = $state('');
@@ -140,7 +191,7 @@
 					bind:value={newPerson1Id}
 				/>
 				<TypeaheadSelect
-					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					options={availablePersonBOptions}
 					placeholder="Person B"
 					bind:value={newPerson2Id}
 				/>
@@ -148,8 +199,19 @@
 				<button type="submit">+ Relationship</button>
 			</form>
 
+			<div class="filter-row">
+				<TypeaheadSelect
+					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					placeholder="Filter by person"
+					bind:value={filterPersonId}
+				/>
+				{#if filterPersonId}
+					<button class="filter-clear" onclick={() => (filterPersonId = null)} title="Clear filter">&times;</button>
+				{/if}
+			</div>
+
 			<div class="list">
-				{#each personRelationships as rel (rel.id)}
+				{#each filteredPersonRelationships as rel (rel.id)}
 					<div class="list-item">
 						<div class="title">{personLabel(rel.person_1_id)} ↔ {personLabel(rel.person_2_id)}</div>
 						{#if editingId === rel.id && editingType === 'person'}
@@ -186,7 +248,7 @@
 					bind:value={newOrgId}
 				/>
 				<TypeaheadSelect
-					options={people.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))}
+					options={availableOrgPersonOptions}
 					placeholder="Person"
 					bind:value={newOrgPersonId}
 				/>
@@ -194,8 +256,19 @@
 				<button type="submit">+ Relationship</button>
 			</form>
 
+			<div class="filter-row">
+				<TypeaheadSelect
+					options={organizations.map((o) => ({ id: o.id, label: o.name }))}
+					placeholder="Filter by organization"
+					bind:value={filterOrgId}
+				/>
+				{#if filterOrgId}
+					<button class="filter-clear" onclick={() => (filterOrgId = null)} title="Clear filter">&times;</button>
+				{/if}
+			</div>
+
 			<div class="list">
-				{#each orgRelationships as rel (rel.id)}
+				{#each filteredOrgRelationships as rel (rel.id)}
 					<div class="list-item">
 						<div class="title">{orgLabel(rel.organization_id)} → {personLabel(rel.person_id)}</div>
 						{#if editingId === rel.id && editingType === 'org'}
@@ -297,6 +370,34 @@
 		background: var(--accent);
 		color: white;
 		border-color: var(--accent);
+	}
+
+	.filter-row {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding-top: 0.25rem;
+		border-top: 1px solid var(--border-light, var(--border));
+	}
+
+	.filter-row :global(.typeahead) {
+		flex: 1;
+	}
+
+	.filter-clear {
+		all: unset;
+		cursor: pointer;
+		font-size: 1.1rem;
+		line-height: 1;
+		color: var(--text-tertiary);
+		padding: 0.15rem 0.35rem;
+		border-radius: var(--radius-sm);
+		transition: color 0.15s, background 0.15s;
+	}
+
+	.filter-clear:hover {
+		color: var(--error);
+		background: var(--error-bg);
 	}
 
 	.list {

@@ -7,6 +7,8 @@ import { addToast } from './toast';
 export const selectedTaskStore = writable<number | null>(null);
 export const selectedTaskDetail = writable<Task | null>(null);
 export const taskDragLockedStore = writable(false);
+export const draggedTaskIdStore = writable<number | null>(null);
+export const nestIntentStore = writable<{ targetTaskId: number; targetSectionId: number } | null>(null);
 
 export function setTaskDragLocked(locked: boolean): void {
   taskDragLockedStore.set(locked);

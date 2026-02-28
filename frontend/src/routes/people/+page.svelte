@@ -14,6 +14,7 @@
 
 	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' | 'follow_up_status' = $state('last_name');
 	let sortDirection: 'asc' | 'desc' = $state('asc');
+	let filterQuery = $state('');
 
 	// Quick-log form state
 	let quickLogTypeId = $state<number | null>(null);
@@ -64,9 +65,16 @@
 		return days / cadence;
 	}
 
-	let sortedPeople: Person[] = $derived.by(() => {
+	let filteredAndSortedPeople: Person[] = $derived.by(() => {
+		const q = filterQuery.trim().toLowerCase();
+		const filtered = q
+			? people.filter(p =>
+				p.first_name.toLowerCase().includes(q) ||
+				p.last_name.toLowerCase().includes(q)
+			)
+			: people;
 		const dir = sortDirection === 'asc' ? 1 : -1;
-		return [...people].sort((a, b) => {
+		return [...filtered].sort((a, b) => {
 			if (sortField === 'follow_up_cadence_days') {
 				const aVal = a.follow_up_cadence_days;
 				const bVal = b.follow_up_cadence_days;
@@ -264,6 +272,7 @@
 			</form>
 
 			<div class="sort-bar">
+				<input class="filter-input" type="text" placeholder="Filter by name…" bind:value={filterQuery} />
 				<select bind:value={sortField}>
 					<option value="last_name">Last Name</option>
 					<option value="first_name">First Name</option>
@@ -281,7 +290,7 @@
 			</div>
 
 			<div class="list">
-				{#each sortedPeople as person (person.id)}
+				{#each filteredAndSortedPeople as person (person.id)}
 					<button class="list-item" class:active={selected?.id === person.id} onclick={() => selectPerson(person)}>
 						<div class="list-item-row">
 							<div class="title">{person.last_name}, {person.first_name}</div>
@@ -465,8 +474,20 @@
 		margin-bottom: 0.5rem;
 	}
 
-	.sort-bar select {
+	.filter-input {
 		flex: 1;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.3rem 0.5rem;
+		font-family: var(--font-body);
+		font-size: 0.8rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
+		min-width: 0;
+	}
+
+	.sort-bar select {
+		flex: none;
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		padding: 0.3rem 0.5rem;

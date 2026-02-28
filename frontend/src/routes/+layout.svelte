@@ -293,6 +293,52 @@
 		overflow: hidden;
 	}
 
+	/* Custom scrollbars — WebKit (Chrome, Safari, Edge) */
+	:global(*::-webkit-scrollbar) {
+		width: 6px;
+		height: 6px;
+	}
+
+	:global(*::-webkit-scrollbar:hover) {
+		width: 10px;
+		height: 10px;
+	}
+
+	:global(*::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	:global(*::-webkit-scrollbar-thumb) {
+		background: #c4bdb3;
+		border-radius: 999px;
+	}
+
+	:global(*::-webkit-scrollbar-thumb:hover) {
+		background: #a8a19a;
+	}
+
+	:global(:root[data-theme='dark'] *::-webkit-scrollbar-thumb) {
+		background: #5c554e;
+	}
+
+	:global(:root[data-theme='dark'] *::-webkit-scrollbar-thumb:hover) {
+		background: #78716c;
+	}
+
+	/* Custom scrollbars — Firefox */
+	:global(*) {
+		scrollbar-width: thin;
+		scrollbar-color: #c4bdb3 transparent;
+	}
+
+	:global(:root[data-theme='dark'] *) {
+		scrollbar-color: #5c554e transparent;
+	}
+
+	:global(#dnd-action-dragged-el) {
+		pointer-events: none;
+	}
+
 	:global(body) {
 		margin: 0;
 		height: 100%;

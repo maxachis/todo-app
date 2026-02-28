@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Task } from '$lib';
 	import { selectedListDetail } from '$lib/stores/lists';
-	import { selectedTaskStore, selectTask, completeTask, uncompleteTask, togglePin, moveTask, taskDragLockedStore, setTaskDragLocked } from '$lib/stores/tasks';
+	import { selectedTaskStore, selectTask, completeTask, uncompleteTask, togglePin, moveTask, taskDragLockedStore, setTaskDragLocked, draggedTaskIdStore, nestIntentStore } from '$lib/stores/tasks';
 	import { addToast } from '$lib/stores/toast';
 	import { completionSoundPreference } from '$lib/stores/completionSound';
 	import { playCompletionSound } from '$lib/audio/completionSounds';
@@ -115,6 +115,37 @@
 		return event.clientY >= bounds.top + bounds.height / 2 ? 'nest' : 'before';
 	}
 
+	function handlePointerMidpoint(event: PointerEvent): void {
+		const dragId = $draggedTaskIdStore;
+		if (dragId === null || dragId === task.id || task.is_completed) {
+			if (dropMode !== null) {
+				dropMode = null;
+				nestIntentStore.set(null);
+			}
+			return;
+		}
+		if (isDescendantOf(task.id, dragId)) {
+			dropMode = null;
+			nestIntentStore.set(null);
+			return;
+		}
+		const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+		const mode = event.clientY >= bounds.top + bounds.height / 2 ? 'nest' : 'before';
+		dropMode = mode;
+		if (mode === 'nest') {
+			nestIntentStore.set({ targetTaskId: task.id, targetSectionId: task.section_id });
+		} else {
+			nestIntentStore.set(null);
+		}
+	}
+
+	function handlePointerLeaveDrag(): void {
+		if ($draggedTaskIdStore !== null) {
+			dropMode = null;
+			nestIntentStore.set(null);
+		}
+	}
+
 	async function handleDropOnTask(event: DragEvent): Promise<void> {
 		event.preventDefault();
 		event.stopPropagation();
@@ -195,6 +226,8 @@
 		dropMode = null;
 	}}
 	ondrop={handleDropOnTask}
+	onpointermove={handlePointerMidpoint}
+	onpointerleave={handlePointerLeaveDrag}
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

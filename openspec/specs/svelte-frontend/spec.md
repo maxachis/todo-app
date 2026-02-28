@@ -238,11 +238,11 @@ The system SHALL provide task completion with immediate visual feedback. Complet
 - **THEN** all non-completed subtasks are also marked complete, with the UI updating reactively
 
 ### Requirement: Drag-and-drop with svelte-dnd-action
-The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop events SHALL update the Svelte store optimistically, then persist via API.
+The system SHALL use svelte-dnd-action for section and list drag-and-drop interactions. Task drag-and-drop SHALL use svelte-dnd-action for the drag gesture with pointer events for midpoint-based drop detection, to support both reordering (place before) and nesting (make subtask) from a single drag gesture. Drop events SHALL update the Svelte store optimistically, then persist via API.
 
 #### Scenario: Reorder task within section
-- **WHEN** the user drags a task to a new position within the same section
-- **THEN** the task list reorders immediately and the new position persists via API
+- **WHEN** the user drags a task and drops it above the midpoint of another task in the same section
+- **THEN** the task is placed before the drop target at the same nesting level and the new position persists via API
 
 #### Scenario: Task drag lock during finalize
 - **WHEN** a task drag finalize/persist cycle is in progress
@@ -250,14 +250,14 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 
 #### Scenario: Drag visual tracks cursor
 - **WHEN** the user drags a task
-- **THEN** the dragged element remains aligned to the cursor using the original grab offset (without immediate cursor-centering)
+- **THEN** the browser's native drag ghost follows the cursor
 
 #### Scenario: Move task to different section
-- **WHEN** the user drags a task into a different section
-- **THEN** the task appears in the new section immediately and the section/position change persists
+- **WHEN** the user drags a task and drops it above the midpoint of a task in a different section
+- **THEN** the task appears in the new section at the drop target's level and the section/position change persists
 
 #### Scenario: Nest task as subtask
-- **WHEN** the user drags a task onto another task
+- **WHEN** the user drags a task and drops it below the midpoint of another task
 - **THEN** the dragged task becomes a subtask of the drop target, updating visually and persisting via API
 
 #### Scenario: Midpoint controls drop intent on task rows
@@ -265,7 +265,7 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 - **THEN** dropping above task B's midpoint inserts task A before task B at task B's current hierarchy level, and dropping below task B's midpoint nests task A under task B
 
 #### Scenario: Promote subtask
-- **WHEN** the user drags a subtask out of its parent's nesting area
+- **WHEN** the user drags a subtask and drops it above the midpoint of a top-level task
 - **THEN** the subtask becomes a top-level task in the section
 
 #### Scenario: Move task to different list via sidebar
@@ -275,6 +275,14 @@ The system SHALL use svelte-dnd-action for all drag-and-drop interactions. Drop 
 #### Scenario: API failure rolls back
 - **WHEN** a drag operation succeeds visually but the API call fails
 - **THEN** the store reverts to the pre-drag state and a toast shows an error message
+
+#### Scenario: Reorder sections within list
+- **WHEN** the user drags a section to a new position within the list
+- **THEN** the section order updates immediately via svelte-dnd-action and persists via API
+
+#### Scenario: Reorder lists in sidebar
+- **WHEN** the user drags a list to a new position in the sidebar
+- **THEN** the list order updates immediately via svelte-dnd-action and persists via API
 
 #### Scenario: Reorder does not create duplicate keyed items
 - **WHEN** the user reorders lists, sections, or tasks via drag-and-drop
