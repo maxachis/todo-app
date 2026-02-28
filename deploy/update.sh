@@ -5,6 +5,7 @@ set -euo pipefail
 
 APP_DIR="/opt/nexus"
 APP_USER="nexus"
+UV="/root/.local/bin/uv"
 
 info() { echo -e "\n\033[1;34m==>\033[0m \033[1m$*\033[0m"; }
 error() { echo -e "\n\033[1;31mERROR:\033[0m $*" >&2; exit 1; }
@@ -19,7 +20,7 @@ chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
 
 info "Installing dependencies"
 cd "${APP_DIR}"
-uv sync --frozen
+"${UV}" sync --frozen
 
 info "Building frontend"
 sudo -u "${APP_USER}" bash -lc "cd '${APP_DIR}/frontend' && npm install && npm run build"
