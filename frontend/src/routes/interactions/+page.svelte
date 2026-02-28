@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Interaction, type InteractionType, type Person, type Organization, type List } from '$lib';
+	import { api, type Interaction, type InteractionMedium, type InteractionType, type Person, type Organization, type List } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
@@ -8,6 +8,7 @@
 	let people: Person[] = $state([]);
 	let organizations: Organization[] = $state([]);
 	let interactionTypes: InteractionType[] = $state([]);
+	let interactionMediums: InteractionMedium[] = $state([]);
 	let selected: Interaction | null = $state(null);
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
@@ -15,12 +16,14 @@
 	let newPersonIds = $state<number[]>([]);
 	let newOrgIds = $state<number[]>([]);
 	let newTypeId = $state<number | null>(null);
+	let newMediumId = $state<number | null>(null);
 	let newDate = $state('');
 	let newNotes = $state('');
 
 	let editPersonIds = $state<number[]>([]);
 	let editOrgIds = $state<number[]>([]);
 	let editTypeId = $state<number | null>(null);
+	let editMediumId = $state<number | null>(null);
 	let editDate = $state('');
 	let editNotes = $state('');
 
@@ -28,6 +31,7 @@
 		people = await api.people.getAll();
 		organizations = await api.organizations.getAll();
 		interactionTypes = await api.interactionTypes.getAll();
+		interactionMediums = await api.interactionMediums.getAll();
 		interactions = await api.interactions.getAll();
 		if (selected) {
 			selected = interactions.find((item) => item.id === selected?.id) ?? null;
@@ -70,11 +74,16 @@
 		return interactionTypes.find((type) => type.id === id);
 	}
 
+	function findMedium(id: number): InteractionMedium | undefined {
+		return interactionMediums.find((m) => m.id === id);
+	}
+
 	function selectInteraction(item: Interaction): void {
 		selected = item;
 		editPersonIds = [...item.person_ids];
 		editOrgIds = [...item.organization_ids];
 		editTypeId = item.interaction_type_id;
+		editMediumId = item.interaction_medium_id;
 		editDate = item.date;
 		editNotes = item.notes;
 		loadLinkedTasks(item.id);
@@ -118,6 +127,12 @@
 	async function handleCreateInteractionType(name: string): Promise<{ id: number; label: string }> {
 		const created = await api.interactionTypes.create({ name });
 		interactionTypes = [...interactionTypes, created].sort((a, b) => a.name.localeCompare(b.name));
+		return { id: created.id, label: created.name };
+	}
+
+	async function handleCreateInteractionMedium(name: string): Promise<{ id: number; label: string }> {
+		const created = await api.interactionMediums.create({ name });
+		interactionMediums = [...interactionMediums, created].sort((a, b) => a.name.localeCompare(b.name));
 		return { id: created.id, label: created.name };
 	}
 
@@ -168,6 +183,7 @@
 			person_ids: newPersonIds,
 			organization_ids: newOrgIds,
 			interaction_type_id: newTypeId,
+			interaction_medium_id: newMediumId,
 			date: newDate,
 			notes: newNotes
 		});
@@ -175,6 +191,7 @@
 		newPersonIds = [];
 		newOrgIds = [];
 		newTypeId = null;
+		newMediumId = null;
 		newDate = '';
 		newNotes = '';
 	}
@@ -185,6 +202,7 @@
 			person_ids: editPersonIds,
 			organization_ids: editOrgIds,
 			interaction_type_id: editTypeId,
+			interaction_medium_id: editMediumId,
 			date: editDate,
 			notes: editNotes
 		});
@@ -250,6 +268,12 @@
 					bind:value={newTypeId}
 					onCreate={handleCreateInteractionType}
 				/>
+				<TypeaheadSelect
+					options={interactionMediums.map((m) => ({ id: m.id, label: m.name }))}
+					placeholder="Medium"
+					bind:value={newMediumId}
+					onCreate={handleCreateInteractionMedium}
+				/>
 				<input type="date" bind:value={newDate} />
 				<textarea bind:value={newNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
 				<button type="submit">+ Interaction</button>
@@ -265,7 +289,7 @@
 							<div class="org-names">{formatOrgNames(item.organization_ids)}</div>
 						{/if}
 						<div class="meta">
-							{findType(item.interaction_type_id)?.name ?? 'Type'} · {item.date}
+							{findType(item.interaction_type_id)?.name ?? 'Type'}{item.interaction_medium_id ? ` · ${findMedium(item.interaction_medium_id)?.name ?? 'Medium'}` : ''} · {item.date}
 						</div>
 					</button>
 				{/each}
@@ -322,6 +346,15 @@
 							placeholder="Interaction type"
 							bind:value={editTypeId}
 							onCreate={handleCreateInteractionType}
+						/>
+					</label>
+					<label>
+						<span>Medium</span>
+						<TypeaheadSelect
+							options={interactionMediums.map((m) => ({ id: m.id, label: m.name }))}
+							placeholder="Medium"
+							bind:value={editMediumId}
+							onCreate={handleCreateInteractionMedium}
 						/>
 					</label>
 					<label>

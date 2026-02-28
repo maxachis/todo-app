@@ -7,7 +7,7 @@ from network.api.schemas import (
     InteractionSchema,
     InteractionUpdateInput,
 )
-from network.models import Interaction, InteractionType, Organization, Person
+from network.models import Interaction, InteractionMedium, InteractionType, Organization, Person
 
 router = Router(tags=["network-interactions"])
 
@@ -18,6 +18,7 @@ def _serialize_interaction(interaction: Interaction) -> InteractionSchema:
         person_ids=list(interaction.people.values_list("id", flat=True)),
         organization_ids=list(interaction.organizations.values_list("id", flat=True)),
         interaction_type_id=interaction.interaction_type_id,
+        interaction_medium_id=interaction.medium_id,
         date=interaction.date,
         notes=interaction.notes,
         created_at=interaction.created_at,
@@ -39,8 +40,12 @@ def create_interaction(request, payload: InteractionCreateInput):
     if len(people) != len(payload.person_ids):
         raise HttpError(422, "One or more person IDs are invalid")
     interaction_type = get_object_or_404(InteractionType, pk=payload.interaction_type_id)
+    medium = None
+    if payload.interaction_medium_id is not None:
+        medium = get_object_or_404(InteractionMedium, pk=payload.interaction_medium_id)
     interaction = Interaction.objects.create(
         interaction_type=interaction_type,
+        medium=medium,
         date=payload.date,
         notes=payload.notes,
     )
@@ -77,6 +82,9 @@ def update_interaction(request, interaction_id: int, payload: InteractionUpdateI
 
     if payload.interaction_type_id is not None:
         interaction.interaction_type = get_object_or_404(InteractionType, pk=payload.interaction_type_id)
+
+    if payload.interaction_medium_id is not None:
+        interaction.medium = get_object_or_404(InteractionMedium, pk=payload.interaction_medium_id)
 
     if payload.date is not None:
         interaction.date = payload.date

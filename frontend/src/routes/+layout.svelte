@@ -44,7 +44,7 @@
 
 	const tabs = [
 		{ href: '/', label: 'Tasks' },
-		{ href: '/upcoming', label: 'Upcoming' },
+		{ href: '/dashboard', label: 'Dashboard' },
 		{ href: '/projects', label: 'Projects' },
 		{ href: '/timesheet', label: 'Timesheet' },
 		{ href: '/people', label: 'People' },

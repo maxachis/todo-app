@@ -6,6 +6,9 @@ class Person(models.Model):
     last_name = models.CharField(max_length=255)
     email = models.CharField(max_length=255, blank=True)
     linkedin_url = models.CharField(max_length=500, blank=True)
+    tags = models.ManyToManyField(
+        "PersonTag", blank=True, related_name="people"
+    )
     notes = models.TextField(
         blank=True
     )

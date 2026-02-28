@@ -12,6 +12,15 @@
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
 
+	let filterQuery = $state('');
+
+	let filteredOrganizations: Organization[] = $derived.by(() => {
+		const q = filterQuery.trim().toLowerCase();
+		return q
+			? organizations.filter(o => o.name.toLowerCase().includes(q))
+			: organizations;
+	});
+
 	let newOrgName = $state('');
 	let newOrgNotes = $state('');
 	let newOrgTypeId = $state<number | null>(null);
@@ -143,8 +152,10 @@
 				<button type="submit">+ Organization</button>
 			</form>
 
+			<input class="filter-input" type="text" placeholder="Filter by name…" bind:value={filterQuery} />
+
 			<div class="list">
-				{#each organizations as org (org.id)}
+				{#each filteredOrganizations as org (org.id)}
 					<button class="list-item" class:active={selected?.id === org.id} onclick={() => selectOrg(org)}>
 						<div class="title">{org.name}</div>
 						<div class="meta">{orgTypes.find((type) => type.id === org.org_type_id)?.name ?? '—'}</div>
@@ -263,6 +274,20 @@
 		background: var(--accent);
 		color: white;
 		border-color: var(--accent);
+	}
+
+	.filter-input {
+		display: block;
+		width: 100%;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.3rem 0.5rem;
+		font-family: var(--font-body);
+		font-size: 0.8rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+		box-sizing: border-box;
 	}
 
 	.list {

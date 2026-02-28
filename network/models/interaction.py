@@ -17,6 +17,12 @@ class Interaction(models.Model):
         to="network.InteractionType",
         on_delete=models.RESTRICT,
     )
+    medium = models.ForeignKey(
+        to="network.InteractionMedium",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     date = models.DateField(default=timezone.now)
     notes = models.TextField(
         blank=True

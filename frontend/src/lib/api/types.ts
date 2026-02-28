@@ -153,6 +153,11 @@ export interface ImportSummary {
 
 // Network types
 
+export interface PersonTag {
+  id: number;
+  name: string;
+}
+
 export interface Person {
   id: number;
   first_name: string;
@@ -162,6 +167,7 @@ export interface Person {
   linkedin_url: string;
   notes: string;
   follow_up_cadence_days: number | null;
+  tags: PersonTag[];
   last_interaction_date: string | null;
   last_interaction_type: string | null;
   created_at: string;
@@ -219,11 +225,17 @@ export interface InteractionType {
   name: string;
 }
 
+export interface InteractionMedium {
+  id: number;
+  name: string;
+}
+
 export interface Interaction {
   id: number;
   person_ids: number[];
   organization_ids: number[];
   interaction_type_id: number;
+  interaction_medium_id: number | null;
   date: string;
   notes: string;
   created_at: string;
@@ -234,6 +246,7 @@ export interface CreateInteractionInput {
   person_ids: number[];
   organization_ids?: number[];
   interaction_type_id: number;
+  interaction_medium_id?: number | null;
   date: string;
   notes?: string;
 }
@@ -242,6 +255,7 @@ export interface UpdateInteractionInput {
   person_ids?: number[];
   organization_ids?: number[];
   interaction_type_id?: number;
+  interaction_medium_id?: number | null;
   date?: string;
   notes?: string;
 }
@@ -343,6 +357,34 @@ export interface LeadTaskLink {
   lead_id: number;
   task_id: number;
   created_at: string;
+}
+
+// Dashboard types
+
+export interface WeeklyCount {
+  week_start: string;
+  count: number;
+}
+
+export interface FollowUpCompliance {
+  on_track: number;
+  total: number;
+  overdue_count: number;
+}
+
+export interface TrendsData {
+  interactions_per_week: WeeklyCount[];
+  tasks_completed_per_week: WeeklyCount[];
+  follow_up_compliance: FollowUpCompliance;
+}
+
+export interface FollowUpDueItem {
+  person_id: number;
+  first_name: string;
+  last_name: string;
+  follow_up_cadence_days: number;
+  last_interaction_date: string | null;
+  days_overdue: number;
 }
 
 export interface CreateListInput {

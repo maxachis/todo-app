@@ -6,6 +6,7 @@
 	import SectionHeader from './SectionHeader.svelte';
 	import TaskList from '../tasks/TaskList.svelte';
 	import TaskCreateForm from '../tasks/TaskCreateForm.svelte';
+	import TaskRow from '../tasks/TaskRow.svelte';
 	import { addToast } from '$lib/stores/toast';
 	import { moveSectionWithOptions, refreshSelectedListDetail } from '$lib/stores/lists';
 
@@ -28,6 +29,7 @@
 	} = $props();
 
 	let collapsedIds = $state<Set<number>>(new Set());
+	let showCompletedIds = $state<Set<number>>(new Set());
 	let sortableSections = $state<Section[]>([]);
 	let editingSectionId = $state<number | null>(null);
 
@@ -54,6 +56,22 @@
 			next.add(sectionId);
 		}
 		collapsedIds = next;
+	}
+
+	function toggleShowCompleted(sectionId: number): void {
+		const next = new Set(showCompletedIds);
+		if (next.has(sectionId)) {
+			next.delete(sectionId);
+		} else {
+			next.add(sectionId);
+		}
+		showCompletedIds = next;
+	}
+
+	function getCompletedTasks(section: Section) {
+		return section.tasks
+			.filter((t) => t.is_completed && t.parent_id === null)
+			.sort((a, b) => a.position - b.position);
 	}
 
 	function handleStartEdit(sectionId: number): void {
@@ -108,6 +126,20 @@
 				{#if !collapsedIds.has(section.id)}
 					<TaskList tasks={section.tasks} sectionId={section.id} />
 					<TaskCreateForm sectionId={section.id} />
+					{@const completedTasks = getCompletedTasks(section)}
+					{#if completedTasks.length > 0}
+						<div class="completed-section">
+							<button class="completed-toggle" onclick={() => toggleShowCompleted(section.id)}>
+								<span class="chevron">{showCompletedIds.has(section.id) ? '▼' : '▶'}</span>
+								Completed ({completedTasks.length})
+							</button>
+							{#if showCompletedIds.has(section.id)}
+								{#each completedTasks as task (task.id)}
+									<TaskRow {task} />
+								{/each}
+							{/if}
+						</div>
+					{/if}
 				{/if}
 			</div>
 		{/each}
@@ -118,5 +150,39 @@
 	.section-list {
 		display: grid;
 		gap: 1.25rem;
+	}
+
+	.completed-section {
+		margin-top: 0.5rem;
+		border-top: 1px solid var(--border-light);
+		padding-top: 0.4rem;
+	}
+
+	.section-block {
+		display: grid;
+	}
+
+	.completed-toggle {
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		color: var(--text-tertiary);
+		font-size: 0.78rem;
+		font-weight: 600;
+		font-family: var(--font-body);
+		padding: 0.25rem 0;
+		margin: 0;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		transition: color var(--transition);
+	}
+
+	.completed-toggle:hover {
+		color: var(--text-secondary);
+	}
+
+	.chevron {
+		font-size: 0.6rem;
 	}
 </style>

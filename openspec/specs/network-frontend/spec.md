@@ -8,6 +8,8 @@ The system SHALL provide Svelte routes and navigation entries for People, Organi
 ### Requirement: Network list and detail views
 The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback. The People list view SHALL include a sort control bar between the create form and the list, allowing the user to choose a sort field and toggle sort direction. The People list sort bar SHALL include a "Follow-up status" sort option in addition to the existing name and cadence sort fields. Each person in the People list SHALL display a follow-up status indicator when the person has a follow-up cadence set, showing the days since last interaction and cadence value with color-coded urgency (overdue, due soon, on track). The People detail panel SHALL display the most recent interaction date and type when available. The People detail panel SHALL display an overdue warning when the person is past their follow-up cadence. The People detail panel SHALL include a quick-log interaction form below the last-interaction summary.
 
+Each person row in the people list SHALL display the person's tags inline. The people list SHALL include a tag filter control that allows the user to filter displayed people by tag. The person detail view SHALL display tags near the top of the panel (after contact fields, before notes) and provide a TypeaheadSelect for adding tags with inline creation support via `onCreate` callback. Each displayed tag SHALL have a remove control to unlink it from the person.
+
 The Interactions page create and edit forms SHALL use a multi-person selection UI instead of a single-person typeahead. The multi-person selection SHALL use the TypeaheadSelect component in onSelect callback mode to add people one at a time, displaying selected people as removable chips. The Interactions list view SHALL display all attendee names for each interaction, truncating to the first 2 names with a "+N more" indicator when there are more than 3 people.
 
 The Relationships page SHALL include filter controls in both the Person ↔ Person and Organization → Person panels. Each filter SHALL be a TypeaheadSelect placed between the create form and the relationship list, allowing users to filter the displayed relationships by a specific person or organization. The filter SHALL auto-sync from the create form's primary field (Person A or Organization) and SHALL be independently editable. The secondary dropdown in each create form (Person B or Person) SHALL exclude entities that already have a relationship with the selected primary entity.
@@ -39,6 +41,26 @@ The Relationships page SHALL include filter controls in both the Person ↔ Pers
 #### Scenario: Linked tasks section supports add and remove
 - **WHEN** a person, organization, or interaction detail view is displayed
 - **THEN** the "Linked Tasks" section provides a typeahead input to search and link new tasks and a remove button on each linked task to unlink it
+
+#### Scenario: Person detail displays tags near top
+- **WHEN** a user selects a person with tags
+- **THEN** the detail panel displays tags after contact fields and before notes, with remove controls on each tag
+
+#### Scenario: Person detail tag typeahead with inline creation
+- **WHEN** a user types a name into the tag typeahead on the person detail that doesn't match any existing person tag
+- **THEN** a "Create [typed name]" option appears, and selecting it creates the tag and adds it to the person
+
+#### Scenario: Person list rows show tags inline
+- **WHEN** the people list loads and a person has tags
+- **THEN** the person's row displays the tag names inline
+
+#### Scenario: People list tag filter
+- **WHEN** the user selects a tag from the tag filter control on the people list
+- **THEN** the list reloads showing only people with that tag
+
+#### Scenario: Clear people list tag filter
+- **WHEN** the user clears the tag filter
+- **THEN** the list reloads showing all people
 
 #### Scenario: Create org type inline via typeahead on Organizations page
 - **WHEN** a user types a name into the org type typeahead (in the create or edit form) that does not match any existing org type
@@ -180,8 +202,24 @@ The People page detail panel SHALL display a non-empty email as a clickable `mai
 - **THEN** no contact links are shown in the detail panel
 
 ### Requirement: Graph visualization parity
-The system SHALL present the network graph in Svelte with equivalent behavior to the existing network app visualization.
+The system SHALL present the network graph in Svelte with equivalent behavior to the existing network app visualization. Graph node, edge, and label colors SHALL be derived from the app's CSS variable theme system rather than hardcoded hex values. Organization nodes SHALL use the `--accent` color. Person nodes SHALL use the `--text-tertiary` color. Edge lines SHALL use the `--border` color. Edge note labels SHALL use the `--text-tertiary` color. Node text labels SHALL use the `--text-primary` color. Graph colors SHALL update automatically when the user toggles between light and dark themes.
 
 #### Scenario: View graph
 - **WHEN** a user opens the Graph view
 - **THEN** the graph renders with the same data and interactions as the legacy network app
+
+#### Scenario: Graph node colors match theme
+- **WHEN** the graph renders in the current theme
+- **THEN** organization nodes SHALL use the `--accent` color and person nodes SHALL use the `--text-tertiary` color
+
+#### Scenario: Graph edge colors match theme
+- **WHEN** the graph renders in the current theme
+- **THEN** edge lines SHALL use the `--border` color and edge note labels SHALL use the `--text-tertiary` color
+
+#### Scenario: Graph label colors match theme
+- **WHEN** the graph renders in the current theme
+- **THEN** node text labels SHALL use the `--text-primary` color
+
+#### Scenario: Graph colors update on theme toggle
+- **WHEN** the user switches between light and dark mode while viewing the graph
+- **THEN** all graph node, edge, and label colors SHALL update to reflect the new theme's CSS variable values without losing the current graph layout or zoom state

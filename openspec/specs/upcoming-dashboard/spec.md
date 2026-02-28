@@ -32,23 +32,31 @@ Each task returned by the upcoming endpoint SHALL include `list_id`, `list_name`
 - **AND** each task includes `section_id` and `section_name` from the task's section
 
 ### Requirement: Dashboard page displays tasks grouped by time horizon
-The frontend SHALL render a page at `/upcoming` that groups tasks into time-based sections: "Overdue", "Today", "Tomorrow", "This Week", and "Later". Grouping SHALL be based on the client's local date compared to each task's `due_date`.
+The frontend SHALL render the Upcoming sub-tab within the Dashboard page at `/dashboard`. The sub-tab groups tasks into time-based sections: "Overdue", "Today", "Tomorrow", "This Week", and "Later". Grouping SHALL be based on the client's local date compared to each task's `due_date`. The Dashboard page SHALL include a sub-tab bar with "Upcoming" and "Trends" tabs, controlled via a `tab` query parameter (defaulting to `upcoming`).
 
 #### Scenario: Tasks span multiple time horizons
-- **WHEN** the user navigates to `/upcoming`
+- **WHEN** the user navigates to `/dashboard` or `/dashboard?tab=upcoming`
 - **AND** there are tasks with due dates in the past, today, tomorrow, this week, and next week
-- **THEN** the page displays group headers for "Overdue", "Today", "Tomorrow", "This Week", and "Later"
+- **THEN** the page displays a sub-tab bar with "Upcoming" active
+- **AND** group headers for "Overdue", "Today", "Tomorrow", "This Week", and "Later"
 - **AND** each task appears under its correct group
 
 #### Scenario: A group has no tasks
-- **WHEN** the user navigates to `/upcoming`
+- **WHEN** the user navigates to `/dashboard?tab=upcoming`
 - **AND** no tasks are overdue
 - **THEN** the "Overdue" group header SHALL NOT be displayed
 
-#### Scenario: No tasks have due dates
-- **WHEN** the user navigates to `/upcoming`
-- **AND** the API returns an empty array
+#### Scenario: No tasks have due dates and no follow-ups due
+- **WHEN** the user navigates to `/dashboard?tab=upcoming`
+- **AND** the upcoming API returns an empty array
+- **AND** no people are overdue for follow-up
 - **THEN** the page displays an empty state message
+
+#### Scenario: User switches between sub-tabs
+- **WHEN** the user clicks the "Trends" sub-tab
+- **THEN** the URL updates to `/dashboard?tab=trends`
+- **AND** the Trends content is displayed
+- **AND** the browser back button returns to the previous tab
 
 ### Requirement: Each dashboard task row shows relevant details
 Each task row on the dashboard SHALL display the task title, due date (formatted), due time (if set), priority indicator (if non-zero), and the list name with emoji and section name as context.
@@ -70,9 +78,9 @@ Each task on the dashboard SHALL be clickable and navigate the user to the main 
 - **AND** the main page selects the corresponding list and task
 
 ### Requirement: Navigation includes Upcoming tab
-The top navigation bar SHALL include an "Upcoming" tab linking to `/upcoming`, placed between "Tasks" and "Projects" in the tab order.
+The top navigation bar SHALL include a "Dashboard" tab linking to `/dashboard`, placed between "Tasks" and "Projects" in the tab order. The tab SHALL be highlighted when the user is on the `/dashboard` route.
 
-#### Scenario: User sees Upcoming tab
+#### Scenario: User sees Dashboard tab
 - **WHEN** the user views any page
-- **THEN** the top navigation bar displays an "Upcoming" tab
-- **AND** the tab is highlighted when the user is on the `/upcoming` route
+- **THEN** the top navigation bar displays a "Dashboard" tab
+- **AND** the tab is highlighted when the user is on the `/dashboard` route

@@ -1,5 +1,5 @@
 ### Requirement: Network entities are first-class in the unified schema
-The system SHALL include models for people, organizations, organization types, interaction types, interactions, relationships, and leads within the unified database. The Interaction model SHALL associate with people via a ManyToManyField (`people`) instead of a single ForeignKey. The Interaction model SHALL also associate with organizations via a ManyToManyField (`organizations`, blank=True).
+The system SHALL include models for people, organizations, organization types, interaction types, interaction mediums, interactions, relationships, and leads within the unified database. The Interaction model SHALL associate with people via a ManyToManyField (`people`) instead of a single ForeignKey. The Interaction model SHALL also associate with organizations via a ManyToManyField (`organizations`, blank=True). The Interaction model SHALL have an optional ForeignKey to InteractionMedium (`medium`, null=True, blank=True, on_delete=SET_NULL).
 
 #### Scenario: Network entities persist in unified database
 - **WHEN** a person, organization, interaction, or lead is created
@@ -12,6 +12,18 @@ The system SHALL include models for people, organizations, organization types, i
 #### Scenario: Interaction associates with organizations
 - **WHEN** an interaction is created and associated with one or more organizations
 - **THEN** all organization associations are stored via the M2M relationship and retrievable from the interaction
+
+#### Scenario: Interaction has optional medium
+- **WHEN** an interaction is created without specifying a medium
+- **THEN** the interaction is persisted with `medium` set to null
+
+#### Scenario: Interaction with medium set
+- **WHEN** an interaction is created with a medium of "Email"
+- **THEN** the interaction is persisted with the `medium` FK pointing to the InteractionMedium record
+
+#### Scenario: Deleting a medium nullifies interaction references
+- **WHEN** an InteractionMedium is deleted and interactions reference it
+- **THEN** those interactions have their `medium` field set to null
 
 ### Requirement: Tasks can link to people, organizations, and interactions
 The system SHALL provide explicit link tables to associate tasks with people, organizations, and interactions.
@@ -41,6 +53,13 @@ The Person model SHALL include an optional `email` field (CharField, max 255, bl
 #### Scenario: Update person contact fields
 - **WHEN** a person's `email` or `linkedin_url` is updated
 - **THEN** the new values are persisted and the `updated_at` timestamp changes
+
+### Requirement: Person has tags via PersonTag
+The Person model SHALL include a ManyToManyField to PersonTag (`tags`, blank=True, related_name="people"). PersonTag SHALL be a separate model in the network domain with a unique `name` field (CharField, max 100).
+
+#### Scenario: Person with tags
+- **WHEN** a person is created and associated with PersonTag records
+- **THEN** the tags are retrievable via the person's `tags` M2M field
 
 ### Requirement: Tasks can link to leads
 The system SHALL provide an explicit link table to associate tasks with leads, following the same pattern as task-person and task-organization links.

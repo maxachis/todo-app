@@ -118,8 +118,29 @@ The system SHALL display sections within a list, each collapsible, with tasks ne
 - **WHEN** the user attempts to drag from task rows/body area inside a section
 - **THEN** section drag does not initiate; dragging sections is only available from a handle in the section header
 
+### Requirement: Section layout ordering
+Within each section in the Tasks view, elements SHALL render in the following order:
+1. Section header
+2. Active (incomplete) tasks with drag-and-drop
+3. Task creation form
+4. Completed tasks (collapsible)
+
+The completed tasks section SHALL retain its existing collapsible toggle, count display, and styling. The task creation form SHALL appear directly after active tasks, before any completed tasks.
+
+#### Scenario: Task create form appears before completed tasks
+- **WHEN** a section contains both active and completed tasks
+- **THEN** the task creation form SHALL render between the active tasks and the completed tasks section
+
+#### Scenario: Section with no completed tasks
+- **WHEN** a section has no completed tasks
+- **THEN** the task creation form SHALL render directly after active tasks with no completed section visible
+
+#### Scenario: Completed section collapse state preserved
+- **WHEN** the user toggles the completed section open or closed
+- **THEN** the toggle behavior SHALL work identically to the current implementation, just in its new position below the task creation form
+
 ### Requirement: Task list rendering
-The system SHALL display tasks within sections, showing title, tags, due date, subtask count, pin button, and a recurrence indicator. Completed tasks SHALL appear in a separate "Completed" group at the bottom. On phone viewports (640px and below), task row metadata SHALL wrap instead of overflowing, and interactive elements SHALL meet minimum touch target sizes. The inline task title edit input SHALL stop click event propagation so that clicks within the input do not exit edit mode.
+The system SHALL display tasks within sections, showing title, tags, due date, subtask count, pin button, and a recurrence indicator. Completed tasks SHALL appear in a separate "Completed" group below the task creation form. On phone viewports (640px and below), task row metadata SHALL wrap instead of overflowing, and interactive elements SHALL meet minimum touch target sizes. The inline task title edit input SHALL stop click event propagation so that clicks within the input do not exit edit mode.
 
 #### Scenario: Tasks render with metadata
 - **WHEN** a section is displayed

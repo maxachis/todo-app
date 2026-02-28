@@ -175,3 +175,29 @@ class TimeEntryCreateInput(Schema):
     date: date
     description: str = ""
     task_ids: list[int] = []
+
+
+class WeeklyCount(Schema):
+    week_start: str
+    count: int
+
+
+class FollowUpCompliance(Schema):
+    on_track: int
+    total: int
+    overdue_count: int
+
+
+class TrendsResponse(Schema):
+    interactions_per_week: list[WeeklyCount]
+    tasks_completed_per_week: list[WeeklyCount]
+    follow_up_compliance: FollowUpCompliance
+
+
+class FollowUpDueItem(Schema):
+    person_id: int
+    first_name: str
+    last_name: str
+    follow_up_cadence_days: int
+    last_interaction_date: str | None
+    days_overdue: int

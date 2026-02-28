@@ -8,6 +8,7 @@
 		type RelationshipPersonPerson
 	} from '$lib';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
+	import { addToast } from '$lib/stores/toast';
 
 	let people: Person[] = $state([]);
 	let organizations: Organization[] = $state([]);
@@ -15,12 +16,27 @@
 	let orgRelationships: RelationshipOrganizationPerson[] = $state([]);
 
 	let newPerson1Id = $state<number | null>(null);
-	let newPerson2Id = $state<number | null>(null);
+	let newPersonBIds = $state<number[]>([]);
 	let newPersonNotes = $state('');
+	let submittingPerson = $state(false);
 
 	let newOrgId = $state<number | null>(null);
-	let newOrgPersonId = $state<number | null>(null);
+	let newOrgPersonIds = $state<number[]>([]);
 	let newOrgNotes = $state('');
+	let submittingOrg = $state(false);
+
+	function addPersonB(id: number): void {
+		if (!newPersonBIds.includes(id)) newPersonBIds = [...newPersonBIds, id];
+	}
+	function removePersonB(id: number): void {
+		newPersonBIds = newPersonBIds.filter((pid) => pid !== id);
+	}
+	function addOrgPerson(id: number): void {
+		if (!newOrgPersonIds.includes(id)) newOrgPersonIds = [...newOrgPersonIds, id];
+	}
+	function removeOrgPerson(id: number): void {
+		newOrgPersonIds = newOrgPersonIds.filter((pid) => pid !== id);
+	}
 
 	let filterPersonId = $state<number | null>(null);
 	let filterOrgId = $state<number | null>(null);
@@ -49,7 +65,7 @@
 
 	const availablePersonBOptions = $derived(
 		people
-			.filter((p) => p.id !== newPerson1Id && !connectedPersonIds.includes(p.id))
+			.filter((p) => p.id !== newPerson1Id && !connectedPersonIds.includes(p.id) && !newPersonBIds.includes(p.id))
 			.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))
 	);
 
@@ -61,7 +77,7 @@
 
 	const availableOrgPersonOptions = $derived(
 		people
-			.filter((p) => !connectedOrgPersonIds.includes(p.id))
+			.filter((p) => !connectedOrgPersonIds.includes(p.id) && !newOrgPersonIds.includes(p.id))
 			.map((p) => ({ id: p.id, label: `${p.last_name}, ${p.first_name}` }))
 	);
 
@@ -71,6 +87,14 @@
 
 	$effect(() => {
 		filterOrgId = newOrgId;
+	});
+
+	$effect(() => {
+		if (newPersonBIds.length === 0) newPersonNotes = '';
+	});
+
+	$effect(() => {
+		if (newOrgPersonIds.length === 0) newOrgNotes = '';
 	});
 
 	let editingId = $state<number | null>(null);
@@ -137,30 +161,70 @@
 
 	async function createPersonRelationship(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newPerson1Id || !newPerson2Id) return;
-		const created = await api.relationships.people.create({
-			person_1_id: newPerson1Id,
-			person_2_id: newPerson2Id,
-			notes: newPersonNotes
+		if (!newPerson1Id || newPersonBIds.length === 0) return;
+		submittingPerson = true;
+		const personAId = newPerson1Id;
+		const notes = newPersonNotes;
+		const results = await Promise.allSettled(
+			newPersonBIds.map((personBId) =>
+				api.relationships.people.create({
+					person_1_id: personAId,
+					person_2_id: personBId,
+					notes
+				})
+			)
+		);
+		const successIds: number[] = [];
+		results.forEach((result, i) => {
+			if (result.status === 'fulfilled') {
+				personRelationships = [...personRelationships, result.value];
+				successIds.push(newPersonBIds[i]);
+			}
 		});
-		personRelationships = [...personRelationships, created];
-		newPerson1Id = null;
-		newPerson2Id = null;
-		newPersonNotes = '';
+		const failCount = results.filter((r) => r.status === 'rejected').length;
+		if (failCount > 0) {
+			addToast({ message: `${failCount} relationship${failCount !== 1 ? 's' : ''} failed to create`, type: 'error' });
+		}
+		newPersonBIds = newPersonBIds.filter((id) => !successIds.includes(id));
+		if (newPersonBIds.length === 0) {
+			newPerson1Id = null;
+			newPersonNotes = '';
+		}
+		submittingPerson = false;
 	}
 
 	async function createOrgRelationship(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newOrgId || !newOrgPersonId) return;
-		const created = await api.relationships.organizations.create({
-			organization_id: newOrgId,
-			person_id: newOrgPersonId,
-			notes: newOrgNotes
+		if (!newOrgId || newOrgPersonIds.length === 0) return;
+		submittingOrg = true;
+		const orgId = newOrgId;
+		const notes = newOrgNotes;
+		const results = await Promise.allSettled(
+			newOrgPersonIds.map((personId) =>
+				api.relationships.organizations.create({
+					organization_id: orgId,
+					person_id: personId,
+					notes
+				})
+			)
+		);
+		const successIds: number[] = [];
+		results.forEach((result, i) => {
+			if (result.status === 'fulfilled') {
+				orgRelationships = [...orgRelationships, result.value];
+				successIds.push(newOrgPersonIds[i]);
+			}
 		});
-		orgRelationships = [...orgRelationships, created];
-		newOrgId = null;
-		newOrgPersonId = null;
-		newOrgNotes = '';
+		const failCount = results.filter((r) => r.status === 'rejected').length;
+		if (failCount > 0) {
+			addToast({ message: `${failCount} relationship${failCount !== 1 ? 's' : ''} failed to create`, type: 'error' });
+		}
+		newOrgPersonIds = newOrgPersonIds.filter((id) => !successIds.includes(id));
+		if (newOrgPersonIds.length === 0) {
+			newOrgId = null;
+			newOrgNotes = '';
+		}
+		submittingOrg = false;
 	}
 
 	async function deletePersonRelationship(id: number): Promise<void> {
@@ -190,13 +254,25 @@
 					placeholder="Person A"
 					bind:value={newPerson1Id}
 				/>
-				<TypeaheadSelect
-					options={availablePersonBOptions}
-					placeholder="Person B"
-					bind:value={newPerson2Id}
-				/>
+				<div class="people-select">
+					<TypeaheadSelect
+						options={availablePersonBOptions}
+						placeholder="Add person..."
+						onSelect={addPersonB}
+					/>
+					{#if newPersonBIds.length > 0}
+						<div class="chips">
+							{#each newPersonBIds as pid (pid)}
+								<span class="chip">
+									{personLabel(pid)}
+									<button class="chip-remove" onclick={() => removePersonB(pid)}>&times;</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
 				<textarea bind:value={newPersonNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
-				<button type="submit">+ Relationship</button>
+				<button type="submit" disabled={newPersonBIds.length === 0 || submittingPerson}>+ Add {newPersonBIds.length} Relationship{newPersonBIds.length !== 1 ? 's' : ''}</button>
 			</form>
 
 			<div class="filter-row">
@@ -247,13 +323,25 @@
 					placeholder="Organization"
 					bind:value={newOrgId}
 				/>
-				<TypeaheadSelect
-					options={availableOrgPersonOptions}
-					placeholder="Person"
-					bind:value={newOrgPersonId}
-				/>
+				<div class="people-select">
+					<TypeaheadSelect
+						options={availableOrgPersonOptions}
+						placeholder="Add person..."
+						onSelect={addOrgPerson}
+					/>
+					{#if newOrgPersonIds.length > 0}
+						<div class="chips">
+							{#each newOrgPersonIds as pid (pid)}
+								<span class="chip">
+									{personLabel(pid)}
+									<button class="chip-remove" onclick={() => removeOrgPerson(pid)}>&times;</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
 				<textarea bind:value={newOrgNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
-				<button type="submit">+ Relationship</button>
+				<button type="submit" disabled={newOrgPersonIds.length === 0 || submittingOrg}>+ Add {newOrgPersonIds.length} Relationship{newOrgPersonIds.length !== 1 ? 's' : ''}</button>
 			</form>
 
 			<div class="filter-row">
@@ -398,6 +486,41 @@
 	.filter-clear:hover {
 		color: var(--error);
 		background: var(--error-bg);
+	}
+
+	.people-select {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		background: var(--accent-light, var(--bg-surface-hover, #e8f0fe));
+		border: 1px solid var(--border-light, var(--border));
+		border-radius: var(--radius-sm);
+		padding: 0.15rem 0.4rem;
+		font-size: 0.75rem;
+	}
+
+	.chip-remove {
+		all: unset;
+		cursor: pointer;
+		font-size: 0.85rem;
+		line-height: 1;
+		color: var(--text-tertiary);
+		padding: 0 0.1rem;
+	}
+
+	.chip-remove:hover {
+		color: var(--error, #dc3545);
 	}
 
 	.list {

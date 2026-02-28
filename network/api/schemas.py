@@ -17,6 +17,19 @@ class OrgTypeUpdateInput(Schema):
     name: Optional[str] = None
 
 
+class InteractionMediumSchema(Schema):
+    id: int
+    name: str
+
+
+class InteractionMediumCreateInput(Schema):
+    name: str
+
+
+class InteractionMediumUpdateInput(Schema):
+    name: Optional[str] = None
+
+
 class InteractionTypeSchema(Schema):
     id: int
     name: str
@@ -30,6 +43,15 @@ class InteractionTypeUpdateInput(Schema):
     name: Optional[str] = None
 
 
+class PersonTagSchema(Schema):
+    id: int
+    name: str
+
+
+class PersonTagInput(Schema):
+    name: str
+
+
 class PersonSchema(Schema):
     id: int
     first_name: str
@@ -39,6 +61,7 @@ class PersonSchema(Schema):
     linkedin_url: str
     notes: str
     follow_up_cadence_days: Optional[int]
+    tags: list[PersonTagSchema]
     last_interaction_date: Optional[date]
     last_interaction_type: Optional[str]
     created_at: datetime
@@ -91,6 +114,7 @@ class InteractionSchema(Schema):
     person_ids: list[int]
     organization_ids: list[int] = []
     interaction_type_id: int
+    interaction_medium_id: Optional[int] = None
     date: date
     notes: str
     created_at: datetime
@@ -101,6 +125,7 @@ class InteractionCreateInput(Schema):
     person_ids: list[int]
     organization_ids: list[int] = []
     interaction_type_id: int
+    interaction_medium_id: Optional[int] = None
     date: date
     notes: str = ""
 
@@ -109,6 +134,7 @@ class InteractionUpdateInput(Schema):
     person_ids: Optional[list[int]] = None
     organization_ids: Optional[list[int]] = None
     interaction_type_id: Optional[int] = None
+    interaction_medium_id: Optional[int] = None
     date: Optional[date] = None
     notes: Optional[str] = None
 

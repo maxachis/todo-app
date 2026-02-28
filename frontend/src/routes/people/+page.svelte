@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Person, type Task, type List, type InteractionType } from '$lib';
+	import { api, type Person, type PersonTag, type Task, type List, type InteractionType } from '$lib';
 	import { ApiError } from '$lib/api/client';
 	import { addToast } from '$lib/stores/toast';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
@@ -15,6 +15,9 @@
 	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' | 'follow_up_status' = $state('last_name');
 	let sortDirection: 'asc' | 'desc' = $state('asc');
 	let filterQuery = $state('');
+	let tagFilter = $state('');
+	let allPersonTags: PersonTag[] = $state([]);
+	let availableTagsForPerson: PersonTag[] = $state([]);
 
 	// Quick-log form state
 	let quickLogTypeId = $state<number | null>(null);
@@ -106,6 +109,7 @@
 	let newLinkedin = $state('');
 	let newNotes = $state('');
 	let newCadence = $state('');
+	let newTagNames: string[] = $state([]);
 
 	let editFirst = $state('');
 	let editMiddle = $state('');
@@ -116,14 +120,23 @@
 	let editCadence = $state('');
 
 	async function loadPeople(): Promise<void> {
-		people = await api.people.getAll();
+		people = await api.people.getAll(tagFilter || undefined);
 		if (selected) {
 			selected = people.find((person) => person.id === selected?.id) ?? null;
 		}
 	}
 
+	async function loadAllPersonTags(): Promise<void> {
+		allPersonTags = await api.personTags.list();
+	}
+
+	async function loadAvailableTagsForPerson(personId: number): Promise<void> {
+		availableTagsForPerson = await api.personTags.list(personId);
+	}
+
 	onMount(() => {
 		loadPeople();
+		loadAllPersonTags();
 		api.interactionTypes.getAll().then((types) => (interactionTypes = types));
 	});
 
@@ -140,6 +153,7 @@
 		quickLogDate = todayStr();
 		quickLogNotes = '';
 		loadLinkedTasks(person.id);
+		loadAvailableTagsForPerson(person.id);
 	}
 
 	async function loadAllTasks(): Promise<void> {
@@ -177,6 +191,48 @@
 		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
+	async function addTagToPerson(name: string): Promise<{ id: number; label: string }> {
+		if (!selected) return { id: 0, label: name };
+		const tags = await api.people.addTag(selected.id, name);
+		selected = { ...selected, tags };
+		people = people.map((p) => (p.id === selected!.id ? selected! : p));
+		await loadAvailableTagsForPerson(selected.id);
+		await loadAllPersonTags();
+		const added = tags.find((t) => t.name === name);
+		return { id: added?.id ?? 0, label: name };
+	}
+
+	async function removeTagFromPerson(tagId: number): Promise<void> {
+		if (!selected) return;
+		await api.people.removeTag(selected.id, tagId);
+		selected = { ...selected, tags: selected.tags.filter((t) => t.id !== tagId) };
+		people = people.map((p) => (p.id === selected!.id ? selected! : p));
+		await loadAvailableTagsForPerson(selected.id);
+	}
+
+	async function setTagFilter(tag: string): Promise<void> {
+		tagFilter = tag;
+		await loadPeople();
+	}
+
+	function addNewTagName(name: string): { id: number; label: string } {
+		const trimmed = name.trim();
+		if (trimmed && !newTagNames.includes(trimmed)) {
+			newTagNames = [...newTagNames, trimmed];
+		}
+		return { id: 0, label: trimmed };
+	}
+
+	function removeNewTagName(name: string): void {
+		newTagNames = newTagNames.filter((t) => t !== name);
+	}
+
+	let newFormAvailableTags: { id: number; label: string }[] = $derived(
+		allPersonTags
+			.filter((t) => !newTagNames.includes(t.name))
+			.map((t) => ({ id: t.id, label: t.name }))
+	);
+
 	async function createPerson(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		if (!newFirst.trim() || !newLast.trim()) return;
@@ -190,7 +246,17 @@
 				notes: newNotes.trim(),
 				follow_up_cadence_days: newCadence ? Number(newCadence) : null
 			});
-			people = [...people, person];
+			// Add tags to newly created person
+			for (const tagName of newTagNames) {
+				await api.people.addTag(person.id, tagName);
+			}
+			// Re-fetch the person to get tags included
+			if (newTagNames.length > 0) {
+				const refreshed = await api.people.get(person.id);
+				people = [...people, refreshed];
+			} else {
+				people = [...people, person];
+			}
 			newFirst = '';
 			newMiddle = '';
 			newLast = '';
@@ -198,6 +264,8 @@
 			newLinkedin = '';
 			newNotes = '';
 			newCadence = '';
+			newTagNames = [];
+			await loadAllPersonTags();
 		} catch (err) {
 			if (err instanceof ApiError && err.status === 409) {
 				const detail = (err.body as { detail?: string })?.detail ?? 'A person with that name already exists.';
@@ -267,6 +335,27 @@
 				<input bind:value={newEmail} type="email" placeholder="Email" />
 				<input bind:value={newLinkedin} placeholder="LinkedIn URL" />
 				<input bind:value={newCadence} placeholder="Follow-up cadence (days)" />
+				<div class="tag-picker">
+					{#if newTagNames.length > 0}
+						<div class="tag-chips">
+							{#each newTagNames as name}
+								<span class="tag-chip">
+									{name}
+									<button type="button" class="tag-remove" onclick={() => removeNewTagName(name)}>&times;</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+					<TypeaheadSelect
+						options={newFormAvailableTags}
+						placeholder="Add tags…"
+						onSelect={(id) => {
+							const tag = allPersonTags.find((t) => t.id === id);
+							if (tag) addNewTagName(tag.name);
+						}}
+						onCreate={(name) => Promise.resolve(addNewTagName(name))}
+					/>
+				</div>
 				<textarea bind:value={newNotes} placeholder="Notes"></textarea>
 				<button type="submit">+ Person</button>
 			</form>
@@ -289,6 +378,20 @@
 				</button>
 			</div>
 
+			{#if allPersonTags.length > 0}
+				<div class="tag-filter-bar">
+					<select onchange={(e) => setTagFilter((e.target as HTMLSelectElement).value)} value={tagFilter}>
+						<option value="">All tags</option>
+						{#each allPersonTags as tag (tag.id)}
+							<option value={tag.name}>{tag.name}</option>
+						{/each}
+					</select>
+					{#if tagFilter}
+						<button class="clear-filter" type="button" onclick={() => setTagFilter('')}>Clear</button>
+					{/if}
+				</div>
+			{/if}
+
 			<div class="list">
 				{#each filteredAndSortedPeople as person (person.id)}
 					<button class="list-item" class:active={selected?.id === person.id} onclick={() => selectPerson(person)}>
@@ -300,6 +403,13 @@
 								</span>
 							{/if}
 						</div>
+						{#if person.tags.length > 0}
+							<div class="list-item-tags">
+								{#each person.tags as tag (tag.id)}
+									<span class="tag-chip-small">{tag.name}</span>
+								{/each}
+							</div>
+						{/if}
 					</button>
 				{/each}
 			</div>
@@ -360,6 +470,30 @@
 						<span>Follow-up cadence (days)</span>
 						<input bind:value={editCadence} />
 					</label>
+					<div class="form-field">
+						<span class="field-label">Tags</span>
+						<div class="tag-picker">
+							{#if selected.tags.length > 0}
+								<div class="tag-chips">
+									{#each selected.tags as tag (tag.id)}
+										<span class="tag-chip">
+											{tag.name}
+											<button type="button" class="tag-remove" onclick={() => removeTagFromPerson(tag.id)}>&times;</button>
+										</span>
+									{/each}
+								</div>
+							{/if}
+							<TypeaheadSelect
+								options={availableTagsForPerson.map((t) => ({ id: t.id, label: t.name }))}
+								placeholder="Add tag…"
+								onSelect={(id) => {
+									const tag = availableTagsForPerson.find((t) => t.id === id);
+									if (tag) addTagToPerson(tag.name);
+								}}
+								onCreate={(name) => addTagToPerson(name)}
+							/>
+						</div>
+					</div>
 					<label>
 						<span>Notes</span>
 						<textarea rows="5" bind:value={editNotes}></textarea>
@@ -576,6 +710,106 @@
 		background: var(--success-bg);
 		color: var(--success);
 		border: 1px solid var(--success-border);
+	}
+
+	.tag-filter-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.tag-filter-bar select {
+		flex: 1;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.3rem 0.5rem;
+		font-family: var(--font-body);
+		font-size: 0.8rem;
+		background: var(--bg-input);
+		color: var(--text-primary);
+	}
+
+	.clear-filter {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		background: var(--bg-surface);
+		color: var(--text-secondary);
+		padding: 0.3rem 0.5rem;
+		cursor: pointer;
+		font-size: 0.8rem;
+		transition: all var(--transition);
+	}
+
+	.clear-filter:hover {
+		background: var(--accent);
+		color: white;
+		border-color: var(--accent);
+	}
+
+	.list-item-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+		margin-top: 0.25rem;
+	}
+
+	.tag-chip-small {
+		font-size: 0.65rem;
+		padding: 0.1rem 0.35rem;
+		border-radius: var(--radius-sm);
+		background: var(--accent-light);
+		color: var(--accent);
+		font-weight: 500;
+	}
+
+	.form-field {
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.field-label {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+
+	.tag-picker {
+		display: grid;
+		gap: 0.3rem;
+	}
+
+	.tag-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
+
+	.tag-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.78rem;
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-sm);
+		background: var(--accent-light);
+		color: var(--accent);
+		font-weight: 500;
+	}
+
+	.tag-remove {
+		background: none;
+		border: none;
+		color: var(--accent);
+		cursor: pointer;
+		font-size: 0.85rem;
+		line-height: 1;
+		padding: 0;
+		opacity: 0.6;
+		transition: opacity var(--transition);
+	}
+
+	.tag-remove:hover {
+		opacity: 1;
 	}
 
 	.detail-header {

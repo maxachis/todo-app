@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import * as d3 from 'd3';
 	import { api, type GraphData } from '$lib';
+
+	let themeObserver: MutationObserver | null = null;
 
 	let graphEl: HTMLDivElement | null = $state(null);
 	let detailsEl: HTMLDivElement | null = $state(null);
@@ -96,8 +98,20 @@
 			}
 		};
 
+		const getThemeColors = () => {
+			const style = getComputedStyle(document.documentElement);
+			return {
+				accent: style.getPropertyValue('--accent').trim(),
+				textPrimary: style.getPropertyValue('--text-primary').trim(),
+				textTertiary: style.getPropertyValue('--text-tertiary').trim(),
+				border: style.getPropertyValue('--border').trim()
+			};
+		};
+
 		const initGraph = (data: GraphData) => {
 			if (!graphEl) return;
+			const colors = getThemeColors();
+
 			const nodes = data.nodes.map((node) => ({
 				id: node.data.id,
 				label: node.data.label,
@@ -153,7 +167,7 @@
 				.selectAll('line')
 				.data(links, (d: any) => d.id)
 				.join('line')
-				.attr('stroke', '#9ca3af')
+				.attr('stroke', colors.border)
 				.attr('stroke-width', 1.5)
 				.on('mouseenter', (_event, d: any) => renderEdgeDetails(d))
 				.on('mouseleave', () => renderDetails(null));
@@ -164,7 +178,7 @@
 				.join('text')
 				.text((d: any) => d.notes || '')
 				.attr('font-size', 10)
-				.attr('fill', '#6b7280')
+				.attr('fill', colors.textTertiary)
 				.attr('text-anchor', 'middle')
 				.attr('dy', -4)
 				.attr('display', 'none');
@@ -174,7 +188,7 @@
 				.data(nodes, (d: any) => d.id)
 				.join('circle')
 				.attr('r', (d: any) => (d.type === 'organization' ? 9 : 7))
-				.attr('fill', (d: any) => (d.type === 'organization' ? '#f97316' : '#4f46e5'))
+				.attr('fill', (d: any) => (d.type === 'organization' ? colors.accent : colors.textTertiary))
 				.call(
 					d3
 						.drag<any, any>()
@@ -202,7 +216,7 @@
 				.join('text')
 				.text((d: any) => d.label)
 				.attr('font-size', 11)
-				.attr('fill', '#374151')
+				.attr('fill', colors.textPrimary)
 				.attr('text-anchor', 'middle')
 				.attr('dy', -12);
 
@@ -304,10 +318,32 @@
 
 			searchInput?.addEventListener('input', search);
 
+			const updateColors = () => {
+				const c = getThemeColors();
+				node.attr('fill', (d: any) => (d.type === 'organization' ? c.accent : c.textTertiary));
+				labels.attr('fill', c.textPrimary);
+				link.attr('stroke', c.border);
+				linkLabels.attr('fill', c.textTertiary);
+			};
+
+			themeObserver = new MutationObserver((mutations) => {
+				for (const m of mutations) {
+					if (m.attributeName === 'data-theme') {
+						updateColors();
+						break;
+					}
+				}
+			});
+			themeObserver.observe(document.documentElement, { attributes: true });
+
 			refreshVisibility();
 		};
 
 		initGraph(raw);
+	});
+
+	onDestroy(() => {
+		themeObserver?.disconnect();
 	});
 </script>
 

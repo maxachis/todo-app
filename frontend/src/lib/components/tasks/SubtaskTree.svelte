@@ -130,6 +130,7 @@
 		font-size: 0.7rem;
 		font-family: var(--font-body);
 		padding: 0.15rem 0;
+		justify-self: start;
 		transition: color var(--transition);
 	}
 

@@ -6,6 +6,7 @@ from ninja.errors import HttpError
 from network.api.schemas import (
     PersonCreateInput,
     PersonSchema,
+    PersonTagSchema,
     PersonUpdateInput,
 )
 from network.models import Interaction, InteractionType, Person
@@ -26,6 +27,10 @@ def _annotate_people(qs):
 
 
 def _serialize_person(person: Person) -> PersonSchema:
+    tags = [
+        PersonTagSchema(id=t.id, name=t.name)
+        for t in person.tags.all()
+    ]
     return PersonSchema(
         id=person.id,
         first_name=person.first_name,
@@ -35,6 +40,7 @@ def _serialize_person(person: Person) -> PersonSchema:
         linkedin_url=person.linkedin_url,
         notes=person.notes,
         follow_up_cadence_days=person.follow_up_cadence_days,
+        tags=tags,
         last_interaction_date=getattr(person, "last_interaction_date", None),
         last_interaction_type=getattr(person, "last_interaction_type", None),
         created_at=person.created_at,
@@ -43,10 +49,11 @@ def _serialize_person(person: Person) -> PersonSchema:
 
 
 @router.get("/people/", response=list[PersonSchema])
-def list_people(request):
-    people = _annotate_people(
-        Person.objects.order_by("last_name", "first_name", "id")
-    )
+def list_people(request, tag: str | None = None):
+    qs = Person.objects.order_by("last_name", "first_name", "id")
+    if tag:
+        qs = qs.filter(tags__name=tag)
+    people = _annotate_people(qs).prefetch_related("tags")
     return [_serialize_person(person) for person in people]
 
 
@@ -80,7 +87,7 @@ def create_person(request, payload: PersonCreateInput):
 
 @router.get("/people/{person_id}/", response=PersonSchema)
 def get_person(request, person_id: int):
-    person = _annotate_people(Person.objects.all()).get(pk=person_id)
+    person = _annotate_people(Person.objects.all()).prefetch_related("tags").get(pk=person_id)
     return _serialize_person(person)
 
 
@@ -117,7 +124,7 @@ def update_person(request, person_id: int, payload: PersonUpdateInput):
 
     person.save()
     # Re-fetch with annotations to include last_interaction fields
-    person = _annotate_people(Person.objects.all()).get(pk=person.pk)
+    person = _annotate_people(Person.objects.all()).prefetch_related("tags").get(pk=person.pk)
     return _serialize_person(person)
 
 

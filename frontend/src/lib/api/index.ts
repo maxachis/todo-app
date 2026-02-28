@@ -3,6 +3,7 @@ import type {
   CreateInteractionInput,
   CreateLeadInput,
   CreateListInput,
+  FollowUpDueItem,
   CreateOrganizationInput,
   CreatePersonInput,
   CreateProjectInput,
@@ -12,6 +13,7 @@ import type {
   GraphData,
   ImportSummary,
   Interaction,
+  InteractionMedium,
   InteractionTaskLink,
   InteractionType,
   Lead,
@@ -22,6 +24,7 @@ import type {
   Organization,
   OrgType,
   Person,
+  PersonTag,
   Project,
   ProjectLink,
   RelationshipOrganizationPerson,
@@ -34,6 +37,7 @@ import type {
   TaskPersonLink,
   TimeEntry,
   TimesheetResponse,
+  TrendsData,
   UpcomingTask,
   UpdateInteractionInput,
   UpdateLeadInput,
@@ -156,6 +160,10 @@ export const api = {
   upcoming: {
     get: () => apiRequest<UpcomingTask[]>('/upcoming/')
   },
+  dashboard: {
+    trends: () => apiRequest<TrendsData>('/dashboard/trends/'),
+    followUpsDue: () => apiRequest<FollowUpDueItem[]>('/dashboard/follow-ups-due/')
+  },
   timesheet: {
     get: (week?: string) =>
       apiRequest<TimesheetResponse>(week ? `/timesheet/?week=${week}` : '/timesheet/'),
@@ -164,13 +172,27 @@ export const api = {
     remove: (id: number) => apiRequest<void>(`/timesheet/${id}/`, { method: 'DELETE' })
   },
   people: {
-    getAll: () => apiRequest<Person[]>('/people/'),
+    getAll: (tag?: string) =>
+      apiRequest<Person[]>(tag ? `/people/?tag=${encodeURIComponent(tag)}` : '/people/'),
     get: (id: number) => apiRequest<Person>(`/people/${id}/`),
     create: (payload: CreatePersonInput) =>
       apiRequest<Person>('/people/', { method: 'POST', body: JSON.stringify(payload) }),
     update: (id: number, payload: UpdatePersonInput) =>
       apiRequest<Person>(`/people/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
-    remove: (id: number) => apiRequest<void>(`/people/${id}/`, { method: 'DELETE' })
+    remove: (id: number) => apiRequest<void>(`/people/${id}/`, { method: 'DELETE' }),
+    addTag: (personId: number, name: string) =>
+      apiRequest<PersonTag[]>(`/people/${personId}/tags/`, {
+        method: 'POST',
+        body: JSON.stringify({ name })
+      }),
+    removeTag: (personId: number, tagId: number) =>
+      apiRequest<void>(`/people/${personId}/tags/${tagId}/`, { method: 'DELETE' })
+  },
+  personTags: {
+    list: (excludePerson?: number) =>
+      apiRequest<PersonTag[]>(
+        excludePerson ? `/person-tags/?exclude_person=${excludePerson}` : '/person-tags/'
+      )
   },
   organizations: {
     getAll: () => apiRequest<Organization[]>('/organizations/'),
@@ -190,6 +212,14 @@ export const api = {
     getAll: () => apiRequest<InteractionType[]>('/interaction-types/'),
     create: (payload: { name: string }) =>
       apiRequest<InteractionType>('/interaction-types/', { method: 'POST', body: JSON.stringify(payload) })
+  },
+  interactionMediums: {
+    getAll: () => apiRequest<InteractionMedium[]>('/interaction-mediums/'),
+    create: (payload: { name: string }) =>
+      apiRequest<InteractionMedium>('/interaction-mediums/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: { name: string }) =>
+      apiRequest<InteractionMedium>(`/interaction-mediums/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => apiRequest<void>(`/interaction-mediums/${id}/`, { method: 'DELETE' })
   },
   interactions: {
     getAll: () => apiRequest<Interaction[]>('/interactions/'),
