@@ -3,6 +3,8 @@
 	import { selectedListDetail } from '$lib/stores/lists';
 	import { selectedTaskStore, selectTask, completeTask, uncompleteTask, togglePin, moveTask, taskDragLockedStore, setTaskDragLocked } from '$lib/stores/tasks';
 	import { addToast } from '$lib/stores/toast';
+	import { completionSoundPreference } from '$lib/stores/completionSound';
+	import { playCompletionSound } from '$lib/audio/completionSounds';
 
 	let {
 		task,
@@ -38,6 +40,7 @@
 		if (task.is_completed) {
 			await uncompleteTask(task.id);
 		} else {
+			playCompletionSound($completionSoundPreference);
 			const result = await completeTask(task.id);
 			const nextOccurrenceId = result.next_occurrence_id ?? undefined;
 			addToast({
@@ -95,6 +98,18 @@
 		return (parent?.subtasks ?? []).slice().sort((a, b) => a.position - b.position);
 	}
 
+	function isDescendantOf(taskId: number, potentialAncestorId: number): boolean {
+		const list = $selectedListDetail;
+		if (!list) return false;
+		for (const section of list.sections) {
+			const ancestor = findTaskById(section.tasks, potentialAncestorId);
+			if (ancestor) {
+				return !!findTaskById(ancestor.subtasks, taskId);
+			}
+		}
+		return false;
+	}
+
 	function midpointDropMode(event: DragEvent): 'before' | 'nest' {
 		const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
 		return event.clientY >= bounds.top + bounds.height / 2 ? 'nest' : 'before';
@@ -112,6 +127,7 @@
 		try {
 			setTaskDragLocked(true);
 			if (midpointDropMode(event) === 'nest') {
+				if (isDescendantOf(task.id, dragTaskId)) return;
 				await moveTask(dragTaskId, {
 					section_id: task.section_id,
 					parent_id: task.id,
@@ -277,6 +293,7 @@
 
 	.task-row.drop-nest {
 		box-shadow: inset 3px 0 0 var(--accent);
+		background: var(--accent-light);
 	}
 
 	.checkbox-wrap {

@@ -8,6 +8,11 @@ class Interaction(models.Model):
         related_name="interactions",
         blank=True,
     )
+    organizations = models.ManyToManyField(
+        to="network.Organization",
+        related_name="interactions",
+        blank=True,
+    )
     interaction_type = models.ForeignKey(
         to="network.InteractionType",
         on_delete=models.RESTRICT,

@@ -9,6 +9,8 @@
 	import { selectedTaskStore } from '$lib/stores/tasks';
 	import { sidebarWidth, detailWidth, savePanelWidths, clampWidths } from '$lib/stores/panelWidths';
 	import { themePreference, cycleTheme, type ThemePreference } from '$lib/stores/theme';
+	import { completionSoundPreference, type CompletionSound } from '$lib/stores/completionSound';
+	import { playCompletionSound } from '$lib/audio/completionSounds';
 
 	const themeIcons: Record<ThemePreference, string> = {
 		light: '\u2600\uFE0F',
@@ -56,6 +58,20 @@
 	const settingsItems = [
 		{ href: '/import', label: 'Import' }
 	];
+
+	const soundOptions: { value: CompletionSound; label: string }[] = [
+		{ value: 'none', label: 'None' },
+		{ value: 'ding', label: 'Ding' },
+		{ value: 'pop', label: 'Pop' },
+		{ value: 'chime', label: 'Chime' },
+		{ value: 'celeste', label: 'Celeste' }
+	];
+
+	function handleSoundChange(event: Event): void {
+		const value = (event.target as HTMLSelectElement).value as CompletionSound;
+		completionSoundPreference.set(value);
+		playCompletionSound(value);
+	}
 
 	function handleSettingsClickOutside(event: MouseEvent) {
 		if (settingsRef && !settingsRef.contains(event.target as Node)) {
@@ -110,6 +126,15 @@
 						<a href={item.href} class:active={$page.url.pathname === item.href}>{item.label}</a>
 					{/each}
 					<a href="/api/export/full/" download="nexus-backup.json" onclick={() => (settingsOpen = false)}>Export Database</a>
+					<hr class="settings-divider" />
+					<div class="settings-pref">
+						<label class="settings-pref-label" for="completion-sound-select">Completion Sound</label>
+						<select id="completion-sound-select" class="settings-select" value={$completionSoundPreference} onchange={handleSoundChange}>
+							{#each soundOptions as opt}
+								<option value={opt.value}>{opt.label}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -388,6 +413,43 @@
 		color: var(--text-on-dark);
 		background: rgba(255, 255, 255, 0.1);
 		font-weight: 600;
+	}
+
+	.settings-divider {
+		border: none;
+		border-top: 1px solid var(--border-nav);
+		margin: 0.25rem 0;
+	}
+
+	.settings-pref {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.4rem 0.65rem;
+	}
+
+	.settings-pref-label {
+		color: var(--text-on-dark-muted);
+		font-size: 0.875rem;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.settings-select {
+		background: rgba(255, 255, 255, 0.08);
+		color: var(--text-on-dark);
+		border: 1px solid var(--border-nav);
+		border-radius: var(--radius-sm);
+		padding: 0.2rem 0.35rem;
+		font-size: 0.8rem;
+		font-family: var(--font-body);
+		cursor: pointer;
+	}
+
+	.settings-select:focus {
+		outline: none;
+		border-color: var(--accent);
 	}
 
 	.theme-toggle {

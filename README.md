@@ -4,6 +4,9 @@ A personal operations hub â€” tasks, CRM, projects, timesheets, network graph â€
 
 ## SSH From Device with Private Key
 
+ubuntu-2gb-ash-1.tail865b93.ts.net
+
+
 ```bash
 ssh root@178.156.197.32
 ```

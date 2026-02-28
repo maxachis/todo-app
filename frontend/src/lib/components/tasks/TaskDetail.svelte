@@ -4,6 +4,7 @@
 	import { updateTask, selectedTaskDetail, selectTask, refreshTask } from '$lib/stores/tasks';
 	import MarkdownEditor from '../shared/MarkdownEditor.svelte';
 	import LinkedEntities from '../shared/LinkedEntities.svelte';
+	import TypeaheadSelect from '../shared/TypeaheadSelect.svelte';
 	import RecurrenceEditor from './RecurrenceEditor.svelte';
 
 	const task = $derived($selectedTaskDetail);
@@ -13,7 +14,6 @@
 	let priorityValue = $state(0);
 	let notesValue = $state('');
 
-	let tagInput = $state('');
 	let availableTags = $state<Tag[]>([]);
 
 	let linkedPeopleIds = $state<number[]>([]);
@@ -111,12 +111,26 @@
 		await updateTask(task.id, { notes: next });
 	}
 
-	async function addTag(event: SubmitEvent): Promise<void> {
-		event.preventDefault();
-		if (!task || !tagInput.trim()) return;
-		await api.tasks.addTag(task.id, tagInput.trim());
-		tagInput = '';
+	const tagOptions = $derived(
+		availableTags.map((t) => ({ id: t.id, label: t.name }))
+	);
+
+	async function onTagSelect(tagId: number): Promise<void> {
+		if (!task) return;
+		const tag = availableTags.find((t) => t.id === tagId);
+		if (!tag) return;
+		await api.tasks.addTag(task.id, tag.name);
 		await refreshTask(task.id);
+		await loadAvailableTags(task.id);
+	}
+
+	async function onTagCreate(name: string): Promise<{ id: number; label: string }> {
+		if (!task) throw new Error('No task selected');
+		const tags = await api.tasks.addTag(task.id, name);
+		await refreshTask(task.id);
+		await loadAvailableTags(task.id);
+		const created = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+		return created ? { id: created.id, label: created.name } : { id: 0, label: name };
 	}
 
 	async function removeTag(tagId: number): Promise<void> {
@@ -189,7 +203,7 @@
 		</div>
 
 		<div class="field">
-			<label for="tag-input">Tags</label>
+			<label>Tags</label>
 			<div class="tags">
 				{#each task.tags as tag}
 					<span class="tag">
@@ -198,20 +212,12 @@
 					</span>
 				{/each}
 			</div>
-			<form class="tag-form" onsubmit={addTag}>
-				<input
-					id="tag-input"
-					bind:value={tagInput}
-					placeholder="Add tag..."
-					list="tag-suggestions"
-				/>
-				<datalist id="tag-suggestions">
-					{#each availableTags as tag}
-						<option value={tag.name}></option>
-					{/each}
-				</datalist>
-				<button type="submit">+</button>
-			</form>
+			<TypeaheadSelect
+				options={tagOptions}
+				placeholder="Add tag..."
+				onSelect={onTagSelect}
+				onCreate={onTagCreate}
+			/>
 		</div>
 
 		<div class="field linked-section">
@@ -342,30 +348,6 @@
 		color: var(--error);
 	}
 
-	.tag-form {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 0.25rem;
-	}
-
-	.tag-form button {
-		border: 1px solid var(--border);
-		background: var(--bg-surface);
-		border-radius: var(--radius-sm);
-		padding: 0.3rem 0.55rem;
-		cursor: pointer;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		transition: all var(--transition);
-	}
-
-	.tag-form button:hover {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: white;
-	}
-
 	.empty-links {
 		color: var(--text-tertiary);
 		font-size: 0.82rem;
@@ -397,10 +379,6 @@
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
-		}
-
-		.tag-form button {
-			min-height: 44px;
 		}
 
 		input,

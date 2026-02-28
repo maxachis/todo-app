@@ -11,3 +11,4 @@ import/network-app/
 backups/
 codex_pytest_tmp/
 .claude/settings.local.json
+.devcontainer/.env.secrets

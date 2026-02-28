@@ -10,7 +10,7 @@ The system SHALL display a cog/settings icon button in the top navigation bar, p
 - **THEN** the cog button is visible in the top navigation bar
 
 ### Requirement: Settings dropdown menu
-The system SHALL open a dropdown menu when the cog button is clicked. The dropdown SHALL contain navigation links for utility actions, starting with an "Import" link, and an "Export Database" action that triggers a full database download.
+The system SHALL open a dropdown menu when the cog button is clicked. The dropdown SHALL contain navigation links for utility actions, starting with an "Import" link, and an "Export Database" action that triggers a full database download. Below a visual divider, the dropdown SHALL contain a "Completion Sound" preference selector with the user's current sound choice.
 
 #### Scenario: Clicking cog opens dropdown
 - **WHEN** the user clicks the cog button
@@ -35,6 +35,14 @@ The system SHALL open a dropdown menu when the cog button is clicked. The dropdo
 #### Scenario: Clicking Export Database triggers download
 - **WHEN** the user clicks the "Export Database" action in the dropdown
 - **THEN** the browser initiates a file download from `/api/export/full/` and the dropdown closes
+
+#### Scenario: Dropdown contains completion sound selector
+- **WHEN** the dropdown menu is open
+- **THEN** a visual divider separates the link items from a "Completion Sound" label with a select dropdown showing the current sound preference
+
+#### Scenario: Changing completion sound in dropdown
+- **WHEN** the user selects a different sound from the completion sound selector
+- **THEN** the preference updates immediately, persists to localStorage, and the selected sound plays as a preview
 
 ### Requirement: Dropdown dismissal
 The system SHALL close the settings dropdown when the user clicks outside, presses Escape, or navigates to a new page.

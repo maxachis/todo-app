@@ -128,3 +128,8 @@ deploy/
 - Current canonical backend tests are API-focused (`tasks/tests/test_api_*.py`).
 - E2E suite targets Svelte UI selectors and runs against Django API + Vite preview.
 - Legacy HTMX view tests are obsolete after cut-over.
+
+## Mistakes
+
+- **[env]**: Use `uv run python manage.py runserver` instead of bare `python manage.py runserver` — Django is installed in the uv-managed virtualenv, not globally.
+- **[tooling]**: `openspec` CLI must be run from the project root (`/workspaces/todo-app/`), not from subdirectories like `frontend/`. After `cd frontend && npm run check`, return to root or use absolute paths.

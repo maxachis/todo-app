@@ -7,7 +7,7 @@ from network.api.schemas import (
     InteractionSchema,
     InteractionUpdateInput,
 )
-from network.models import Interaction, InteractionType, Person
+from network.models import Interaction, InteractionType, Organization, Person
 
 router = Router(tags=["network-interactions"])
 
@@ -16,6 +16,7 @@ def _serialize_interaction(interaction: Interaction) -> InteractionSchema:
     return InteractionSchema(
         id=interaction.id,
         person_ids=list(interaction.people.values_list("id", flat=True)),
+        organization_ids=list(interaction.organizations.values_list("id", flat=True)),
         interaction_type_id=interaction.interaction_type_id,
         date=interaction.date,
         notes=interaction.notes,
@@ -26,7 +27,7 @@ def _serialize_interaction(interaction: Interaction) -> InteractionSchema:
 
 @router.get("/interactions/", response=list[InteractionSchema])
 def list_interactions(request):
-    interactions = Interaction.objects.prefetch_related("people").order_by("-date", "-id")
+    interactions = Interaction.objects.prefetch_related("people", "organizations").order_by("-date", "-id")
     return [_serialize_interaction(interaction) for interaction in interactions]
 
 
@@ -44,24 +45,35 @@ def create_interaction(request, payload: InteractionCreateInput):
         notes=payload.notes,
     )
     interaction.people.set(people)
+    if payload.organization_ids:
+        orgs = list(Organization.objects.filter(pk__in=payload.organization_ids))
+        if len(orgs) != len(payload.organization_ids):
+            raise HttpError(422, "One or more organization IDs are invalid")
+        interaction.organizations.set(orgs)
     return 201, _serialize_interaction(interaction)
 
 
 @router.get("/interactions/{interaction_id}/", response=InteractionSchema)
 def get_interaction(request, interaction_id: int):
-    interaction = get_object_or_404(Interaction.objects.prefetch_related("people"), pk=interaction_id)
+    interaction = get_object_or_404(Interaction.objects.prefetch_related("people", "organizations"), pk=interaction_id)
     return _serialize_interaction(interaction)
 
 
 @router.put("/interactions/{interaction_id}/", response=InteractionSchema)
 def update_interaction(request, interaction_id: int, payload: InteractionUpdateInput):
-    interaction = get_object_or_404(Interaction.objects.prefetch_related("people"), pk=interaction_id)
+    interaction = get_object_or_404(Interaction.objects.prefetch_related("people", "organizations"), pk=interaction_id)
 
     if payload.person_ids is not None:
         people = list(Person.objects.filter(pk__in=payload.person_ids))
         if len(people) != len(payload.person_ids):
             raise HttpError(422, "One or more person IDs are invalid")
         interaction.people.set(people)
+
+    if payload.organization_ids is not None:
+        orgs = list(Organization.objects.filter(pk__in=payload.organization_ids))
+        if len(orgs) != len(payload.organization_ids):
+            raise HttpError(422, "One or more organization IDs are invalid")
+        interaction.organizations.set(orgs)
 
     if payload.interaction_type_id is not None:
         interaction.interaction_type = get_object_or_404(InteractionType, pk=payload.interaction_type_id)

@@ -40,15 +40,19 @@ class TestPinning:
                 .map((el) => el.textContent?.trim())"""
         )
 
+        # Reorder tasks[1] before tasks[0] via native DnD (above midpoint)
         page.evaluate(
-            """(taskIds) => {
-                const zone = document.querySelectorAll('.task-dnd-zone')[0];
-                zone.dispatchEvent(new CustomEvent('finalize', {
-                    bubbles: true,
-                    detail: { items: taskIds.map((id) => ({ id })) }
-                }));
+            """([dragId, targetId]) => {
+                const target = document.querySelector(`.task-row[data-task-id="${targetId}"]`);
+                if (!target) return;
+                const rect = target.getBoundingClientRect();
+                const y = rect.top + (rect.height * 0.25);
+                const dt = new DataTransfer();
+                dt.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
             }""",
-            [tasks[1].id, tasks[0].id, tasks[2].id],
+            [tasks[1].id, tasks[0].id],
         )
         page.wait_for_timeout(500)
 

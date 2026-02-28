@@ -1,28 +1,32 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Interaction, type InteractionType, type Person, type List } from '$lib';
+	import { api, type Interaction, type InteractionType, type Person, type Organization, type List } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 
 	let interactions: Interaction[] = $state([]);
 	let people: Person[] = $state([]);
+	let organizations: Organization[] = $state([]);
 	let interactionTypes: InteractionType[] = $state([]);
 	let selected: Interaction | null = $state(null);
 	let linkedTaskIds = $state<number[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
 
 	let newPersonIds = $state<number[]>([]);
+	let newOrgIds = $state<number[]>([]);
 	let newTypeId = $state<number | null>(null);
 	let newDate = $state('');
 	let newNotes = $state('');
 
 	let editPersonIds = $state<number[]>([]);
+	let editOrgIds = $state<number[]>([]);
 	let editTypeId = $state<number | null>(null);
 	let editDate = $state('');
 	let editNotes = $state('');
 
 	async function loadData(): Promise<void> {
 		people = await api.people.getAll();
+		organizations = await api.organizations.getAll();
 		interactionTypes = await api.interactionTypes.getAll();
 		interactions = await api.interactions.getAll();
 		if (selected) {
@@ -50,6 +54,18 @@
 		return `${names.slice(0, 2).join('; ')} +${names.length - 2} more`;
 	}
 
+	function findOrg(id: number): Organization | undefined {
+		return organizations.find((org) => org.id === id);
+	}
+
+	function orgLabel(id: number): string {
+		return findOrg(id)?.name ?? `Org #${id}`;
+	}
+
+	function formatOrgNames(orgIds: number[]): string {
+		return orgIds.map((id) => orgLabel(id)).join('; ');
+	}
+
 	function findType(id: number): InteractionType | undefined {
 		return interactionTypes.find((type) => type.id === id);
 	}
@@ -57,6 +73,7 @@
 	function selectInteraction(item: Interaction): void {
 		selected = item;
 		editPersonIds = [...item.person_ids];
+		editOrgIds = [...item.organization_ids];
 		editTypeId = item.interaction_type_id;
 		editDate = item.date;
 		editNotes = item.notes;
@@ -124,17 +141,39 @@
 		editPersonIds = editPersonIds.filter((pid) => pid !== id);
 	}
 
+	function addNewOrg(id: number): void {
+		if (!newOrgIds.includes(id)) {
+			newOrgIds = [...newOrgIds, id];
+		}
+	}
+
+	function removeNewOrg(id: number): void {
+		newOrgIds = newOrgIds.filter((oid) => oid !== id);
+	}
+
+	function addEditOrg(id: number): void {
+		if (!editOrgIds.includes(id)) {
+			editOrgIds = [...editOrgIds, id];
+		}
+	}
+
+	function removeEditOrg(id: number): void {
+		editOrgIds = editOrgIds.filter((oid) => oid !== id);
+	}
+
 	async function createInteraction(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		if (newPersonIds.length === 0 || !newTypeId || !newDate) return;
 		const created = await api.interactions.create({
 			person_ids: newPersonIds,
+			organization_ids: newOrgIds,
 			interaction_type_id: newTypeId,
 			date: newDate,
 			notes: newNotes
 		});
 		interactions = [created, ...interactions];
 		newPersonIds = [];
+		newOrgIds = [];
 		newTypeId = null;
 		newDate = '';
 		newNotes = '';
@@ -144,6 +183,7 @@
 		if (!selected || editPersonIds.length === 0 || !editTypeId || !editDate) return;
 		const updated = await api.interactions.update(selected.id, {
 			person_ids: editPersonIds,
+			organization_ids: editOrgIds,
 			interaction_type_id: editTypeId,
 			date: editDate,
 			notes: editNotes
@@ -187,6 +227,23 @@
 						</div>
 					{/if}
 				</div>
+				<div class="people-select">
+					<TypeaheadSelect
+						options={organizations.filter((o) => !newOrgIds.includes(o.id)).map((o) => ({ id: o.id, label: o.name }))}
+						placeholder="Add organization..."
+						onSelect={addNewOrg}
+					/>
+					{#if newOrgIds.length > 0}
+						<div class="chips">
+							{#each newOrgIds as oid (oid)}
+								<span class="chip">
+									{orgLabel(oid)}
+									<button type="button" class="chip-remove" onclick={() => removeNewOrg(oid)}>&times;</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
 				<TypeaheadSelect
 					options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
 					placeholder="Interaction type"
@@ -204,6 +261,9 @@
 						<div class="title">
 							{formatPeopleNames(item.person_ids)}
 						</div>
+						{#if item.organization_ids.length > 0}
+							<div class="org-names">{formatOrgNames(item.organization_ids)}</div>
+						{/if}
 						<div class="meta">
 							{findType(item.interaction_type_id)?.name ?? 'Type'} · {item.date}
 						</div>
@@ -232,6 +292,24 @@
 									<span class="chip">
 										{personLabel(pid)}
 										<button type="button" class="chip-remove" onclick={() => removeEditPerson(pid)}>&times;</button>
+									</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
+					<div class="field-group">
+						<span class="field-label">Organizations</span>
+						<TypeaheadSelect
+							options={organizations.filter((o) => !editOrgIds.includes(o.id)).map((o) => ({ id: o.id, label: o.name }))}
+							placeholder="Add organization..."
+							onSelect={addEditOrg}
+						/>
+						{#if editOrgIds.length > 0}
+							<div class="chips">
+								{#each editOrgIds as oid (oid)}
+									<span class="chip">
+										{orgLabel(oid)}
+										<button type="button" class="chip-remove" onclick={() => removeEditOrg(oid)}>&times;</button>
 									</span>
 								{/each}
 							</div>
@@ -413,6 +491,11 @@
 	.title {
 		font-weight: 600;
 		color: var(--text-primary);
+	}
+
+	.org-names {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
 	}
 
 	.meta {

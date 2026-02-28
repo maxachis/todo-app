@@ -261,6 +261,7 @@
 		box-shadow: var(--shadow-sm);
 		display: grid;
 		gap: 0.75rem;
+		align-content: start;
 		min-height: 0;
 		overflow-y: auto;
 	}

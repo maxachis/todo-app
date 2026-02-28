@@ -10,25 +10,26 @@ class TestDragDrop:
         task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
         page.locator(f'[data-list-id="{task_list.id}"]').click()
-        page.wait_for_selector(".task-dnd-zone")
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').wait_for()
 
+        # Drop tasks[1] above tasks[0] midpoint to reorder tasks[1] before tasks[0]
         page.evaluate(
-            """(taskIds) => {
-                const zone = document.querySelectorAll('.task-dnd-zone')[0];
-                zone.dispatchEvent(new CustomEvent('finalize', {
-                    bubbles: true,
-                    detail: { items: taskIds.map((id) => ({ id })) }
-                }));
+            """([dragId, targetId]) => {
+                const target = document.querySelector(`.task-row[data-task-id="${targetId}"]`);
+                if (!target) return;
+                const rect = target.getBoundingClientRect();
+                const y = rect.top + (rect.height * 0.25);
+                const dt = new DataTransfer();
+                dt.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
             }""",
-            [tasks[1].id, tasks[0].id, tasks[2].id],
+            [tasks[1].id, tasks[0].id],
         )
         page.wait_for_timeout(400)
 
-        rows = page.locator(".task-dnd-zone .task-row")
+        rows = page.locator(".task-list .task-row")
         expect(rows).to_have_count(3)
-        expect(page.locator(".task-dnd-zone")).to_contain_text("Buy groceries")
-        expect(page.locator(".task-dnd-zone")).to_contain_text("Walk the dog")
-        expect(page.locator(".task-dnd-zone")).to_contain_text("Read a book")
 
         fresh_from_db(tasks[1])
         fresh_from_db(tasks[0])
@@ -38,22 +39,25 @@ class TestDragDrop:
         data = seed_full
         moving = data["tasks"][1]
         target_section_id = data["section2"].id
+        # Find a task in section2 to drop onto
+        target_task = data["task_in_progress"]
         page.goto(base_url)
         page.locator(f'[data-list-id="{data["list1"].id}"]').click()
-        page.wait_for_selector(".task-dnd-zone")
+        page.locator(f'.task-row[data-task-id="{target_task.id}"]').wait_for()
 
+        # Drop moving task above midpoint of target task in section2 (reorder before)
         page.evaluate(
-            """(taskId) => {
-                const zones = document.querySelectorAll('.task-dnd-zone');
-                const zone = zones[1];
-                const ids = Array.from(zone.querySelectorAll('[data-task-id]')).map((el) => Number(el.dataset.taskId));
-                if (!ids.includes(taskId)) ids.unshift(taskId);
-                zone.dispatchEvent(new CustomEvent('finalize', {
-                    bubbles: true,
-                    detail: { items: ids.map((id) => ({ id })) }
-                }));
+            """([dragId, targetId]) => {
+                const target = document.querySelector(`.task-row[data-task-id="${targetId}"]`);
+                if (!target) return;
+                const rect = target.getBoundingClientRect();
+                const y = rect.top + (rect.height * 0.25);
+                const dt = new DataTransfer();
+                dt.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt }));
             }""",
-            moving.id,
+            [moving.id, target_task.id],
         )
         page.wait_for_timeout(400)
 
@@ -181,29 +185,33 @@ class TestDragDrop:
         fresh_from_db(task_a)
         assert task_a.parent_id == task_c.id
 
-    def test_rapid_finalize_reorders_do_not_break_task_list(self, page, base_url, seed_list_with_tasks):
+    def test_rapid_drops_do_not_break_task_list(self, page, base_url, seed_list_with_tasks):
         task_list, _, tasks = seed_list_with_tasks
         page.goto(base_url)
         page.locator(f'[data-list-id="{task_list.id}"]').click()
-        page.wait_for_selector(".task-dnd-zone")
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').wait_for()
 
+        # Dispatch two rapid drops — the second should be blocked by the drag lock
         page.evaluate(
-            """(taskIds) => {
-                const zone = document.querySelectorAll('.task-dnd-zone')[0];
-                zone.dispatchEvent(new CustomEvent('finalize', {
-                    bubbles: true,
-                    detail: { items: taskIds.map((id) => ({ id })) }
-                }));
-                zone.dispatchEvent(new CustomEvent('finalize', {
-                    bubbles: true,
-                    detail: { items: taskIds.slice().reverse().map((id) => ({ id })) }
-                }));
+            """([dragId, targetId]) => {
+                const target = document.querySelector(`.task-row[data-task-id="${targetId}"]`);
+                if (!target) return;
+                const rect = target.getBoundingClientRect();
+                const y = rect.top + (rect.height * 0.25);
+                const dt1 = new DataTransfer();
+                dt1.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt1 }));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt1 }));
+                // Immediately dispatch a second drop (should be blocked by drag lock)
+                const dt2 = new DataTransfer();
+                dt2.setData('text/task-id', String(dragId));
+                target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: dt2 }));
             }""",
-            [tasks[0].id, tasks[1].id, tasks[2].id],
+            [tasks[1].id, tasks[0].id],
         )
         page.wait_for_timeout(600)
 
-        rows = page.locator(".task-dnd-zone .task-row")
+        rows = page.locator(".task-list .task-row")
         expect(rows).to_have_count(3)
 
     def test_real_mouse_drag_reorders_sections(self, page, base_url, seed_full):

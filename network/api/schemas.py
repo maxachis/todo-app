@@ -89,6 +89,7 @@ class OrganizationUpdateInput(Schema):
 class InteractionSchema(Schema):
     id: int
     person_ids: list[int]
+    organization_ids: list[int] = []
     interaction_type_id: int
     date: date
     notes: str
@@ -98,6 +99,7 @@ class InteractionSchema(Schema):
 
 class InteractionCreateInput(Schema):
     person_ids: list[int]
+    organization_ids: list[int] = []
     interaction_type_id: int
     date: date
     notes: str = ""
@@ -105,6 +107,7 @@ class InteractionCreateInput(Schema):
 
 class InteractionUpdateInput(Schema):
     person_ids: Optional[list[int]] = None
+    organization_ids: Optional[list[int]] = None
     interaction_type_id: Optional[int] = None
     date: Optional[date] = None
     notes: Optional[str] = None
