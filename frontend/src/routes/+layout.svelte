@@ -437,14 +437,19 @@
 	}
 
 	.settings-select {
-		background: rgba(255, 255, 255, 0.08);
-		color: var(--text-on-dark);
+		background: #3d3733;
+		color: #ede9e1;
 		border: 1px solid var(--border-nav);
 		border-radius: var(--radius-sm);
 		padding: 0.2rem 0.35rem;
 		font-size: 0.8rem;
 		font-family: var(--font-body);
 		cursor: pointer;
+	}
+
+	.settings-select option {
+		background: #3d3733;
+		color: #ede9e1;
 	}
 
 	.settings-select:focus {

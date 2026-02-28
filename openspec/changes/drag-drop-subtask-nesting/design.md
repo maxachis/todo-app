@@ -1,13 +1,13 @@
 ## Context
 
-The task drag-and-drop system currently uses two competing mechanisms:
+The task drag-and-drop system uses two complementary mechanisms:
 
-1. **svelte-dnd-action** (library) in `TaskList.svelte` and `SubtaskTree.svelte` — handles flat reordering within a parent via consider/finalize events
+1. **svelte-dnd-action** (library) in `TaskList.svelte` and `SubtaskTree.svelte` — handles flat reordering within a parent via pointer-event-based drag with consider/finalize events and FLIP animations
 2. **Native HTML5 DnD** handlers on `TaskRow.svelte` — handles midpoint-based nesting (`ondragstart`, `ondragover`, `ondrop`)
 
-Both systems share `type="task-dnd"` zones and the `taskDragLockedStore` lock, but they fire concurrently during a drag. When a user drops a task, svelte-dnd-action's `onfinalize` may trigger a flat reorder at the same time as `TaskRow.handleDropOnTask` attempts a nest or positional insert. This race condition leads to unpredictable results, especially at deeper nesting levels.
+svelte-dnd-action provides the drag gesture (pointer events, visual feedback, animated placeholders) while the native DnD handlers on TaskRow provide midpoint-based nesting. Both systems coexist: svelte-dnd-action handles same-level reordering, and the TaskRow drop handlers handle parent-id changes for nesting.
 
-The `midpointDropMode()` function already implements the core detection logic (above midpoint = "before", below midpoint = "nest"), and the backend `move_task` endpoint already supports `parent_id` changes with circular-nesting protection. The infrastructure for both reordering and nesting is in place — the problem is the conflicting event handling.
+The `midpointDropMode()` function implements the core detection logic (above midpoint = "before", below midpoint = "nest"), and the backend `move_task` endpoint already supports `parent_id` changes with circular-nesting protection. The infrastructure is in place — the improvements needed are a frontend circular-nesting guard and clearer visual feedback for nesting intent.
 
 ## Goals / Non-Goals
 
@@ -26,17 +26,16 @@ The `midpointDropMode()` function already implements the core detection logic (a
 
 ## Decisions
 
-### 1. Remove svelte-dnd-action from task containers; use only native HTML5 DnD
+### 1. Keep svelte-dnd-action for drag gesture; enhance native DnD for nesting
 
-**Decision:** Remove `DragContainer`/`DragItem` wrappers from `TaskList.svelte` and `SubtaskTree.svelte` for task items. Rely entirely on native HTML5 drag-and-drop handlers already on `TaskRow.svelte`.
+**Decision:** Keep `DragContainer`/`DragItem` wrappers in `TaskList.svelte` and `SubtaskTree.svelte`. svelte-dnd-action handles the drag gesture (pointer-event-based, works across browsers including Firefox/Linux) and same-level reordering. The native HTML5 DnD handlers on `TaskRow.svelte` handle midpoint-based nesting when the user drops below a task's midpoint.
 
-**Rationale:** svelte-dnd-action operates on flat arrays and has no concept of hierarchical nesting. Its `onfinalize` callback receives a reordered array and always interprets drops as positional reorders. It cannot express "this drop means nest task A under task B." Trying to intercept or override its behavior creates fragile coordination code. Removing it eliminates the root cause of the dual-system conflict.
+**Rationale:** Native HTML5 DnD is unreliable across browser/OS combinations (particularly Firefox on Linux). svelte-dnd-action uses pointer events which work universally. The two systems coexist: svelte-dnd-action handles the drag initiation and reorder finalization, while TaskRow's ondragover/ondrop handlers handle nesting with midpoint detection.
 
-**Alternatives considered:**
-- *Keep svelte-dnd-action, override finalize*: Would require hooking into internal drag state to read cursor position at drop time — svelte-dnd-action doesn't expose this. Fragile.
-- *Keep svelte-dnd-action for "before" only, disable for "nest"*: Would need to dynamically toggle `dropFromOthersDisabled` based on real-time midpoint detection during `ondragover`, which still creates timing conflicts.
-
-**Trade-off:** We lose svelte-dnd-action's animated placeholder (FLIP animation during consider). Tasks won't visually "shuffle" during drag. Instead, the static CSS indicators (`drop-before` line, `drop-nest` accent) provide clear feedback. This is acceptable for a task management tool where precision matters more than animation.
+**Enhancements over the original:**
+- Explicit `draggable` attribute with string values (`'true'`/`'false'`) for correct HTML semantics
+- `effectAllowed = 'move'` and `dropEffect = 'move'` set on dataTransfer for proper browser feedback
+- Frontend circular-nesting guard (see Decision 3)
 
 ### 2. Midpoint detection determines reorder vs nest
 

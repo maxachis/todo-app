@@ -172,19 +172,23 @@
 	data-task-id={task.id}
 	data-section-id={task.section_id}
 	data-parent-id={task.parent_id}
-	draggable={!task.is_completed}
+	draggable={!task.is_completed ? 'true' : 'false'}
 	ondragstart={(event) => {
 		if ($taskDragLockedStore) {
 			event.preventDefault();
 			return;
 		}
-		event.dataTransfer?.setData('text/task-id', String(task.id));
-		event.dataTransfer?.setData('text/section-id', String(task.section_id));
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData('text/task-id', String(task.id));
+			event.dataTransfer.setData('text/section-id', String(task.section_id));
+		}
 	}}
 	ondragover={(event) => {
 		if (task.is_completed) return;
 		if (!event.dataTransfer?.types.includes('text/task-id')) return;
 		event.preventDefault();
+		if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
 		dropMode = midpointDropMode(event);
 	}}
 	ondragleave={() => {
