@@ -24,7 +24,7 @@ Personal operations hub (tasks, CRM, projects, timesheets, network graph), built
 
 ### Navigation
 
-Top navbar tabs: Tasks, Upcoming, People, Organizations, Interactions, Relationships, Graph, Projects, Timesheet. Import is accessed via the settings cog dropdown. Theme toggle is in the navbar.
+Top navbar tabs: Tasks, Dashboard, Projects, Timesheet, CRM, Network. CRM has sub-tabs (People, Orgs, Interactions, Leads) at `/crm/*`. Network has sub-tabs (Relationships, Graph) at `/network/*`. Theme toggle is in the navbar.
 
 ## Commands
 
@@ -65,18 +65,22 @@ frontend/
         lists/       # list sidebar components
         search/      # search UI
         sections/    # section components
-        shared/      # ExportButton, LinkedEntities, MarkdownEditor, ResizeHandle, Toast, TypeaheadSelect
+        shared/      # ExportButton, LinkedEntities, MarkdownEditor, ResizeHandle, Toast, TypeaheadSelect, linkedTasks.svelte.ts
         tasks/       # task row and detail components
       actions/       # keyboard and other Svelte actions
+      styles/        # shared CSS (crm.css)
     routes/
       +layout.svelte
       +page.svelte         # Tasks (main three-panel view)
-      upcoming/            # Upcoming dashboard
-      people/              # People list + detail
-      organizations/       # Organizations list + detail
-      interactions/        # Interactions list + detail
-      relationships/       # Person-person and org-person relationships
-      graph/               # Network graph visualization
+      dashboard/           # Upcoming dashboard
+      crm/                 # CRM layout with sub-tabs
+        people/            # People list + detail
+        orgs/              # Organizations list + detail
+        interactions/      # Interactions list + detail
+        leads/             # Leads list + detail
+      network/             # Network layout with sub-tabs
+        relationships/     # Person-person and org-person relationships
+        graph/             # Network graph visualization
       projects/            # Project management
       timesheet/           # Weekly time tracking
       import/              # Data import (TickTick CSV, native JSON/CSV)

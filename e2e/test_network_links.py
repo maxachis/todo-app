@@ -21,15 +21,11 @@ class TestNetworkNavigation:
         nav = page.locator("header.top-nav nav")
         for label in [
             "Tasks",
-            "Upcoming",
+            "Dashboard",
             "Projects",
             "Timesheet",
-            "Import",
-            "People",
-            "Orgs",
-            "Interactions",
-            "Relationships",
-            "Graph",
+            "CRM",
+            "Network",
         ]:
             expect(nav.get_by_text(label, exact=True)).to_be_visible()
 
@@ -37,16 +33,16 @@ class TestNetworkNavigation:
         page.goto(base_url)
         nav = page.locator("header.top-nav nav")
 
-        nav.get_by_text("People", exact=True).click()
-        expect(page).to_have_url(f"{base_url}/people")
+        nav.get_by_text("CRM", exact=True).click()
+        expect(page).to_have_url(f"{base_url}/crm/people")
         expect(page.locator("h1")).to_contain_text("People")
 
-        nav.get_by_text("Orgs", exact=True).click()
-        expect(page).to_have_url(f"{base_url}/organizations")
+        page.locator(".sub-tabs").get_by_text("Orgs", exact=True).click()
+        expect(page).to_have_url(f"{base_url}/crm/orgs")
         expect(page.locator("h1")).to_contain_text("Organizations")
 
     def test_network_routes_hide_task_panels(self, page, base_url):
-        page.goto(f"{base_url}/people")
+        page.goto(f"{base_url}/crm/people")
         expect(page.locator("#sidebar")).to_have_count(0)
         expect(page.locator("#detail-panel")).to_have_count(0)
 
@@ -99,7 +95,7 @@ class TestPersonTaskLinking:
             first_name="Bob", last_name="Jones"
         )
 
-        page.goto(f"{base_url}/people")
+        page.goto(f"{base_url}/crm/people")
 
         # Select the person
         page.get_by_text("Jones, Bob").click()

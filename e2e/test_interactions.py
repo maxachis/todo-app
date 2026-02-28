@@ -20,7 +20,7 @@ class TestConsecutiveInteractionCreation:
         person = Person.objects.create(first_name="Alice", last_name="Smith")
         itype = InteractionType.objects.create(name="Email")
 
-        page.goto(f"{base_url}/interactions")
+        page.goto(f"{base_url}/crm/interactions")
 
         form = page.locator(".create-form")
 

@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Person, type PersonTag, type Task, type List, type InteractionType } from '$lib';
+	import { api, type Person, type PersonTag, type InteractionType } from '$lib';
 	import { ApiError } from '$lib/api/client';
 	import { addToast } from '$lib/stores/toast';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
+	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
+
+	const ltm = createLinkedTasksManager('people');
 
 	let people: Person[] = $state([]);
 	let selected: Person | null = $state(null);
-	let linkedTaskIds = $state<number[]>([]);
-	let allTasks = $state<{ id: number; title: string }[]>([]);
 	let interactionTypes: InteractionType[] = $state([]);
 
 	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' | 'follow_up_status' = $state('last_name');
@@ -152,43 +153,8 @@
 		quickLogTypeId = null;
 		quickLogDate = todayStr();
 		quickLogNotes = '';
-		loadLinkedTasks(person.id);
+		ltm.loadLinkedTasks(person.id);
 		loadAvailableTagsForPerson(person.id);
-	}
-
-	async function loadAllTasks(): Promise<void> {
-		const lists: List[] = await api.lists.getAll();
-		const flat: { id: number; title: string }[] = [];
-		for (const list of lists) {
-			for (const section of list.sections) {
-				for (const task of section.tasks) {
-					flat.push({ id: task.id, title: task.title });
-				}
-			}
-		}
-		allTasks = flat;
-	}
-
-	async function loadLinkedTasks(personId: number): Promise<void> {
-		if (allTasks.length === 0) await loadAllTasks();
-		const links = await api.taskLinks.people.listByPerson(personId);
-		linkedTaskIds = links.map((l) => l.task_id);
-	}
-
-	async function addTaskLink(taskId: number): Promise<void> {
-		if (!selected) return;
-		await api.taskLinks.people.add(taskId, selected.id);
-		linkedTaskIds = [...linkedTaskIds, taskId];
-	}
-
-	async function removeTaskLink(taskId: number): Promise<void> {
-		if (!selected) return;
-		await api.taskLinks.people.remove(taskId, selected.id);
-		linkedTaskIds = linkedTaskIds.filter((id) => id !== taskId);
-	}
-
-	function taskName(t: { id: number }): string {
-		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
 	}
 
 	async function addTagToPerson(name: string): Promise<{ id: number; label: string }> {
@@ -321,12 +287,12 @@
 	}
 </script>
 
-<section class="network-page">
+<section class="crm-page">
 	<header>
 		<h1>People</h1>
 	</header>
 
-	<div class="network-grid">
+	<div class="crm-grid">
 		<div class="panel list-panel">
 			<form class="create-form" onsubmit={createPerson}>
 				<input bind:value={newFirst} placeholder="First name" />
@@ -348,7 +314,7 @@
 					{/if}
 					<TypeaheadSelect
 						options={newFormAvailableTags}
-						placeholder="Add tags…"
+						placeholder="Add tags..."
 						onSelect={(id) => {
 							const tag = allPersonTags.find((t) => t.id === id);
 							if (tag) addNewTagName(tag.name);
@@ -361,7 +327,7 @@
 			</form>
 
 			<div class="sort-bar">
-				<input class="filter-input" type="text" placeholder="Filter by name…" bind:value={filterQuery} />
+				<input class="filter-input" type="text" placeholder="Filter by name..." bind:value={filterQuery} />
 				<select bind:value={sortField}>
 					<option value="last_name">Last Name</option>
 					<option value="first_name">First Name</option>
@@ -485,7 +451,7 @@
 							{/if}
 							<TypeaheadSelect
 								options={availableTagsForPerson.map((t) => ({ id: t.id, label: t.name }))}
-								placeholder="Add tag…"
+								placeholder="Add tag..."
 								onSelect={(id) => {
 									const tag = availableTagsForPerson.find((t) => t.id === id);
 									if (tag) addTagToPerson(tag.name);
@@ -518,11 +484,11 @@
 				<div class="linked-tasks-section">
 					<LinkedEntities
 						label="Linked Tasks"
-						entities={allTasks}
-						linkedIds={linkedTaskIds}
-						getDisplayName={taskName}
-						onAdd={addTaskLink}
-						onRemove={removeTaskLink}
+						entities={ltm.allTasks}
+						linkedIds={ltm.linkedTaskIds}
+						getDisplayName={ltm.taskName}
+						onAdd={(taskId: number) => { if (selected) ltm.addTaskLink(selected.id, taskId); }}
+						onRemove={(taskId: number) => { if (selected) ltm.removeTaskLink(selected.id, taskId); }}
 					/>
 				</div>
 			{:else}
@@ -533,74 +499,6 @@
 </section>
 
 <style>
-	.network-page {
-		display: grid;
-		gap: 1rem;
-		height: 100%;
-		min-height: 0;
-		grid-template-rows: auto 1fr;
-	}
-
-	h1 {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: 1.5rem;
-	}
-
-	.network-grid {
-		display: grid;
-		grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
-		gap: 1rem;
-		min-height: 0;
-	}
-
-	.panel {
-		background: var(--bg-surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 0.9rem;
-		box-shadow: var(--shadow-sm);
-		min-height: 0;
-		overflow-y: auto;
-	}
-
-	.create-form {
-		display: grid;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.create-form input,
-	.create-form textarea {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	.create-form button,
-	.detail-form button {
-		border: 1px solid var(--border);
-		background: var(--bg-surface);
-		color: var(--text-primary);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.75rem;
-		cursor: pointer;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		transition: all var(--transition);
-	}
-
-	.create-form button:hover,
-	.detail-form button:hover {
-		background: var(--accent);
-		color: white;
-		border-color: var(--accent);
-	}
-
 	.sort-bar {
 		display: flex;
 		align-items: center;
@@ -608,16 +506,11 @@
 		margin-bottom: 0.5rem;
 	}
 
-	.filter-input {
+	.sort-bar .filter-input {
 		flex: 1;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.3rem 0.5rem;
-		font-family: var(--font-body);
-		font-size: 0.8rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-		min-width: 0;
+		display: inline;
+		width: auto;
+		margin-bottom: 0;
 	}
 
 	.sort-bar select {
@@ -647,38 +540,6 @@
 		background: var(--accent);
 		color: white;
 		border-color: var(--accent);
-	}
-
-	.list {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.list-item {
-		text-align: left;
-		border: 1px solid var(--border-light);
-		border-radius: var(--radius-sm);
-		padding: 0.5rem 0.6rem;
-		background: var(--bg-surface);
-		cursor: pointer;
-		transition: background var(--transition), border-color var(--transition);
-	}
-
-	.list-item.active {
-		background: var(--accent-light);
-		border-color: var(--accent);
-	}
-
-	.list-item-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-	}
-
-	.title {
-		font-weight: 600;
-		color: var(--text-primary);
 	}
 
 	.status-badge {
@@ -747,6 +608,13 @@
 		border-color: var(--accent);
 	}
 
+	.list-item-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
 	.list-item-tags {
 		display: flex;
 		flex-wrap: wrap;
@@ -766,11 +634,6 @@
 	.form-field {
 		display: grid;
 		gap: 0.25rem;
-	}
-
-	.field-label {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
 	}
 
 	.tag-picker {
@@ -812,14 +675,6 @@
 		opacity: 1;
 	}
 
-	.detail-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
 	.contact-links {
 		display: flex;
 		gap: 0.75rem;
@@ -856,44 +711,6 @@
 		font-weight: 600;
 		color: var(--error);
 		font-size: 0.78rem;
-	}
-
-	.detail-form {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	label {
-		display: grid;
-		gap: 0.25rem;
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-	}
-
-	label input,
-	label textarea {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	.detail-form .primary {
-		background: var(--accent);
-		color: white;
-		border-color: var(--accent);
-	}
-
-	.danger {
-		border: 1px solid var(--error-border);
-		background: var(--error-bg);
-		color: var(--error);
-		border-radius: var(--radius-sm);
-		padding: 0.35rem 0.6rem;
-		cursor: pointer;
 	}
 
 	.quick-log-section {
@@ -942,22 +759,5 @@
 		background: var(--accent);
 		color: white;
 		border-color: var(--accent);
-	}
-
-	.linked-tasks-section {
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--border-light);
-	}
-
-	.empty-state {
-		color: var(--text-tertiary);
-		font-size: 0.9rem;
-	}
-
-	@media (max-width: 1024px) {
-		.network-grid {
-			grid-template-columns: 1fr;
-		}
 	}
 </style>

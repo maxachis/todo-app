@@ -1,9 +1,33 @@
 ### Requirement: Network navigation in Svelte UI
-The system SHALL provide Svelte routes and navigation entries for People, Organizations, Interactions, Relationships, and Graph.
+The system SHALL provide Svelte routes and navigation entries for CRM (People, Organizations, Interactions, Leads) and Network (Relationships, Graph) as nested route groups under `/crm` and `/network` respectively. The former standalone routes (`/people`, `/organizations`, `/interactions`, `/relationships`, `/graph`, `/leads`) SHALL be removed.
 
 #### Scenario: Navigate to People view
-- **WHEN** a user selects People from the main navigation
-- **THEN** the People view loads in the Svelte app without full-page reload
+- **WHEN** a user selects CRM from the main navigation and then the People sub-tab
+- **THEN** the People view loads at `/crm/people` in the Svelte app without full-page reload
+
+#### Scenario: Navigate to Organizations view
+- **WHEN** a user selects CRM from the main navigation and then the Orgs sub-tab
+- **THEN** the Organizations view loads at `/crm/orgs` without full-page reload
+
+#### Scenario: Navigate to Interactions view
+- **WHEN** a user selects CRM from the main navigation and then the Interactions sub-tab
+- **THEN** the Interactions view loads at `/crm/interactions` without full-page reload
+
+#### Scenario: Navigate to Leads view
+- **WHEN** a user selects CRM from the main navigation and then the Leads sub-tab
+- **THEN** the Leads view loads at `/crm/leads` without full-page reload
+
+#### Scenario: Navigate to Relationships view
+- **WHEN** a user selects Network from the main navigation and then the Relationships sub-tab
+- **THEN** the Relationships view loads at `/network/relationships` without full-page reload
+
+#### Scenario: Navigate to Graph view
+- **WHEN** a user selects Network from the main navigation and then the Graph sub-tab
+- **THEN** the Graph view loads at `/network/graph` without full-page reload
+
+#### Scenario: Old standalone routes are removed
+- **WHEN** a user attempts to navigate to `/people`, `/organizations`, `/interactions`, `/relationships`, `/graph`, or `/leads`
+- **THEN** the route does not resolve (SvelteKit 404 or equivalent)
 
 ### Requirement: Network list and detail views
 The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback. The People list view SHALL include a sort control bar between the create form and the list, allowing the user to choose a sort field and toggle sort direction. The People list sort bar SHALL include a "Follow-up status" sort option in addition to the existing name and cadence sort fields. Each person in the People list SHALL display a follow-up status indicator when the person has a follow-up cadence set, showing the days since last interaction and cadence value with color-coded urgency (overdue, due soon, on track). The People detail panel SHALL display the most recent interaction date and type when available. The People detail panel SHALL display an overdue warning when the person is past their follow-up cadence. The People detail panel SHALL include a quick-log interaction form below the last-interaction summary.

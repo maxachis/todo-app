@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Interaction, type InteractionMedium, type InteractionType, type Person, type Organization, type List } from '$lib';
+	import { api, type Interaction, type InteractionMedium, type InteractionType, type Person, type Organization } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
+	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
+
+	const ltm = createLinkedTasksManager('interactions');
 
 	let interactions: Interaction[] = $state([]);
 	let people: Person[] = $state([]);
@@ -10,8 +13,6 @@
 	let interactionTypes: InteractionType[] = $state([]);
 	let interactionMediums: InteractionMedium[] = $state([]);
 	let selected: Interaction | null = $state(null);
-	let linkedTaskIds = $state<number[]>([]);
-	let allTasks = $state<{ id: number; title: string }[]>([]);
 
 	let newPersonIds = $state<number[]>([]);
 	let newOrgIds = $state<number[]>([]);
@@ -86,42 +87,15 @@
 		editMediumId = item.interaction_medium_id;
 		editDate = item.date;
 		editNotes = item.notes;
-		loadLinkedTasks(item.id);
+		ltm.loadLinkedTasks(item.id);
 	}
 
-	async function loadAllTasks(): Promise<void> {
-		const lists: List[] = await api.lists.getAll();
-		const flat: { id: number; title: string }[] = [];
-		for (const list of lists) {
-			for (const section of list.sections) {
-				for (const task of section.tasks) {
-					flat.push({ id: task.id, title: task.title });
-				}
-			}
-		}
-		allTasks = flat;
+	function addTaskLink(taskId: number): void {
+		if (selected) ltm.addTaskLink(selected.id, taskId);
 	}
 
-	async function loadLinkedTasks(interactionId: number): Promise<void> {
-		if (allTasks.length === 0) await loadAllTasks();
-		const links = await api.taskLinks.interactions.list(interactionId);
-		linkedTaskIds = links.map((l) => l.task_id);
-	}
-
-	async function addTaskLink(taskId: number): Promise<void> {
-		if (!selected) return;
-		await api.taskLinks.interactions.add(selected.id, taskId);
-		linkedTaskIds = [...linkedTaskIds, taskId];
-	}
-
-	async function removeTaskLink(taskId: number): Promise<void> {
-		if (!selected) return;
-		await api.taskLinks.interactions.remove(selected.id, taskId);
-		linkedTaskIds = linkedTaskIds.filter((id) => id !== taskId);
-	}
-
-	function taskName(t: { id: number }): string {
-		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
+	function removeTaskLink(taskId: number): void {
+		if (selected) ltm.removeTaskLink(selected.id, taskId);
 	}
 
 	async function handleCreateInteractionType(name: string): Promise<{ id: number; label: string }> {
@@ -220,12 +194,12 @@
 	}
 </script>
 
-<section class="network-page">
+<section class="crm-page">
 	<header>
 		<h1>Interactions</h1>
 	</header>
 
-	<div class="network-grid">
+	<div class="crm-grid">
 		<div class="panel list-panel">
 			<form class="create-form" onsubmit={createInteraction}>
 				<div class="people-select">
@@ -370,9 +344,9 @@
 				<div class="linked-tasks-section">
 					<LinkedEntities
 						label="Linked Tasks"
-						entities={allTasks}
-						linkedIds={linkedTaskIds}
-						getDisplayName={taskName}
+						entities={ltm.allTasks}
+						linkedIds={ltm.linkedTaskIds}
+						getDisplayName={ltm.taskName}
 						onAdd={addTaskLink}
 						onRemove={removeTaskLink}
 					/>
@@ -385,217 +359,13 @@
 </section>
 
 <style>
-	.network-page {
-		display: grid;
-		gap: 1rem;
-		height: 100%;
-		min-height: 0;
-		grid-template-rows: auto 1fr;
-	}
-
-	h1 {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: 1.5rem;
-	}
-
-	.network-grid {
-		display: grid;
-		grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
-		gap: 1rem;
-		min-height: 0;
-	}
-
-	.panel {
-		background: var(--bg-surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 0.9rem;
-		box-shadow: var(--shadow-sm);
-		min-height: 0;
-		overflow-y: auto;
-	}
-
-	.create-form {
-		display: grid;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.create-form input,
-	.create-form textarea {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	.create-form button[type="submit"],
-	.detail-form button {
-		border: 1px solid var(--border);
-		background: var(--bg-surface);
-		color: var(--text-primary);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.75rem;
-		cursor: pointer;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		transition: all var(--transition);
-	}
-
-	.create-form button[type="submit"]:hover,
-	.detail-form button:hover {
-		background: var(--accent);
-		color: white;
-		border-color: var(--accent);
-	}
-
 	.people-select {
 		display: grid;
 		gap: 0.35rem;
 	}
 
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.3rem;
-	}
-
-	.chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		background: var(--accent-light, var(--bg-surface-hover, #e8f0fe));
-		border: 1px solid var(--border-light, var(--border));
-		border-radius: var(--radius-sm);
-		padding: 0.2rem 0.4rem;
-		font-size: 0.75rem;
-		color: var(--text-primary);
-	}
-
-	.chip-remove {
-		all: unset;
-		cursor: pointer;
-		font-size: 0.85rem;
-		line-height: 1;
-		color: var(--text-tertiary);
-		padding: 0 0.1rem;
-	}
-
-	.chip-remove:hover {
-		color: var(--error, #dc3545);
-	}
-
-	.field-group {
-		display: grid;
-		gap: 0.25rem;
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-	}
-
-	.field-label {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-	}
-
-	.list {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.list-item {
-		text-align: left;
-		border: 1px solid var(--border-light);
-		border-radius: var(--radius-sm);
-		padding: 0.5rem 0.6rem;
-		background: var(--bg-surface);
-		cursor: pointer;
-		transition: background var(--transition), border-color var(--transition);
-	}
-
-	.list-item.active {
-		background: var(--accent-light);
-		border-color: var(--accent);
-	}
-
-	.title {
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
 	.org-names {
 		font-size: 0.75rem;
 		color: var(--text-secondary);
-	}
-
-	.meta {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-	}
-
-	.detail-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.detail-form {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	label {
-		display: grid;
-		gap: 0.25rem;
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-	}
-
-	label input,
-	label textarea {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	.detail-form .primary {
-		background: var(--accent);
-		color: white;
-		border-color: var(--accent);
-	}
-
-	.danger {
-		border: 1px solid var(--error-border);
-		background: var(--error-bg);
-		color: var(--error);
-		border-radius: var(--radius-sm);
-		padding: 0.35rem 0.6rem;
-		cursor: pointer;
-	}
-
-	.linked-tasks-section {
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--border-light);
-	}
-
-	.empty-state {
-		color: var(--text-tertiary);
-		font-size: 0.9rem;
-	}
-
-	@media (max-width: 1024px) {
-		.network-grid {
-			grid-template-columns: 1fr;
-		}
 	}
 </style>

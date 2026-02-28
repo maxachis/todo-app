@@ -287,7 +287,7 @@
 				<h2>Follow-ups Due<span class="group-count follow-up-count">{followUpsDue.length}</span></h2>
 				<div class="task-list">
 					{#each followUpsDue as fu (fu.person_id)}
-						<a href="/people?person={fu.person_id}" class="follow-up-row">
+						<a href="/crm/people?person={fu.person_id}" class="follow-up-row">
 							<div class="follow-up-main">
 								<span class="follow-up-icon">&#128100;</span>
 								<span class="follow-up-name">{fu.first_name} {fu.last_name}</span>

@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Organization, type OrgType, type List } from '$lib';
+	import { api, type Organization, type OrgType } from '$lib';
 	import { ApiError } from '$lib/api/client';
 	import { addToast } from '$lib/stores/toast';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
+	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
+
+	const ltm = createLinkedTasksManager('organizations');
 
 	let organizations: Organization[] = $state([]);
 	let orgTypes: OrgType[] = $state([]);
 	let selected: Organization | null = $state(null);
-	let linkedTaskIds = $state<number[]>([]);
-	let allTasks = $state<{ id: number; title: string }[]>([]);
 
 	let filterQuery = $state('');
 
@@ -46,42 +47,15 @@
 		editName = org.name;
 		editNotes = org.notes;
 		editOrgTypeId = org.org_type_id;
-		loadLinkedTasks(org.id);
-	}
-
-	async function loadAllTasks(): Promise<void> {
-		const lists: List[] = await api.lists.getAll();
-		const flat: { id: number; title: string }[] = [];
-		for (const list of lists) {
-			for (const section of list.sections) {
-				for (const task of section.tasks) {
-					flat.push({ id: task.id, title: task.title });
-				}
-			}
-		}
-		allTasks = flat;
-	}
-
-	async function loadLinkedTasks(orgId: number): Promise<void> {
-		if (allTasks.length === 0) await loadAllTasks();
-		const links = await api.taskLinks.organizations.listByOrg(orgId);
-		linkedTaskIds = links.map((l) => l.task_id);
+		ltm.loadLinkedTasks(org.id);
 	}
 
 	async function addTaskLink(taskId: number): Promise<void> {
-		if (!selected) return;
-		await api.taskLinks.organizations.add(taskId, selected.id);
-		linkedTaskIds = [...linkedTaskIds, taskId];
+		if (selected) ltm.addTaskLink(selected.id, taskId);
 	}
 
 	async function removeTaskLink(taskId: number): Promise<void> {
-		if (!selected) return;
-		await api.taskLinks.organizations.remove(taskId, selected.id);
-		linkedTaskIds = linkedTaskIds.filter((id) => id !== taskId);
-	}
-
-	function taskName(t: { id: number }): string {
-		return allTasks.find((x) => x.id === t.id)?.title ?? `Task #${t.id}`;
+		if (selected) ltm.removeTaskLink(selected.id, taskId);
 	}
 
 	async function handleCreateOrgType(name: string): Promise<{ id: number; label: string }> {
@@ -133,12 +107,12 @@
 	}
 </script>
 
-<section class="network-page">
+<section class="crm-page">
 	<header>
 		<h1>Organizations</h1>
 	</header>
 
-	<div class="network-grid">
+	<div class="crm-grid">
 		<div class="panel list-panel">
 			<form class="create-form" onsubmit={createOrganization}>
 				<input bind:value={newOrgName} placeholder="Organization name" />
@@ -193,9 +167,9 @@
 				<div class="linked-tasks-section">
 					<LinkedEntities
 						label="Linked Tasks"
-						entities={allTasks}
-						linkedIds={linkedTaskIds}
-						getDisplayName={taskName}
+						entities={ltm.allTasks}
+						linkedIds={ltm.linkedTaskIds}
+						getDisplayName={ltm.taskName}
 						onAdd={addTaskLink}
 						onRemove={removeTaskLink}
 					/>
@@ -208,178 +182,5 @@
 </section>
 
 <style>
-	.network-page {
-		display: grid;
-		gap: 1rem;
-		height: 100%;
-		min-height: 0;
-		grid-template-rows: auto 1fr;
-	}
-
-	h1 {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: 1.5rem;
-	}
-
-	.network-grid {
-		display: grid;
-		grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
-		gap: 1rem;
-		min-height: 0;
-	}
-
-	.panel {
-		background: var(--bg-surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 0.9rem;
-		box-shadow: var(--shadow-sm);
-		min-height: 0;
-		overflow-y: auto;
-	}
-
-	.create-form {
-		display: grid;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.create-form input,
-	.create-form textarea {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	.create-form button,
-	.detail-form button {
-		border: 1px solid var(--border);
-		background: var(--bg-surface);
-		color: var(--text-primary);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.75rem;
-		cursor: pointer;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		transition: all var(--transition);
-	}
-
-	.create-form button:hover,
-	.detail-form button:hover {
-		background: var(--accent);
-		color: white;
-		border-color: var(--accent);
-	}
-
-	.filter-input {
-		display: block;
-		width: 100%;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.3rem 0.5rem;
-		font-family: var(--font-body);
-		font-size: 0.8rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-		margin-bottom: 0.5rem;
-		box-sizing: border-box;
-	}
-
-	.list {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.list-item {
-		text-align: left;
-		border: 1px solid var(--border-light);
-		border-radius: var(--radius-sm);
-		padding: 0.5rem 0.6rem;
-		background: var(--bg-surface);
-		cursor: pointer;
-		transition: background var(--transition), border-color var(--transition);
-	}
-
-	.list-item.active {
-		background: var(--accent-light);
-		border-color: var(--accent);
-	}
-
-	.title {
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.meta {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-	}
-
-	.detail-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.detail-form {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	label {
-		display: grid;
-		gap: 0.25rem;
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-	}
-
-	label input,
-	label textarea {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		background: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	.detail-form .primary {
-		background: var(--accent);
-		color: white;
-		border-color: var(--accent);
-	}
-
-	.danger {
-		border: 1px solid var(--error-border);
-		background: var(--error-bg);
-		color: var(--error);
-		border-radius: var(--radius-sm);
-		padding: 0.35rem 0.6rem;
-		cursor: pointer;
-	}
-
-	.linked-tasks-section {
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--border-light);
-	}
-
-	.empty-state {
-		color: var(--text-tertiary);
-		font-size: 0.9rem;
-	}
-
-	@media (max-width: 1024px) {
-		.network-grid {
-			grid-template-columns: 1fr;
-		}
-	}
+	/* All styles provided by crm.css via the CRM layout */
 </style>

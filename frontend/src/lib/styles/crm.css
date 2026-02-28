@@ -1,0 +1,219 @@
+/* Shared CRM page styles */
+
+.crm-page {
+	display: grid;
+	gap: 1rem;
+	height: 100%;
+	min-height: 0;
+	grid-template-rows: auto 1fr;
+}
+
+.crm-page h1 {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.5rem;
+}
+
+.crm-grid {
+	display: grid;
+	grid-template-columns: minmax(260px, 1fr) minmax(360px, 2fr);
+	gap: 1rem;
+	min-height: 0;
+}
+
+.crm-page .panel {
+	background: var(--bg-surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: 0.9rem;
+	box-shadow: var(--shadow-sm);
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.crm-page .create-form {
+	display: grid;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.crm-page .create-form input,
+.crm-page .create-form textarea {
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	padding: 0.4rem 0.6rem;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	background: var(--bg-input);
+	color: var(--text-primary);
+}
+
+.crm-page .create-form button,
+.crm-page .detail-form button {
+	border: 1px solid var(--border);
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	border-radius: var(--radius-sm);
+	padding: 0.4rem 0.75rem;
+	cursor: pointer;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	transition: all var(--transition);
+}
+
+.crm-page .create-form button:hover,
+.crm-page .detail-form button:hover {
+	background: var(--accent);
+	color: white;
+	border-color: var(--accent);
+}
+
+.crm-page .list {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.crm-page .list-item {
+	text-align: left;
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-sm);
+	padding: 0.5rem 0.6rem;
+	background: var(--bg-surface);
+	cursor: pointer;
+	transition: background var(--transition), border-color var(--transition);
+}
+
+.crm-page .list-item.active {
+	background: var(--accent-light);
+	border-color: var(--accent);
+}
+
+.crm-page .title {
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.crm-page .meta {
+	font-size: 0.75rem;
+	color: var(--text-tertiary);
+}
+
+.crm-page .detail-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.crm-page .detail-form {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.crm-page .detail-form label {
+	display: grid;
+	gap: 0.25rem;
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+.crm-page .detail-form label input,
+.crm-page .detail-form label textarea {
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	padding: 0.4rem 0.6rem;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	background: var(--bg-input);
+	color: var(--text-primary);
+}
+
+.crm-page .detail-form .primary {
+	background: var(--accent);
+	color: white;
+	border-color: var(--accent);
+}
+
+.crm-page .danger {
+	border: 1px solid var(--error-border);
+	background: var(--error-bg);
+	color: var(--error);
+	border-radius: var(--radius-sm);
+	padding: 0.35rem 0.6rem;
+	cursor: pointer;
+}
+
+.crm-page .linked-tasks-section {
+	margin-top: 0.75rem;
+	padding-top: 0.75rem;
+	border-top: 1px solid var(--border-light);
+}
+
+.crm-page .empty-state {
+	color: var(--text-tertiary);
+	font-size: 0.9rem;
+}
+
+.crm-page .field-group {
+	display: grid;
+	gap: 0.25rem;
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+.crm-page .field-label {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+.crm-page .filter-input {
+	display: block;
+	width: 100%;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	padding: 0.3rem 0.5rem;
+	font-family: var(--font-body);
+	font-size: 0.8rem;
+	background: var(--bg-input);
+	color: var(--text-primary);
+	margin-bottom: 0.5rem;
+	box-sizing: border-box;
+}
+
+.crm-page .chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+}
+
+.crm-page .chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	background: var(--accent-light, var(--bg-surface-hover, #e8f0fe));
+	border: 1px solid var(--border-light, var(--border));
+	border-radius: var(--radius-sm);
+	padding: 0.2rem 0.4rem;
+	font-size: 0.75rem;
+	color: var(--text-primary);
+}
+
+.crm-page .chip-remove {
+	all: unset;
+	cursor: pointer;
+	font-size: 0.85rem;
+	line-height: 1;
+	color: var(--text-tertiary);
+	padding: 0 0.1rem;
+}
+
+.crm-page .chip-remove:hover {
+	color: var(--error, #dc3545);
+}
+
+@media (max-width: 1024px) {
+	.crm-grid {
+		grid-template-columns: 1fr;
+	}
+}

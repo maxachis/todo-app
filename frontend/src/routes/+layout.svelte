@@ -43,16 +43,12 @@
 	});
 
 	const tabs = [
-		{ href: '/', label: 'Tasks' },
-		{ href: '/dashboard', label: 'Dashboard' },
-		{ href: '/projects', label: 'Projects' },
-		{ href: '/timesheet', label: 'Timesheet' },
-		{ href: '/people', label: 'People' },
-		{ href: '/organizations', label: 'Orgs' },
-		{ href: '/interactions', label: 'Interactions' },
-		{ href: '/relationships', label: 'Relationships' },
-		{ href: '/graph', label: 'Graph' },
-		{ href: '/leads', label: 'Leads' }
+		{ href: '/', label: 'Tasks', exact: true },
+		{ href: '/dashboard', label: 'Dashboard', exact: true },
+		{ href: '/projects', label: 'Projects', exact: true },
+		{ href: '/timesheet', label: 'Timesheet', exact: true },
+		{ href: '/crm', label: 'CRM', exact: false },
+		{ href: '/network', label: 'Network', exact: false }
 	];
 
 	const settingsItems = [
@@ -179,7 +175,7 @@
 
 	<nav class="mobile-tabs">
 		{#each tabs as tab}
-			<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}</a>
+			<a href={tab.href} class:active={tab.exact ? $page.url.pathname === tab.href : $page.url.pathname.startsWith(tab.href)}>{tab.label}</a>
 		{/each}
 	</nav>
 </div>
