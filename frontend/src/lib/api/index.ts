@@ -46,7 +46,12 @@ import type {
   UpdatePersonInput,
   UpdateProjectInput,
   UpdateSectionInput,
-  UpdateTaskInput
+  UpdateTaskInput,
+  Page,
+  PageBacklink,
+  PageCreateInput,
+  PageListItem,
+  PageUpdateInput
 } from './types';
 
 export const api = {
@@ -269,6 +274,25 @@ export const api = {
     update: (id: number, payload: UpdateLeadInput) =>
       apiRequest<Lead>(`/leads/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
     remove: (id: number) => apiRequest<void>(`/leads/${id}/`, { method: 'DELETE' })
+  },
+  notebook: {
+    pages: {
+      list: (params?: { search?: string; page_type?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.search) query.set('search', params.search);
+        if (params?.page_type) query.set('page_type', params.page_type);
+        const qs = query.toString();
+        return apiRequest<PageListItem[]>(`/notebook/pages/${qs ? `?${qs}` : ''}`);
+      },
+      create: (payload: PageCreateInput) =>
+        apiRequest<Page>('/notebook/pages/', { method: 'POST', body: JSON.stringify(payload) }),
+      get: (slug: string) => apiRequest<Page>(`/notebook/pages/${slug}/`),
+      update: (slug: string, payload: PageUpdateInput) =>
+        apiRequest<Page>(`/notebook/pages/${slug}/`, { method: 'PUT', body: JSON.stringify(payload) }),
+      remove: (slug: string) => apiRequest<void>(`/notebook/pages/${slug}/`, { method: 'DELETE' })
+    },
+    mentions: (entityType: string, entityId: number) =>
+      apiRequest<PageBacklink[]>(`/notebook/mentions/${entityType}/${entityId}/`)
   },
   graph: {
     get: () => apiRequest<GraphData>('/graph/')

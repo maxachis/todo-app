@@ -76,13 +76,14 @@ def compute_next_due_date(
             month_num, day_num = int(d[:2]), int(d[3:5])
             parsed.append((month_num, day_num))
 
-        # Find next date after today
+        # Find next date after the current due date (or today if none)
+        threshold = max(base, today)
         for year_offset in range(0, 3):
             year = today.year + year_offset
             for month_num, day_num in parsed:
                 clamped_day = min(day_num, calendar.monthrange(year, month_num)[1])
                 candidate = date(year, month_num, clamped_day)
-                if candidate > today:
+                if candidate > threshold:
                     return candidate
 
         # Fallback: first date next year

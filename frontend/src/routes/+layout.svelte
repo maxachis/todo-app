@@ -47,6 +47,7 @@
 		{ href: '/dashboard', label: 'Dashboard', exact: true },
 		{ href: '/projects', label: 'Projects', exact: true },
 		{ href: '/timesheet', label: 'Timesheet', exact: true },
+		{ href: '/notebook', label: 'Notebook', exact: false },
 		{ href: '/crm', label: 'CRM', exact: false },
 		{ href: '/network', label: 'Network', exact: false }
 	];

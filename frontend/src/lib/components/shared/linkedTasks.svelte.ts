@@ -17,9 +17,10 @@ export function createLinkedTasksManager(entityType: EntityType): LinkedTasksMan
 	let linkedTaskIds: number[] = $state([]);
 
 	async function loadAllTasks(): Promise<void> {
-		const lists: List[] = await api.lists.getAll();
+		const summaries: List[] = await api.lists.getAll();
+		const details = await Promise.all(summaries.map((l) => api.lists.get(l.id)));
 		const flat: { id: number; title: string }[] = [];
-		for (const list of lists) {
+		for (const list of details) {
 			for (const section of list.sections) {
 				for (const task of section.tasks) {
 					flat.push({ id: task.id, title: task.title });

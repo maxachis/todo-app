@@ -453,3 +453,54 @@ export interface CreateTimeEntryInput {
   description?: string;
   task_ids?: number[];
 }
+
+// Notebook types
+
+export interface PageMention {
+  entity_type: string;
+  entity_id: number;
+}
+
+export interface PageBacklink {
+  id: number;
+  title: string;
+  slug: string;
+  page_type: string;
+  date: string | null;
+  snippet: string;
+}
+
+export interface Page {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  page_type: string;
+  date: string | null;
+  entity_mentions: PageMention[];
+  backlinks: PageBacklink[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageListItem {
+  id: number;
+  title: string;
+  slug: string;
+  page_type: string;
+  date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageCreateInput {
+  title?: string;
+  content?: string;
+  page_type?: string;
+  date?: string;
+}
+
+export interface PageUpdateInput {
+  title?: string;
+  content?: string;
+}

@@ -20,6 +20,7 @@ from network.models import (
     TaskOrganization,
     TaskPerson,
 )
+from notebook.models import Page, PageLink
 from tasks.models import List, Project, ProjectLink, Section, Tag, Task, TimeEntry
 
 
@@ -236,6 +237,30 @@ def _serialize_interaction_task(it):
     }
 
 
+# ── notebook app serializers ──
+
+
+def _serialize_notebook_page(page):
+    return {
+        "id": page.id,
+        "title": page.title,
+        "slug": page.slug,
+        "content": page.content,
+        "page_type": page.page_type,
+        "date": _serialize_value(page.date),
+        "created_at": _serialize_value(page.created_at),
+        "updated_at": _serialize_value(page.updated_at),
+    }
+
+
+def _serialize_page_link(link):
+    return {
+        "id": link.id,
+        "source_page_id": link.source_page_id,
+        "target_page_id": link.target_page_id,
+    }
+
+
 # ── top-level export ──
 
 
@@ -277,4 +302,7 @@ def export_full_database():
         "interaction_tasks": [
             _serialize_interaction_task(it) for it in InteractionTask.objects.all()
         ],
+        # notebook app
+        "notebook_pages": [_serialize_notebook_page(p) for p in Page.objects.all()],
+        "page_links": [_serialize_page_link(pl) for pl in PageLink.objects.all()],
     }

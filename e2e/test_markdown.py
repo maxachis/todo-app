@@ -8,6 +8,9 @@ from tasks.models import Task
 class TestMarkdown:
     def test_click_to_edit_and_render(self, page, base_url, seed_list_with_tasks):
         task_list, _, tasks = seed_list_with_tasks
+        tasks[0].notes = "initial notes"
+        tasks[0].save()
+
         page.goto(base_url)
         page.locator(f'[data-list-id="{task_list.id}"]').click()
 

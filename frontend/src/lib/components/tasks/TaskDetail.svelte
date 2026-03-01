@@ -6,6 +6,7 @@
 	import LinkedEntities from '../shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '../shared/TypeaheadSelect.svelte';
 	import RecurrenceEditor from './RecurrenceEditor.svelte';
+	import NotebookMentions from '../shared/NotebookMentions.svelte';
 
 	const task = $derived($selectedTaskDetail);
 
@@ -253,6 +254,8 @@
 				/>
 			</div>
 		</div>
+
+		<NotebookMentions entityType="task" entityId={task.id} />
 	</div>
 {:else}
 	<p class="placeholder">Select a task to view details.</p>

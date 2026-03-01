@@ -100,13 +100,14 @@ class TestPersonTaskLinking:
         # Select the person
         page.get_by_text("Jones, Bob").click()
 
-        # Find the linked tasks section
+        # Find the linked tasks section and wait for tasks to load
         detail = page.locator(".detail-panel")
         linked_section = detail.locator(".linked-tasks-section")
         expect(linked_section).to_be_visible()
 
-        # Type into the typeahead to find the task and select
+        # Wait for task data to load (TypeaheadSelect only renders when options exist)
         typeahead_input = linked_section.locator('.typeahead-input')
+        expect(typeahead_input).to_be_visible()
         typeahead_input.fill("Buy groceries")
         linked_section.locator('.typeahead-option').first.click()
 

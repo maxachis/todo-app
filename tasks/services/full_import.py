@@ -19,6 +19,7 @@ from network.models import (
     TaskOrganization,
     TaskPerson,
 )
+from notebook.models import Page, PageLink
 from tasks.models import List, Project, ProjectLink, Section, Tag, Task, TimeEntry
 
 
@@ -43,6 +44,8 @@ def _make_stats():
         "task_persons_created": 0, "task_persons_skipped": 0,
         "task_organizations_created": 0, "task_organizations_skipped": 0,
         "interaction_tasks_created": 0, "interaction_tasks_skipped": 0,
+        "notebook_pages_created": 0, "notebook_pages_skipped": 0,
+        "page_links_created": 0, "page_links_skipped": 0,
         "errors": 0,
         "error_details": [],
     }
@@ -87,6 +90,7 @@ def import_full_database(data: dict) -> dict:
     time_entry_map: dict[int, int] = {}
     interaction_map: dict[int, int] = {}
     lead_map: dict[int, int] = {}
+    page_map: dict[int, int] = {}
 
     with transaction.atomic():
         # ── 1. Independent entities ──
@@ -532,5 +536,53 @@ def import_full_database(data: dict) -> dict:
                     interaction_id=new_interaction_id, task_id=new_task_id
                 )
                 stats["interaction_tasks_created"] += 1
+
+        # ── 6. Notebook ──
+
+        # Pages (independent — no FK to other apps)
+        for item in data.get("notebook_pages", []):
+            existing = Page.objects.filter(slug=item["slug"]).first()
+            if existing:
+                page_map[item["id"]] = existing.id
+                stats["notebook_pages_skipped"] += 1
+            else:
+                obj = Page(
+                    title=item["title"],
+                    slug=item["slug"],
+                    content=item.get("content", ""),
+                    page_type=item.get("page_type", "wiki"),
+                    date=_parse_date_safe(item.get("date")),
+                )
+                obj.save()
+                page_map[item["id"]] = obj.id
+                stats["notebook_pages_created"] += 1
+
+        # Reconcile entity mentions from content (rebuilds from parsed text)
+        if data.get("notebook_pages"):
+            from notebook.mentions import reconcile_mentions
+
+            for page in Page.objects.filter(id__in=page_map.values()):
+                reconcile_mentions(page)
+
+        # PageLinks (FK -> Page, FK -> Page)
+        for item in data.get("page_links", []):
+            new_source = page_map.get(item["source_page_id"])
+            new_target = page_map.get(item["target_page_id"])
+            if new_source is None or new_target is None:
+                stats["errors"] += 1
+                stats["error_details"].append(
+                    f"PageLink {item['id']}: source or target page not found"
+                )
+                continue
+            existing = PageLink.objects.filter(
+                source_page_id=new_source, target_page_id=new_target
+            ).first()
+            if existing:
+                stats["page_links_skipped"] += 1
+            else:
+                PageLink.objects.create(
+                    source_page_id=new_source, target_page_id=new_target
+                )
+                stats["page_links_created"] += 1
 
     return stats

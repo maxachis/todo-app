@@ -6,6 +6,7 @@
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
+	import NotebookMentions from '$lib/components/shared/NotebookMentions.svelte';
 
 	const ltm = createLinkedTasksManager('people');
 
@@ -491,6 +492,7 @@
 						onRemove={(taskId: number) => { if (selected) ltm.removeTaskLink(selected.id, taskId); }}
 					/>
 				</div>
+				<NotebookMentions entityType="person" entityId={selected.id} />
 			{:else}
 				<div class="empty-state">Select a person to view details.</div>
 			{/if}

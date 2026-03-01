@@ -23,15 +23,15 @@ class TestConsecutiveInteractionCreation:
         page.goto(f"{base_url}/crm/interactions")
 
         form = page.locator(".create-form")
+        person_input = form.get_by_placeholder("Add person...")
+        type_input = form.get_by_placeholder("Interaction type")
 
         # --- First interaction ---
-        person_input = form.locator(".typeahead-input").first
         person_input.fill("Alice")
-        page.locator(".typeahead-option").first.click()
+        form.locator(".typeahead-option").first.click()
 
-        type_input = form.locator(".typeahead-input").nth(1)
         type_input.fill("Email")
-        page.locator(".typeahead-option").first.click()
+        form.locator(".typeahead-option").first.click()
 
         form.locator('input[type="date"]').fill("2026-02-20")
         form.locator("button[type='submit']").click()
@@ -45,10 +45,10 @@ class TestConsecutiveInteractionCreation:
 
         # --- Second interaction ---
         person_input.fill("Alice")
-        page.locator(".typeahead-option").first.click()
+        form.locator(".typeahead-option").first.click()
 
         type_input.fill("Email")
-        page.locator(".typeahead-option").first.click()
+        form.locator(".typeahead-option").first.click()
 
         form.locator('input[type="date"]').fill("2026-02-21")
         form.locator("button[type='submit']").click()

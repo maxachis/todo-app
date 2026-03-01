@@ -9,6 +9,7 @@
 		createProjectLink,
 		deleteProjectLink
 	} from '$lib/stores/projects';
+	import NotebookMentions from '$lib/components/shared/NotebookMentions.svelte';
 
 	let newName = $state('');
 	let newDescription = $state('');
@@ -123,6 +124,7 @@
 						<button onclick={() => startEdit(project)}>Edit</button>
 						<button class="delete-btn" onclick={() => handleDelete(project.id)}>Delete</button>
 					</div>
+					<NotebookMentions entityType="project" entityId={project.id} />
 				{/if}
 			</div>
 		{/each}

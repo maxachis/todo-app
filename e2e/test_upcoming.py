@@ -1,4 +1,4 @@
-"""E2E tests for the upcoming tasks dashboard."""
+"""E2E tests for the dashboard (upcoming tasks, follow-ups, trends)."""
 
 from datetime import date, timedelta
 
@@ -15,9 +15,9 @@ class TestUpcomingDashboard:
             due_date=date.today() + timedelta(days=1),
         )
 
-        page.goto(f"{base_url}/upcoming")
+        page.goto(f"{base_url}/dashboard")
 
-        expect(page.locator("h1")).to_have_text("Upcoming")
+        expect(page.locator("h1")).to_have_text("Dashboard")
         expect(page.locator(".task-row")).to_have_count(1)
         expect(page.locator(".task-title").first).to_have_text("Due soon")
 
@@ -37,7 +37,7 @@ class TestUpcomingDashboard:
             due_date=today + timedelta(days=14),
         )
 
-        page.goto(f"{base_url}/upcoming")
+        page.goto(f"{base_url}/dashboard")
 
         expect(page.locator(".task-group")).to_have_count(3)
         groups = page.locator("h2")
@@ -52,17 +52,17 @@ class TestUpcomingDashboard:
             due_date=date.today(),
         )
 
-        page.goto(f"{base_url}/upcoming")
+        page.goto(f"{base_url}/dashboard")
         page.locator(".task-row").first.click()
 
         page.wait_for_url(f"**/?list={task_list.id}&task={task.id}")
         expect(page.locator(f'.task-row[data-task-id="{task.id}"]')).to_be_visible()
 
     def test_empty_state_when_no_upcoming_tasks(self, page, base_url, seed_list):
-        page.goto(f"{base_url}/upcoming")
+        page.goto(f"{base_url}/dashboard")
 
         expect(page.locator(".empty-state")).to_be_visible()
-        expect(page.locator(".empty-state p")).to_contain_text("No tasks with due dates")
+        expect(page.locator(".empty-state p")).to_contain_text("No tasks with due dates and no follow-ups due.")
 
     def test_shows_list_and_section_context(self, page, base_url):
         task_list = List.objects.create(name="Work", emoji="", position=10)
@@ -72,7 +72,7 @@ class TestUpcomingDashboard:
             due_date=date.today(),
         )
 
-        page.goto(f"{base_url}/upcoming")
+        page.goto(f"{base_url}/dashboard")
 
         location = page.locator(".task-location").first
         expect(location).to_contain_text("Work")

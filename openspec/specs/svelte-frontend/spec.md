@@ -10,7 +10,7 @@ The system SHALL use SvelteKit with `adapter-static` to produce a static SPA bui
 - **THEN** the SPA loads and fetches data from the Django API via client-side requests
 
 ### Requirement: Three-panel layout shell
-The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, Dashboard, Projects, Timesheet, CRM, and Network pages. The navigation bar SHALL also include a settings cog button and a theme toggle control. The Import page SHALL NOT appear as a primary navigation tab; it SHALL be accessible via the settings dropdown menu. On phone viewports (640px and below), the app shell SHALL use `100dvh` (with `100vh` fallback) instead of `100vh` to account for mobile browser chrome resizing. All interactive elements in the navigation bar SHALL meet a 44px minimum touch target height on phone viewports. The CRM nav tab SHALL be highlighted as active when the current path starts with `/crm`. The Network nav tab SHALL be highlighted as active when the current path starts with `/network`.
+The system SHALL render a three-panel layout: left sidebar (list navigation), center panel (task list), and right panel (task detail). The panel widths SHALL be user-adjustable via draggable resize handles on desktop viewports. A top navigation bar SHALL provide links to Tasks, Dashboard, Projects, Timesheet, CRM, Network, and Notebook pages. The navigation bar SHALL also include a settings cog button and a theme toggle control. The Import page SHALL NOT appear as a primary navigation tab; it SHALL be accessible via the settings dropdown menu. On phone viewports (640px and below), the app shell SHALL use `100dvh` (with `100vh` fallback) instead of `100vh` to account for mobile browser chrome resizing. All interactive elements in the navigation bar SHALL meet a 44px minimum touch target height on phone viewports. The CRM nav tab SHALL be highlighted as active when the current path starts with `/crm`. The Network nav tab SHALL be highlighted as active when the current path starts with `/network`. The Notebook nav tab SHALL be highlighted as active when the current path starts with `/notebook`.
 
 #### Scenario: Desktop layout shows all three panels
 - **WHEN** the viewport is wider than 1024px
@@ -55,6 +55,14 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 #### Scenario: Network nav tab active on Network sub-routes
 - **WHEN** the user is on `/network/relationships` or `/network/graph`
 - **THEN** the Network tab in the top navbar is highlighted as active
+
+#### Scenario: User sees Notebook tab
+- **WHEN** the user views any page
+- **THEN** the top navigation bar displays a "Notebook" tab
+
+#### Scenario: Notebook tab is highlighted on notebook routes
+- **WHEN** the user is on `/notebook` or `/notebook/some-page`
+- **THEN** the "Notebook" tab is highlighted in the navigation bar
 
 ### Requirement: List sidebar navigation
 The system SHALL display all lists in the sidebar, ordered by position. Selecting a list SHALL load its content in the center panel.
@@ -209,6 +217,17 @@ The system SHALL display a task's full details in the right panel when selected.
 #### Scenario: Phone viewport detail panel touch targets
 - **WHEN** the viewport is 640px or narrower
 - **THEN** tag buttons, form inputs, and action buttons in the detail panel have a minimum touch target of 44px height
+
+### Requirement: Task detail panel includes notebook mentions
+The task detail panel SHALL include a collapsible "Notebook Mentions" section showing pages that mention the selected task. The section SHALL fetch data from `GET /api/notebook/mentions/task/{id}/` and display each entry as a clickable row with page title, type badge, and content snippet. Clicking an entry SHALL navigate to `/notebook/{slug}`. The section SHALL be hidden when there are no mentions.
+
+#### Scenario: Task with notebook mentions
+- **WHEN** the user views a task that is mentioned in 2 notebook pages
+- **THEN** a "Notebook Mentions" section displays with 2 entries
+
+#### Scenario: Task with no notebook mentions
+- **WHEN** the user views a task with no notebook mentions
+- **THEN** the "Notebook Mentions" section is not displayed
 
 ### Requirement: Live Markdown editor
 The system SHALL provide a block-based Markdown editor for task notes. Inactive blocks SHALL show rendered HTML; the active block SHALL show raw Markdown. The editor SHALL provide visual affordances indicating that content is editable.
@@ -498,6 +517,17 @@ The system SHALL provide a dedicated page at `/projects` for project management 
 #### Scenario: Phone viewport card action buttons are touch-sized
 - **WHEN** the viewport is 640px or narrower
 - **THEN** project card action buttons have a minimum touch target of 44px height
+
+### Requirement: Project detail view includes notebook mentions
+The project page SHALL include a collapsible "Notebook Mentions" section on project cards for projects that are mentioned in notebook pages. The section SHALL fetch data from `GET /api/notebook/mentions/project/{id}/` and display entries as clickable rows.
+
+#### Scenario: Project with notebook mentions
+- **WHEN** a project is mentioned in notebook pages
+- **THEN** the project card displays a "Notebook Mentions" section with clickable entries
+
+#### Scenario: Project with no notebook mentions
+- **WHEN** a project has no notebook mentions
+- **THEN** no "Notebook Mentions" section is shown on the project card
 
 ### Requirement: Timesheet page
 The system SHALL provide a dedicated page at `/timesheet` for weekly time tracking with navigation and summaries. The task selector SHALL use a hierarchical checkbox-based picker that displays tasks with indentation reflecting their parent-child nesting, replacing the native `<select multiple>`. Time entry rows SHALL display associated task names with hierarchy breadcrumbs instead of omitting task information. On phone viewports (640px and below), the summary bar, entry form, week navigation, and entry rows SHALL wrap/stack to prevent horizontal overflow.

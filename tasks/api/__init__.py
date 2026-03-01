@@ -13,6 +13,7 @@ from network.api import (
     relationships,
     task_links,
 )
+from notebook.api import pages as notebook_pages
 from tasks.api import dashboard, export, import_tasks, lists, project_links, projects, search, sections, tags, tasks, timesheet, upcoming
 
 api = NinjaAPI(urls_namespace="tasks_api")
@@ -39,6 +40,7 @@ api.add_router("", relationships.router)
 api.add_router("", task_links.router)
 api.add_router("", graph.router)
 api.add_router("", leads.router)
+api.add_router("", notebook_pages.router)
 
 
 @api.get("/health/")

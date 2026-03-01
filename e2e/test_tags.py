@@ -13,8 +13,10 @@ class TestTags:
         page.locator(f'[data-list-id="{task_list.id}"]').click()
 
         page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').click()
-        page.locator("#tag-input").fill("urgent")
-        page.locator("form.tag-form button[type='submit']").click()
+        detail = page.locator("#detail-panel")
+        tag_input = detail.get_by_placeholder("Add tag...")
+        tag_input.fill("urgent")
+        detail.locator(".typeahead-option").first.click()
 
         expect(page.locator("#detail-panel")).to_contain_text("urgent")
         fresh_from_db(tasks[0])
@@ -29,7 +31,11 @@ class TestTags:
         page.locator(f'[data-list-id="{task_list.id}"]').click()
         page.locator(f'.task-row[data-task-id="{tasks[0].id}"]').click()
 
-        expect(page.locator('#tag-suggestions option[value="errand"]')).to_have_count(0)
+        detail = page.locator("#detail-panel")
+        tag_input = detail.get_by_placeholder("Add tag...")
+        tag_input.fill("errand")
+        # The existing tag should not appear as a selectable option (only "Create" may appear)
+        expect(detail.locator(".typeahead-option:not(.typeahead-create)")).to_have_count(0)
 
     def test_remove_tag(self, page, base_url, seed_full):
         task = seed_full["tasks"][0]

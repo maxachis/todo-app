@@ -11,7 +11,7 @@ class TestTaskCompletion:
         page.goto(base_url)
         page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        page.locator(f'.task-row[data-task-id="{tasks[0].id}"] input[type="checkbox"]').click()
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"] .checkbox-wrap').click()
 
         expect(page.locator(".toast")).to_contain_text("completed")
         page.wait_for_timeout(300)
@@ -23,7 +23,7 @@ class TestTaskCompletion:
         page.goto(base_url)
         page.locator(f'[data-list-id="{task_list.id}"]').click()
 
-        page.locator(f'.task-row[data-task-id="{tasks[0].id}"] input[type="checkbox"]').click()
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"] .checkbox-wrap').click()
         expect(page.locator(".toast")).to_be_visible()
 
         page.locator('.toast .action:has-text("Undo")').click()
@@ -39,7 +39,7 @@ class TestTaskCompletion:
         page.goto(base_url)
         page.locator(f'[data-list-id="{task_list.id}"]').click()
         page.locator('.completed-toggle:has-text("Completed")').click()
-        page.locator(f'.task-row[data-task-id="{tasks[0].id}"] input[type="checkbox"]').click()
+        page.locator(f'.task-row[data-task-id="{tasks[0].id}"] .checkbox-wrap').click()
         page.wait_for_timeout(400)
 
         fresh_from_db(tasks[0])
