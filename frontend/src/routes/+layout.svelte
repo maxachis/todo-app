@@ -5,6 +5,7 @@
 	import ToastContainer from '$lib/components/shared/ToastContainer.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
 	import ResizeHandle from '$lib/components/shared/ResizeHandle.svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { selectedTaskStore } from '$lib/stores/tasks';
 	import { selectedListStore } from '$lib/stores/lists';
@@ -92,6 +93,11 @@
 		$page.url.pathname;
 		settingsOpen = false;
 	});
+
+	function navigate(event: MouseEvent, href: string): void {
+		event.preventDefault();
+		goto(href);
+	}
 </script>
 
 <svelte:window bind:innerWidth onclick={handleSettingsClickOutside} onkeydown={handleSettingsKeydown} />
@@ -107,7 +113,7 @@
 		</button>
 		<nav>
 			{#each tabs as tab}
-				<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}</a>
+				<a href={tab.href} class:active={$page.url.pathname === tab.href} onclick={(e) => navigate(e, tab.href)}>{tab.label}</a>
 			{/each}
 		</nav>
 		<div class="nav-spacer"></div>
@@ -182,7 +188,7 @@
 
 	<nav class="mobile-tabs">
 		{#each tabs as tab}
-			<a href={tab.href} class:active={tab.exact ? $page.url.pathname === tab.href : $page.url.pathname.startsWith(tab.href)}>{tab.label}</a>
+			<a href={tab.href} class:active={tab.exact ? $page.url.pathname === tab.href : $page.url.pathname.startsWith(tab.href)} onclick={(e) => navigate(e, tab.href)}>{tab.label}</a>
 		{/each}
 	</nav>
 </div>

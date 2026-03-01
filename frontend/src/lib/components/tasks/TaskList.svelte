@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Task } from '$lib';
 	import { moveTaskWithOptions, moveTask, refreshTasksView, taskDragLockedStore, setTaskDragLocked, draggedTaskIdStore, nestIntentStore } from '$lib/stores/tasks';
 	import { addToast } from '$lib/stores/toast';
@@ -24,8 +25,11 @@
 			.sort((a, b) => a.position - b.position);
 
 		// Detect tasks that just completed (in current list but not in new filtered set)
+		// Use untrack() to avoid reactive dependency on sortableActiveTasks — without this,
+		// writing sortableActiveTasks below would re-trigger this effect, causing cascading
+		// DnD zone reconfigurations with large task counts.
 		const activeIds = new Set(activeTasks.map((t) => t.id));
-		const justCompleted = sortableActiveTasks.filter((t) => !activeIds.has(t.id));
+		const justCompleted = untrack(() => sortableActiveTasks).filter((t) => !activeIds.has(t.id));
 
 		if (removalTimeout !== null) {
 			clearTimeout(removalTimeout);

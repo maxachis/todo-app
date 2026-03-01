@@ -136,10 +136,9 @@ def page(page):
 
 @pytest.fixture(autouse=True)
 def _reset_db(base_url):
-    Task.objects.all().delete()
-    Section.objects.all().delete()
-    List.objects.all().delete()
-    Tag.objects.all().delete()
+    from django.core.management import call_command
+
+    call_command("flush", "--no-input", verbosity=0)
 
 
 @pytest.fixture()
