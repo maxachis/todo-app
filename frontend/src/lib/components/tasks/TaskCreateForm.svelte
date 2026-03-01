@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as chrono from 'chrono-node';
 	import { createTask, selectTask } from '$lib/stores/tasks';
+	import { validateRequired } from '$lib/utils/validation';
 
 	let {
 		sectionId,
@@ -132,8 +133,8 @@
 
 	async function submit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
+		if (!validateRequired({ 'Title': title })) return;
 		const trimmed = title.trim();
-		if (!trimmed) return;
 		await createTask(sectionId, {
 			title: trimmed,
 			...(parentId !== null ? { parent_id: parentId } : {}),

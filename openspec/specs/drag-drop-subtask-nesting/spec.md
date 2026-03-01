@@ -5,7 +5,7 @@ Defines the drag-and-drop subtask nesting behavior, including midpoint-based dro
 ## Requirements
 
 ### Requirement: Midpoint-based drop determines reorder vs nest
-The system SHALL use cursor position relative to the drop target task row's vertical midpoint to determine drop behavior. Dropping above the midpoint SHALL reorder (insert before the target at the target's hierarchy level). Dropping below the midpoint SHALL nest (make the dragged task a subtask of the target).
+The system SHALL use cursor position relative to the drop target task row's vertical midpoint to determine drop behavior. Dropping above the midpoint SHALL reorder (insert before the target at the target's hierarchy level). Dropping below the midpoint SHALL nest (make the dragged task a subtask of the target). On touch devices, the drag interaction SHALL only begin after the touch-hold delay (defined in the `mobile-touch-hold-drag` capability) has elapsed, after which the existing midpoint-based detection SHALL apply unchanged.
 
 #### Scenario: Drop above midpoint reorders task before target
 - **WHEN** the user drags Task A and drops it above the vertical midpoint of Task B
@@ -26,8 +26,12 @@ The system SHALL use cursor position relative to the drop target task row's vert
 - **WHEN** the user drags a subtask and drops it above the midpoint of a sibling subtask
 - **THEN** the subtask SHALL be repositioned before the sibling within the same parent, preserving its nesting level
 
+#### Scenario: Touch device drag uses hold-then-midpoint detection
+- **WHEN** the user touches and holds a task for at least 200ms on a touch device, then drags it over another task
+- **THEN** the midpoint-based reorder vs nest detection SHALL apply identically to mouse-based drag
+
 ### Requirement: Visual feedback during drag indicates drop mode
-The system SHALL display distinct visual indicators on the drop target task row during drag to show whether the drop will reorder or nest.
+The system SHALL display distinct visual indicators on the drop target task row during drag to show whether the drop will reorder or nest. Drop-zone container outlines SHALL use the app's accent color (`--accent`) instead of the library default bright yellow.
 
 #### Scenario: Before mode shows horizontal line above target
 - **WHEN** the user drags a task and the cursor is above the midpoint of the target task row
@@ -40,6 +44,11 @@ The system SHALL display distinct visual indicators on the drop target task row 
 #### Scenario: Visual feedback clears on drag leave
 - **WHEN** the cursor leaves the target task row during drag
 - **THEN** all visual indicators (line, accent bar, background tint) SHALL be removed immediately
+
+#### Scenario: Drop-zone outline uses accent color
+- **WHEN** a drag-and-drop zone becomes an active drop target (tasks, sections, lists, or pinned tasks)
+- **THEN** the zone's outline SHALL be a warm brown derived from the app's accent color (not bright yellow)
+- **AND** the outline SHALL be visible in both light and dark themes
 
 ### Requirement: Frontend circular nesting prevention
 The system SHALL prevent dropping a task onto its own descendant on the frontend, without waiting for a backend error response.

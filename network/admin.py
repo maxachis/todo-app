@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from network.models import Person, Organization, RelationshipOrganizationPerson, RelationshipPersonPerson, Interaction, \
-    InteractionType, OrgType
+    InteractionType, OrgType, PersonPersonRelationshipType, OrgPersonRelationshipType
 
 # Register your models here.
 for model in [
@@ -12,6 +12,8 @@ for model in [
     Interaction,
     RelationshipPersonPerson,
     RelationshipOrganizationPerson,
+    PersonPersonRelationshipType,
+    OrgPersonRelationshipType,
 ]:
     admin.site.register(
         model

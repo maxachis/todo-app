@@ -10,6 +10,7 @@
 		deleteProjectLink
 	} from '$lib/stores/projects';
 	import NotebookMentions from '$lib/components/shared/NotebookMentions.svelte';
+	import { validateRequired } from '$lib/utils/validation';
 
 	let newName = $state('');
 	let newDescription = $state('');
@@ -26,7 +27,7 @@
 
 	async function handleCreate(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newName.trim()) return;
+		if (!validateRequired({ 'Name': newName })) return;
 		await createProject({ name: newName.trim(), description: newDescription.trim() });
 		newName = '';
 		newDescription = '';
@@ -51,7 +52,7 @@
 
 	async function handleAddLink(projectId: number, event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newLinkDescriptor.trim() || !newLinkUrl.trim()) return;
+		if (!validateRequired({ 'Label': newLinkDescriptor, 'URL': newLinkUrl })) return;
 		await createProjectLink(projectId, {
 			descriptor: newLinkDescriptor.trim(),
 			url: newLinkUrl.trim()

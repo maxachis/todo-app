@@ -32,7 +32,7 @@
 
 	const hasExactMatch = $derived(
 		inputText.trim() !== '' &&
-			options.some((o) => o.label.toLowerCase() === inputText.trim().toLowerCase())
+			options.some((o) => o.label.toLowerCase() === inputText.toLowerCase())
 	);
 
 	const showCreateOption = $derived(

@@ -42,7 +42,7 @@
 		<h3 class="pinned-header">&#128204; Pinned</h3>
 		<div
 			class="pinned-dnd-zone"
-			use:dndzone={{ items: sortablePinned, type: 'pinned-dnd', flipDurationMs: 150, centreDraggedOnCursor: false }}
+			use:dndzone={{ items: sortablePinned, type: 'pinned-dnd', flipDurationMs: 150, centreDraggedOnCursor: false, delayTouchStart: 200, dropTargetStyle: { outline: 'rgba(180, 88, 40, 0.7) solid 2px' } }}
 			onconsider={handleConsider}
 			onfinalize={handleFinalize}
 		>

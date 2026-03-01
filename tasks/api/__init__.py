@@ -11,6 +11,7 @@ from network.api import (
     people,
     person_tags,
     relationships,
+    relationship_types,
     task_links,
 )
 from notebook.api import pages as notebook_pages
@@ -37,6 +38,7 @@ api.add_router("", interaction_types.router)
 api.add_router("", interaction_mediums.router)
 api.add_router("", interactions.router)
 api.add_router("", relationships.router)
+api.add_router("", relationship_types.router)
 api.add_router("", task_links.router)
 api.add_router("", graph.router)
 api.add_router("", leads.router)

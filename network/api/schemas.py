@@ -43,6 +43,32 @@ class InteractionTypeUpdateInput(Schema):
     name: Optional[str] = None
 
 
+class PersonPersonRelationshipTypeSchema(Schema):
+    id: int
+    name: str
+
+
+class PersonPersonRelationshipTypeCreateInput(Schema):
+    name: str
+
+
+class PersonPersonRelationshipTypeUpdateInput(Schema):
+    name: Optional[str] = None
+
+
+class OrgPersonRelationshipTypeSchema(Schema):
+    id: int
+    name: str
+
+
+class OrgPersonRelationshipTypeCreateInput(Schema):
+    name: str
+
+
+class OrgPersonRelationshipTypeUpdateInput(Schema):
+    name: Optional[str] = None
+
+
 class PersonTagSchema(Schema):
     id: int
     name: str
@@ -143,6 +169,8 @@ class RelationshipPersonPersonSchema(Schema):
     id: int
     person_1_id: int
     person_2_id: int
+    relationship_type_id: Optional[int] = None
+    relationship_type_name: Optional[str] = None
     notes: str
     created_at: datetime
     updated_at: datetime
@@ -151,10 +179,12 @@ class RelationshipPersonPersonSchema(Schema):
 class RelationshipPersonPersonCreateInput(Schema):
     person_1_id: int
     person_2_id: int
+    relationship_type_id: Optional[int] = None
     notes: str = ""
 
 
 class RelationshipPersonPersonUpdateInput(Schema):
+    relationship_type_id: Optional[int] = None
     notes: Optional[str] = None
 
 
@@ -162,6 +192,8 @@ class RelationshipOrganizationPersonSchema(Schema):
     id: int
     organization_id: int
     person_id: int
+    relationship_type_id: Optional[int] = None
+    relationship_type_name: Optional[str] = None
     notes: str
     created_at: datetime
     updated_at: datetime
@@ -170,10 +202,12 @@ class RelationshipOrganizationPersonSchema(Schema):
 class RelationshipOrganizationPersonCreateInput(Schema):
     organization_id: int
     person_id: int
+    relationship_type_id: Optional[int] = None
     notes: str = ""
 
 
 class RelationshipOrganizationPersonUpdateInput(Schema):
+    relationship_type_id: Optional[int] = None
     notes: Optional[str] = None
 
 

@@ -3,6 +3,7 @@
 	import { api, type Organization, type OrgType } from '$lib';
 	import { ApiError } from '$lib/api/client';
 	import { addToast } from '$lib/stores/toast';
+	import { validateRequired } from '$lib/utils/validation';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
@@ -67,11 +68,11 @@
 
 	async function createOrganization(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newOrgName.trim() || !newOrgTypeId) return;
+		if (!validateRequired({ 'Name': newOrgName, 'Organization type': newOrgTypeId })) return;
 		try {
 			const created = await api.organizations.create({
 				name: newOrgName.trim(),
-				org_type_id: newOrgTypeId,
+				org_type_id: newOrgTypeId!,
 				notes: newOrgNotes.trim()
 			});
 			organizations = [...organizations, created].sort((a, b) => a.name.localeCompare(b.name));

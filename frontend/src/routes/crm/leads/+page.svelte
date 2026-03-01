@@ -4,6 +4,8 @@
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
+	import { validateRequired } from '$lib/utils/validation';
+	import { addToast } from '$lib/stores/toast';
 
 	const ltm = createLinkedTasksManager('leads');
 
@@ -72,8 +74,11 @@
 
 	async function createLead(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newTitle.trim()) return;
-		if (!newPersonId && !newOrgId) return;
+		if (!validateRequired({ 'Title': newTitle })) return;
+		if (!newPersonId && !newOrgId) {
+			addToast({ message: 'Required: Person or Organization', type: 'error' });
+			return;
+		}
 		const lead = await api.leads.create({
 			title: newTitle.trim(),
 			person_id: newPersonId,

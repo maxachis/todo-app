@@ -4,6 +4,8 @@ from .interaction import Interaction
 from .organization import Organization
 from .relationship.person_person import RelationshipPersonPerson
 from .relationship.organization_person import RelationshipOrganizationPerson
+from .relationship.person_person_type import PersonPersonRelationshipType
+from .relationship.org_person_type import OrgPersonRelationshipType
 from .org_type import OrgType
 from .interaction_type import InteractionType
 from .interaction_medium import InteractionMedium

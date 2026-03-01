@@ -38,6 +38,8 @@ The Interactions page create and edit forms SHALL use a multi-person selection U
 
 The Relationships page SHALL include filter controls in both the Person ↔ Person and Organization → Person panels. Each filter SHALL be a TypeaheadSelect placed between the create form and the relationship list, allowing users to filter the displayed relationships by a specific person or organization. The filter SHALL auto-sync from the create form's primary field (Person A or Organization) and SHALL be independently editable. The secondary dropdown in each create form (Person B or Person) SHALL exclude entities that already have a relationship with the selected primary entity.
 
+The Relationships page create forms SHALL include a TypeaheadSelect for relationship type, placed after the entity selectors and before the notes field. The person-person create form SHALL use person-person relationship types. The org-person create form SHALL use org-person relationship types. Both type selectors SHALL support inline creation via the `onCreate` callback, following the same pattern as org type and interaction type typeaheads. Each relationship row in the list SHALL display its relationship type name as a label when set. Existing relationships SHALL support inline editing of the relationship type via a TypeaheadSelect, following the same pattern as inline notes editing.
+
 #### Scenario: Relationships page shows filter controls
 - **WHEN** the user navigates to the Relationships page
 - **THEN** each panel SHALL display a filter TypeaheadSelect between the create form and the relationship list
@@ -49,6 +51,30 @@ The Relationships page SHALL include filter controls in both the Person ↔ Pers
 #### Scenario: Person B dropdown excludes existing connections
 - **WHEN** Person A is selected and has existing relationships
 - **THEN** the Person B dropdown SHALL only show people not yet connected to Person A
+
+#### Scenario: Person-person create form includes relationship type selector
+- **WHEN** the user is filling in the person-person create form
+- **THEN** a TypeaheadSelect for person-person relationship type is present after the person selectors and before notes
+
+#### Scenario: Org-person create form includes relationship type selector
+- **WHEN** the user is filling in the org-person create form
+- **THEN** a TypeaheadSelect for org-person relationship type is present after the entity selectors and before notes
+
+#### Scenario: Create relationship type inline via typeahead
+- **WHEN** a user types a name into the relationship type typeahead that does not match any existing type
+- **THEN** a "Create [typed name]" option appears, and selecting it creates the type via the API, adds it to the local type list, and selects it in the typeahead
+
+#### Scenario: Relationship list row displays type label
+- **WHEN** a relationship has a type set
+- **THEN** the list row displays the type name as a label
+
+#### Scenario: Relationship list row without type
+- **WHEN** a relationship has no type set
+- **THEN** the list row does not display a type label
+
+#### Scenario: Edit relationship type inline
+- **WHEN** the user clicks on a relationship's type area in the list
+- **THEN** a TypeaheadSelect appears allowing the user to change or set the relationship type, and the change is saved via the API on selection
 
 #### Scenario: View person detail with linked tasks
 - **WHEN** a user selects a person from the list
@@ -62,30 +88,6 @@ The Relationships page SHALL include filter controls in both the Person ↔ Pers
 - **WHEN** a user selects an interaction from the list
 - **THEN** the detail panel shows the interaction data and a "Linked Tasks" section listing tasks linked to that interaction
 
-#### Scenario: Linked tasks section supports add and remove
-- **WHEN** a person, organization, or interaction detail view is displayed
-- **THEN** the "Linked Tasks" section provides a typeahead input to search and link new tasks and a remove button on each linked task to unlink it
-
-#### Scenario: Person detail displays tags near top
-- **WHEN** a user selects a person with tags
-- **THEN** the detail panel displays tags after contact fields and before notes, with remove controls on each tag
-
-#### Scenario: Person detail tag typeahead with inline creation
-- **WHEN** a user types a name into the tag typeahead on the person detail that doesn't match any existing person tag
-- **THEN** a "Create [typed name]" option appears, and selecting it creates the tag and adds it to the person
-
-#### Scenario: Person list rows show tags inline
-- **WHEN** the people list loads and a person has tags
-- **THEN** the person's row displays the tag names inline
-
-#### Scenario: People list tag filter
-- **WHEN** the user selects a tag from the tag filter control on the people list
-- **THEN** the list reloads showing only people with that tag
-
-#### Scenario: Clear people list tag filter
-- **WHEN** the user clears the tag filter
-- **THEN** the list reloads showing all people
-
 #### Scenario: Create org type inline via typeahead on Organizations page
 - **WHEN** a user types a name into the org type typeahead (in the create or edit form) that does not match any existing org type
 - **THEN** a "Create [typed name]" option appears, and selecting it creates the org type via the API, adds it to the local type list, and selects it in the typeahead
@@ -93,66 +95,6 @@ The Relationships page SHALL include filter controls in both the Person ↔ Pers
 #### Scenario: Create interaction type inline via typeahead on Interactions page
 - **WHEN** a user types a name into the interaction type typeahead (in the create or edit form) that does not match any existing interaction type
 - **THEN** a "Create [typed name]" option appears, and selecting it creates the interaction type via the API, adds it to the local type list, and selects it in the typeahead
-
-#### Scenario: Add multiple people in interaction create form
-- **WHEN** a user selects "Alice" then "Bob" from the person typeahead in the interaction create form
-- **THEN** both appear as removable chips and both person IDs are included when the form is submitted
-
-#### Scenario: Remove a person from interaction create form
-- **WHEN** the user clicks the remove control on a person chip in the interaction create form
-- **THEN** that person is removed from the selection
-
-#### Scenario: Edit interaction loads existing people as chips
-- **WHEN** the user selects an interaction that has multiple people
-- **THEN** the edit form shows all associated people as removable chips in the person selection area
-
-#### Scenario: Interaction list shows multiple attendee names
-- **WHEN** an interaction with people "Doe, Jane" and "Smith, Bob" appears in the list
-- **THEN** the list item title shows both names
-
-#### Scenario: Interaction list truncates many attendees
-- **WHEN** an interaction with 5 people appears in the list
-- **THEN** the list item title shows the first 2 names followed by "+3 more"
-
-#### Scenario: Select interaction type via typeahead in interaction create form
-- **WHEN** a user types into the interaction type field of the interaction create form
-- **THEN** a filtered list of interaction types appears matching the typed text, and selecting one sets the type for the new interaction
-
-#### Scenario: Select interaction type via typeahead in interaction edit form
-- **WHEN** a user types into the interaction type field of the interaction edit form
-- **THEN** a filtered list of interaction types appears matching the typed text, and selecting one updates the type for the interaction
-
-#### Scenario: Select org type via typeahead in organization create form
-- **WHEN** a user types into the org type field of the organization create form
-- **THEN** a filtered list of org types appears matching the typed text, and selecting one sets the org type for the new organization
-
-#### Scenario: Select org type via typeahead in organization edit form
-- **WHEN** a user types into the org type field of the organization edit form
-- **THEN** a filtered list of org types appears matching the typed text, and selecting one updates the org type for the organization
-
-#### Scenario: People list includes sort controls
-- **WHEN** the People page loads
-- **THEN** a sort control bar is visible between the create form and the people list, showing the active sort field and direction
-
-#### Scenario: People list includes follow-up status sort option
-- **WHEN** the user opens the sort field dropdown on the People page
-- **THEN** "Follow-up status" appears as a sort option alongside existing name and cadence options
-
-#### Scenario: People list items show follow-up status
-- **WHEN** the People page loads and a person has a follow-up cadence set
-- **THEN** the list item displays a color-coded status indicator with days-since and cadence values
-
-#### Scenario: People detail shows last interaction
-- **WHEN** a user selects a person who has recorded interactions
-- **THEN** the detail panel displays the date and type of their most recent interaction
-
-#### Scenario: People detail shows overdue warning
-- **WHEN** a user selects a person who is overdue for follow-up
-- **THEN** the detail panel displays a visual overdue warning
-
-#### Scenario: People detail includes quick-log interaction form
-- **WHEN** a user selects a person from the list
-- **THEN** the detail panel includes an inline form to log a new interaction with type selector and date field defaulting to today
 
 ### Requirement: Editable relationship notes on the Relationships page
 The system SHALL allow users to edit the notes field on existing person-to-person and organization-to-person relationships directly from the Relationships page.
@@ -178,14 +120,14 @@ The system SHALL allow users to edit the notes field on existing person-to-perso
 - **THEN** an empty textarea appears for entering notes, and saving persists the new notes
 
 ### Requirement: API client update methods for relationships
-The system SHALL provide typed API client methods for updating existing person-to-person and organization-to-person relationships.
+The system SHALL provide typed API client methods for updating existing person-to-person and organization-to-person relationships. The update payloads SHALL accept an optional `relationship_type_id` field.
 
 #### Scenario: Update person-to-person relationship
-- **WHEN** the client calls `api.relationships.people.update(id, { notes })`
+- **WHEN** the client calls `api.relationships.people.update(id, { notes, relationship_type_id })`
 - **THEN** a PUT request is sent to `/relationships/people/{id}/` with the payload and the response is typed as `RelationshipPersonPerson`
 
 #### Scenario: Update organization-to-person relationship
-- **WHEN** the client calls `api.relationships.organizations.update(id, { notes })`
+- **WHEN** the client calls `api.relationships.organizations.update(id, { notes, relationship_type_id })`
 - **THEN** a PUT request is sent to `/relationships/organizations/{id}/` with the payload and the response is typed as `RelationshipOrganizationPerson`
 
 ### Requirement: People create form includes email and LinkedIn fields
@@ -226,7 +168,7 @@ The People page detail panel SHALL display a non-empty email as a clickable `mai
 - **THEN** no contact links are shown in the detail panel
 
 ### Requirement: Graph visualization parity
-The system SHALL present the network graph in Svelte with equivalent behavior to the existing network app visualization. Graph node, edge, and label colors SHALL be derived from the app's CSS variable theme system rather than hardcoded hex values. Organization nodes SHALL use the `--accent` color. Person nodes SHALL use the `--text-tertiary` color. Edge lines SHALL use the `--border` color. Edge note labels SHALL use the `--text-tertiary` color. Node text labels SHALL use the `--text-primary` color. Graph colors SHALL update automatically when the user toggles between light and dark themes.
+The system SHALL present the network graph in Svelte with equivalent behavior to the existing network app visualization. Graph node, edge, and label colors SHALL be derived from the app's CSS variable theme system rather than hardcoded hex values. Organization nodes SHALL use the `--accent` color. Person nodes SHALL use the `--text-tertiary` color. Edge lines SHALL use the `--border` color. Edge note labels SHALL use the `--text-tertiary` color. Node text labels SHALL use the `--text-primary` color. Graph colors SHALL update automatically when the user toggles between light and dark themes. The graph controls panel SHALL include a "Scale nodes by connections" checkbox that, when enabled, scales node radii proportionally to each node's connection count computed from visible edges.
 
 #### Scenario: View graph
 - **WHEN** a user opens the Graph view
@@ -247,6 +189,10 @@ The system SHALL present the network graph in Svelte with equivalent behavior to
 #### Scenario: Graph colors update on theme toggle
 - **WHEN** the user switches between light and dark mode while viewing the graph
 - **THEN** all graph node, edge, and label colors SHALL update to reflect the new theme's CSS variable values without losing the current graph layout or zoom state
+
+#### Scenario: Graph includes node sizing toggle
+- **WHEN** a user opens the Graph view
+- **THEN** the Filters card includes a "Scale nodes by connections" checkbox that controls connection-weighted node sizing
 
 ### Requirement: Person detail view includes notebook mentions
 The person detail view SHALL include a collapsible "Notebook Mentions" section showing pages that mention this person. The section SHALL fetch data from `GET /api/notebook/mentions/person/{id}/` and display each entry as a clickable row with page title, type badge (daily/wiki), and content snippet. The section SHALL be hidden when there are no mentions.
@@ -273,3 +219,33 @@ The organization detail view SHALL include a collapsible "Notebook Mentions" sec
 #### Scenario: Organization with no notebook mentions
 - **WHEN** the user views an organization with no notebook mentions
 - **THEN** the "Notebook Mentions" section is not displayed
+
+### Requirement: API client methods for relationship types
+The system SHALL provide typed API client methods for listing and creating person-person and org-person relationship types. The relationship type client methods SHALL follow the same pattern as `api.orgTypes` and `api.interactionTypes`.
+
+#### Scenario: List person-person relationship types
+- **WHEN** the client calls `api.relationshipTypes.people.getAll()`
+- **THEN** a GET request is sent to `/relationship-types/people/` and the response is typed as `PersonPersonRelationshipType[]`
+
+#### Scenario: Create person-person relationship type
+- **WHEN** the client calls `api.relationshipTypes.people.create({ name: "Coworker" })`
+- **THEN** a POST request is sent to `/relationship-types/people/` and the response is typed as `PersonPersonRelationshipType`
+
+#### Scenario: List org-person relationship types
+- **WHEN** the client calls `api.relationshipTypes.organizations.getAll()`
+- **THEN** a GET request is sent to `/relationship-types/organizations/` and the response is typed as `OrgPersonRelationshipType[]`
+
+#### Scenario: Create org-person relationship type
+- **WHEN** the client calls `api.relationshipTypes.organizations.create({ name: "CEO" })`
+- **THEN** a POST request is sent to `/relationship-types/organizations/` and the response is typed as `OrgPersonRelationshipType`
+
+### Requirement: Relationship create payloads include type
+The relationship create API client methods SHALL accept an optional `relationship_type_id` field in their payloads.
+
+#### Scenario: Create person-person relationship with type via client
+- **WHEN** the client calls `api.relationships.people.create({ person_1_id, person_2_id, relationship_type_id })`
+- **THEN** a POST request is sent to `/relationships/people/` including the `relationship_type_id` field
+
+#### Scenario: Create org-person relationship with type via client
+- **WHEN** the client calls `api.relationships.organizations.create({ organization_id, person_id, relationship_type_id })`
+- **THEN** a POST request is sent to `/relationships/organizations/` including the `relationship_type_id` field

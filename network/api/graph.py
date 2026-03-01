@@ -14,8 +14,8 @@ router = Router(tags=["network-graph"])
 def graph_data(request):
     people = Person.objects.order_by("last_name", "first_name")
     organizations = Organization.objects.select_related("org_type").order_by("name")
-    person_person = RelationshipPersonPerson.objects.select_related("person_1", "person_2")
-    organization_person = RelationshipOrganizationPerson.objects.select_related("organization", "person")
+    person_person = RelationshipPersonPerson.objects.select_related("person_1", "person_2", "relationship_type")
+    organization_person = RelationshipOrganizationPerson.objects.select_related("organization", "person", "relationship_type")
 
     nodes = []
     for person in people:
@@ -60,6 +60,8 @@ def graph_data(request):
                     "target": f"person-{relationship.person_2_id}",
                     "type": "person-person",
                     "notes": relationship.notes,
+                    "relationship_type_id": relationship.relationship_type_id,
+                    "relationship_type_name": relationship.relationship_type.name if relationship.relationship_type else None,
                 }
             }
         )
@@ -73,6 +75,8 @@ def graph_data(request):
                     "target": f"person-{relationship.person_id}",
                     "type": "organization-person",
                     "notes": relationship.notes,
+                    "relationship_type_id": relationship.relationship_type_id,
+                    "relationship_type_name": relationship.relationship_type.name if relationship.relationship_type else None,
                 }
             }
         )

@@ -7,6 +7,7 @@
 	import ResizeHandle from '$lib/components/shared/ResizeHandle.svelte';
 	import { page } from '$app/stores';
 	import { selectedTaskStore } from '$lib/stores/tasks';
+	import { selectedListStore } from '$lib/stores/lists';
 	import { sidebarWidth, detailWidth, savePanelWidths, clampWidths } from '$lib/stores/panelWidths';
 	import { themePreference, cycleTheme, type ThemePreference } from '$lib/stores/theme';
 	import { completionSoundPreference, type CompletionSound } from '$lib/stores/completionSound';
@@ -40,6 +41,11 @@
 		if ($selectedTaskStore !== null) {
 			detailOpen = true;
 		}
+	});
+
+	$effect(() => {
+		$selectedListStore;
+		sidebarOpen = false;
 	});
 
 	const tabs = [

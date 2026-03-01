@@ -9,6 +9,12 @@ class RelationshipOrganizationPerson(models.Model):
         to="network.Person",
         on_delete=models.CASCADE
     )
+    relationship_type = models.ForeignKey(
+        "network.OrgPersonRelationshipType",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
     notes = models.TextField(
         blank=True
     )

@@ -22,8 +22,10 @@ import type {
   MoveInput,
   MoveTaskInput,
   Organization,
+  OrgPersonRelationshipType,
   OrgType,
   Person,
+  PersonPersonRelationshipType,
   PersonTag,
   Project,
   ProjectLink,
@@ -238,12 +240,12 @@ export const api = {
   relationships: {
     people: {
       getAll: () => apiRequest<RelationshipPersonPerson[]>('/relationships/people/'),
-      create: (payload: { person_1_id: number; person_2_id: number; notes?: string }) =>
+      create: (payload: { person_1_id: number; person_2_id: number; relationship_type_id?: number | null; notes?: string }) =>
         apiRequest<RelationshipPersonPerson>('/relationships/people/', {
           method: 'POST',
           body: JSON.stringify(payload)
         }),
-      update: (id: number, payload: { notes?: string }) =>
+      update: (id: number, payload: { relationship_type_id?: number | null; notes?: string }) =>
         apiRequest<RelationshipPersonPerson>(`/relationships/people/${id}/`, {
           method: 'PUT',
           body: JSON.stringify(payload)
@@ -252,18 +254,36 @@ export const api = {
     },
     organizations: {
       getAll: () => apiRequest<RelationshipOrganizationPerson[]>('/relationships/organizations/'),
-      create: (payload: { organization_id: number; person_id: number; notes?: string }) =>
+      create: (payload: { organization_id: number; person_id: number; relationship_type_id?: number | null; notes?: string }) =>
         apiRequest<RelationshipOrganizationPerson>('/relationships/organizations/', {
           method: 'POST',
           body: JSON.stringify(payload)
         }),
-      update: (id: number, payload: { notes?: string }) =>
+      update: (id: number, payload: { relationship_type_id?: number | null; notes?: string }) =>
         apiRequest<RelationshipOrganizationPerson>(`/relationships/organizations/${id}/`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         }),
       remove: (id: number) =>
         apiRequest<void>(`/relationships/organizations/${id}/`, { method: 'DELETE' })
+    }
+  },
+  relationshipTypes: {
+    people: {
+      getAll: () => apiRequest<PersonPersonRelationshipType[]>('/relationship-types/people/'),
+      create: (payload: { name: string }) =>
+        apiRequest<PersonPersonRelationshipType>('/relationship-types/people/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        })
+    },
+    organizations: {
+      getAll: () => apiRequest<OrgPersonRelationshipType[]>('/relationship-types/organizations/'),
+      create: (payload: { name: string }) =>
+        apiRequest<OrgPersonRelationshipType>('/relationship-types/organizations/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        })
     }
   },
   leads: {

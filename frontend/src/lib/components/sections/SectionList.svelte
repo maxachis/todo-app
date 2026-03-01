@@ -107,7 +107,7 @@
 <div class="section-list">
 	<div
 		class="sections-dnd"
-		use:dragHandleZone={{ items: sortableSections, type: 'section-dnd', flipDurationMs: FLIP_DURATION, useCursorForDetection: true }}
+		use:dragHandleZone={{ items: sortableSections, type: 'section-dnd', flipDurationMs: FLIP_DURATION, useCursorForDetection: true, delayTouchStart: 200, dropTargetStyle: { outline: 'rgba(180, 88, 40, 0.7) solid 2px' } }}
 		onconsider={handleSectionConsider}
 		onfinalize={handleSectionFinalize}
 	>

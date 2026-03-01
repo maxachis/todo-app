@@ -5,6 +5,7 @@
 	import { listsStore, selectedListStore, createList, deleteList, loadLists, selectList, updateList } from '$lib/stores/lists';
 	import { moveTask } from '$lib/stores/tasks';
 	import { addToast } from '$lib/stores/toast';
+	import { validateRequired } from '$lib/utils/validation';
 	import EmojiPicker from './EmojiPicker.svelte';
 	import ListItem from './ListItem.svelte';
 	import ExportButton from '../shared/ExportButton.svelte';
@@ -26,8 +27,8 @@
 
 	async function submitCreate(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
+		if (!validateRequired({ 'Name': creatingName })) return;
 		const name = creatingName.trim();
-		if (!name) return;
 		await createList({ name, emoji: creatingEmoji });
 		creatingName = '';
 	}
@@ -99,7 +100,7 @@
 		<button type="submit">Add</button>
 	</form>
 
-	<div class="list-dnd-zone" use:dndzone={{ items: sortableLists, flipDurationMs: 150 }} onconsider={handleConsider} onfinalize={handleReorder}>
+	<div class="list-dnd-zone" use:dndzone={{ items: sortableLists, flipDurationMs: 150, delayTouchStart: 200, dropTargetStyle: { outline: 'rgba(180, 88, 40, 0.7) solid 2px' } }} onconsider={handleConsider} onfinalize={handleReorder}>
 		{#each sortableLists as list (list.id)}
 			<ListItem
 				{list}

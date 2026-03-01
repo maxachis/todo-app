@@ -3,25 +3,32 @@
 	import {
 		api,
 		type Organization,
+		type OrgPersonRelationshipType,
 		type Person,
+		type PersonPersonRelationshipType,
 		type RelationshipOrganizationPerson,
 		type RelationshipPersonPerson
 	} from '$lib';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { addToast } from '$lib/stores/toast';
+	import { validateRequired } from '$lib/utils/validation';
 
 	let people: Person[] = $state([]);
 	let organizations: Organization[] = $state([]);
 	let personRelationships: RelationshipPersonPerson[] = $state([]);
 	let orgRelationships: RelationshipOrganizationPerson[] = $state([]);
+	let ppRelTypes: PersonPersonRelationshipType[] = $state([]);
+	let opRelTypes: OrgPersonRelationshipType[] = $state([]);
 
 	let newPerson1Id = $state<number | null>(null);
 	let newPersonBIds = $state<number[]>([]);
+	let newPersonTypeId = $state<number | null>(null);
 	let newPersonNotes = $state('');
 	let submittingPerson = $state(false);
 
 	let newOrgId = $state<number | null>(null);
 	let newOrgPersonIds = $state<number[]>([]);
+	let newOrgTypeId = $state<number | null>(null);
 	let newOrgNotes = $state('');
 	let submittingOrg = $state(false);
 
@@ -138,11 +145,38 @@
 		node.focus();
 	}
 
+	async function handleCreatePPRelType(name: string): Promise<{ id: number; label: string }> {
+		const created = await api.relationshipTypes.people.create({ name });
+		ppRelTypes = [...ppRelTypes, created].sort((a, b) => a.name.localeCompare(b.name));
+		return { id: created.id, label: created.name };
+	}
+
+	async function handleCreateOPRelType(name: string): Promise<{ id: number; label: string }> {
+		const created = await api.relationshipTypes.organizations.create({ name });
+		opRelTypes = [...opRelTypes, created].sort((a, b) => a.name.localeCompare(b.name));
+		return { id: created.id, label: created.name };
+	}
+
+	async function updateRelType(relId: number, kind: 'person' | 'org', typeId: number): Promise<void> {
+		if (kind === 'person') {
+			const updated = await api.relationships.people.update(relId, { relationship_type_id: typeId });
+			personRelationships = personRelationships.map((r) => (r.id === relId ? updated : r));
+		} else {
+			const updated = await api.relationships.organizations.update(relId, { relationship_type_id: typeId });
+			orgRelationships = orgRelationships.map((r) => (r.id === relId ? updated : r));
+		}
+	}
+
 	async function loadData(): Promise<void> {
-		people = await api.people.getAll();
-		organizations = await api.organizations.getAll();
-		personRelationships = await api.relationships.people.getAll();
-		orgRelationships = await api.relationships.organizations.getAll();
+		[people, organizations, personRelationships, orgRelationships, ppRelTypes, opRelTypes] =
+			await Promise.all([
+				api.people.getAll(),
+				api.organizations.getAll(),
+				api.relationships.people.getAll(),
+				api.relationships.organizations.getAll(),
+				api.relationshipTypes.people.getAll(),
+				api.relationshipTypes.organizations.getAll()
+			]);
 	}
 
 	onMount(() => {
@@ -161,15 +195,17 @@
 
 	async function createPersonRelationship(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newPerson1Id || newPersonBIds.length === 0) return;
+		if (!validateRequired({ 'Person A': newPerson1Id, 'Person B': newPersonBIds })) return;
 		submittingPerson = true;
-		const personAId = newPerson1Id;
+		const personAId = newPerson1Id!;
 		const notes = newPersonNotes;
+		const typeId = newPersonTypeId;
 		const results = await Promise.allSettled(
 			newPersonBIds.map((personBId) =>
 				api.relationships.people.create({
 					person_1_id: personAId,
 					person_2_id: personBId,
+					...(typeId ? { relationship_type_id: typeId } : {}),
 					notes
 				})
 			)
@@ -188,6 +224,7 @@
 		newPersonBIds = newPersonBIds.filter((id) => !successIds.includes(id));
 		if (newPersonBIds.length === 0) {
 			newPerson1Id = null;
+			newPersonTypeId = null;
 			newPersonNotes = '';
 		}
 		submittingPerson = false;
@@ -195,15 +232,17 @@
 
 	async function createOrgRelationship(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newOrgId || newOrgPersonIds.length === 0) return;
+		if (!validateRequired({ 'Organization': newOrgId, 'People': newOrgPersonIds })) return;
 		submittingOrg = true;
-		const orgId = newOrgId;
+		const orgId = newOrgId!;
 		const notes = newOrgNotes;
+		const typeId = newOrgTypeId;
 		const results = await Promise.allSettled(
 			newOrgPersonIds.map((personId) =>
 				api.relationships.organizations.create({
 					organization_id: orgId,
 					person_id: personId,
+					...(typeId ? { relationship_type_id: typeId } : {}),
 					notes
 				})
 			)
@@ -222,6 +261,7 @@
 		newOrgPersonIds = newOrgPersonIds.filter((id) => !successIds.includes(id));
 		if (newOrgPersonIds.length === 0) {
 			newOrgId = null;
+			newOrgTypeId = null;
 			newOrgNotes = '';
 		}
 		submittingOrg = false;
@@ -271,6 +311,12 @@
 						</div>
 					{/if}
 				</div>
+				<TypeaheadSelect
+					options={ppRelTypes.map((t) => ({ id: t.id, label: t.name }))}
+					placeholder="Relationship type"
+					bind:value={newPersonTypeId}
+					onCreate={handleCreatePPRelType}
+				/>
 				<textarea bind:value={newPersonNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
 				<button type="submit" disabled={newPersonBIds.length === 0 || submittingPerson}>+ Add {newPersonBIds.length} Relationship{newPersonBIds.length !== 1 ? 's' : ''}</button>
 			</form>
@@ -289,7 +335,21 @@
 			<div class="list">
 				{#each filteredPersonRelationships as rel (rel.id)}
 					<div class="list-item">
-						<div class="title">{personLabel(rel.person_1_id)} ↔ {personLabel(rel.person_2_id)}</div>
+						<div class="title-row">
+							<span class="title">{personLabel(rel.person_1_id)} ↔ {personLabel(rel.person_2_id)}</span>
+							{#if rel.relationship_type_name}
+								<span class="type-label">{rel.relationship_type_name}</span>
+							{/if}
+						</div>
+						<div class="type-select">
+							<TypeaheadSelect
+								options={ppRelTypes.map((t) => ({ id: t.id, label: t.name }))}
+								placeholder="Set type"
+								value={rel.relationship_type_id}
+								onSelect={(id) => updateRelType(rel.id, 'person', id)}
+								onCreate={handleCreatePPRelType}
+							/>
+						</div>
 						{#if editingId === rel.id && editingType === 'person'}
 							<textarea
 								class="edit-notes"
@@ -340,6 +400,12 @@
 						</div>
 					{/if}
 				</div>
+				<TypeaheadSelect
+					options={opRelTypes.map((t) => ({ id: t.id, label: t.name }))}
+					placeholder="Role / type"
+					bind:value={newOrgTypeId}
+					onCreate={handleCreateOPRelType}
+				/>
 				<textarea bind:value={newOrgNotes} placeholder="Notes" onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.closest('form')?.requestSubmit(); } }}></textarea>
 				<button type="submit" disabled={newOrgPersonIds.length === 0 || submittingOrg}>+ Add {newOrgPersonIds.length} Relationship{newOrgPersonIds.length !== 1 ? 's' : ''}</button>
 			</form>
@@ -358,7 +424,21 @@
 			<div class="list">
 				{#each filteredOrgRelationships as rel (rel.id)}
 					<div class="list-item">
-						<div class="title">{orgLabel(rel.organization_id)} → {personLabel(rel.person_id)}</div>
+						<div class="title-row">
+							<span class="title">{orgLabel(rel.organization_id)} → {personLabel(rel.person_id)}</span>
+							{#if rel.relationship_type_name}
+								<span class="type-label">{rel.relationship_type_name}</span>
+							{/if}
+						</div>
+						<div class="type-select">
+							<TypeaheadSelect
+								options={opRelTypes.map((t) => ({ id: t.id, label: t.name }))}
+								placeholder="Set role"
+								value={rel.relationship_type_id}
+								onSelect={(id) => updateRelType(rel.id, 'org', id)}
+								onCreate={handleCreateOPRelType}
+							/>
+						</div>
 						{#if editingId === rel.id && editingType === 'org'}
 							<textarea
 								class="edit-notes"
@@ -536,9 +616,30 @@
 		gap: 0.35rem;
 	}
 
+	.title-row {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+
 	.title {
 		font-weight: 600;
 		color: var(--text-primary);
+	}
+
+	.type-label {
+		font-size: 0.7rem;
+		padding: 0.1rem 0.35rem;
+		background: var(--accent-light, var(--bg-surface-hover, #e8f0fe));
+		border: 1px solid var(--border-light, var(--border));
+		border-radius: var(--radius-sm);
+		color: var(--text-secondary, var(--text-primary));
+		white-space: nowrap;
+	}
+
+	.type-select {
+		font-size: 0.85rem;
 	}
 
 	.meta {

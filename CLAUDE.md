@@ -32,8 +32,8 @@ Top navbar tabs: Tasks, Dashboard, Projects, Timesheet, CRM, Network. CRM has su
 # Backend dev server
 python manage.py runserver 0.0.0.0:8000
 
-# Frontend dev server
-cd frontend && npm run dev
+# Frontend dev server (use --host in devcontainer)
+cd frontend && npm run dev -- --host 0.0.0.0
 
 # Frontend type/lint checks
 cd frontend && npm run check

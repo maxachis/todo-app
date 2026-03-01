@@ -14,6 +14,12 @@ class RelationshipPersonPerson(models.Model):
         related_name="relationships_incoming",
     )
 
+    relationship_type = models.ForeignKey(
+        "network.PersonPersonRelationshipType",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
     notes = models.TextField(
         blank=True
     )

@@ -9,6 +9,7 @@ from network.api import (
     people,
     person_tags,
     relationships,
+    relationship_types,
     task_links,
 )
 
@@ -21,6 +22,7 @@ __all__ = [
     "interaction_mediums",
     "interactions",
     "relationships",
+    "relationship_types",
     "task_links",
     "graph",
     "leads",

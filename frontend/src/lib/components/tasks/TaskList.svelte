@@ -16,11 +16,37 @@
 	} = $props();
 
 	let sortableActiveTasks = $state<Task[]>([]);
+	let removalTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	$effect(() => {
-		sortableActiveTasks = tasks
+		const activeTasks = tasks
 			.filter((t) => !t.is_completed && t.parent_id === null)
 			.sort((a, b) => a.position - b.position);
+
+		// Detect tasks that just completed (in current list but not in new filtered set)
+		const activeIds = new Set(activeTasks.map((t) => t.id));
+		const justCompleted = sortableActiveTasks.filter((t) => !activeIds.has(t.id));
+
+		if (removalTimeout !== null) {
+			clearTimeout(removalTimeout);
+			removalTimeout = null;
+		}
+
+		if (justCompleted.length > 0) {
+			// Keep completed tasks visible briefly so the check animation plays
+			// and the scroll position adjusts smoothly (prevents black flash)
+			const completedInPlace = justCompleted.map((t) => {
+				const updated = tasks.find((task) => task.id === t.id);
+				return updated ?? t;
+			});
+			sortableActiveTasks = [...activeTasks, ...completedInPlace];
+			removalTimeout = setTimeout(() => {
+				sortableActiveTasks = activeTasks;
+				removalTimeout = null;
+			}, 300);
+		} else {
+			sortableActiveTasks = activeTasks;
+		}
 	});
 
 	function handleConsider(event: CustomEvent<{ items: Task[]; info: { id: string } }>): void {

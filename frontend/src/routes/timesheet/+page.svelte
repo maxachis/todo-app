@@ -8,6 +8,7 @@
 		deleteTimeEntry
 	} from '$lib/stores/timesheet';
 	import { projectsStore, loadProjects } from '$lib/stores/projects';
+	import { validateRequired } from '$lib/utils/validation';
 
 	let weekOffset = $state(0);
 	let newProjectId = $state<number | null>(null);
@@ -50,9 +51,9 @@
 
 	async function handleCreate(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (newProjectId === null) return;
+		if (!validateRequired({ 'Project': newProjectId })) return;
 		await createTimeEntry({
-			project_id: newProjectId,
+			project_id: newProjectId!,
 			date: newDate,
 			description: newDescription.trim(),
 			task_ids: newTaskIds

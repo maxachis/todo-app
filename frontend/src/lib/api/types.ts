@@ -260,10 +260,22 @@ export interface UpdateInteractionInput {
   notes?: string;
 }
 
+export interface PersonPersonRelationshipType {
+  id: number;
+  name: string;
+}
+
+export interface OrgPersonRelationshipType {
+  id: number;
+  name: string;
+}
+
 export interface RelationshipPersonPerson {
   id: number;
   person_1_id: number;
   person_2_id: number;
+  relationship_type_id: number | null;
+  relationship_type_name: string | null;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -273,6 +285,8 @@ export interface RelationshipOrganizationPerson {
   id: number;
   organization_id: number;
   person_id: number;
+  relationship_type_id: number | null;
+  relationship_type_name: string | null;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -294,6 +308,8 @@ export interface GraphEdge {
     target: string;
     type: string;
     notes: string;
+    relationship_type_id: number | null;
+    relationship_type_name: string | null;
   };
 }
 

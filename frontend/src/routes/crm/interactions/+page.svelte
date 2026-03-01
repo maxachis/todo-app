@@ -4,6 +4,7 @@
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
+	import { validateRequired } from '$lib/utils/validation';
 
 	const ltm = createLinkedTasksManager('interactions');
 
@@ -152,11 +153,11 @@
 
 	async function createInteraction(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (newPersonIds.length === 0 || !newTypeId || !newDate) return;
+		if (!validateRequired({ 'People': newPersonIds, 'Type': newTypeId, 'Date': newDate })) return;
 		const created = await api.interactions.create({
 			person_ids: newPersonIds,
 			organization_ids: newOrgIds,
-			interaction_type_id: newTypeId,
+			interaction_type_id: newTypeId!,
 			interaction_medium_id: newMediumId,
 			date: newDate,
 			notes: newNotes

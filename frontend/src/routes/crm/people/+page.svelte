@@ -3,6 +3,7 @@
 	import { api, type Person, type PersonTag, type InteractionType } from '$lib';
 	import { ApiError } from '$lib/api/client';
 	import { addToast } from '$lib/stores/toast';
+	import { validateRequired } from '$lib/utils/validation';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
@@ -202,7 +203,7 @@
 
 	async function createPerson(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!newFirst.trim() || !newLast.trim()) return;
+		if (!validateRequired({ 'First name': newFirst, 'Last name': newLast })) return;
 		try {
 			const person = await api.people.create({
 				first_name: newFirst.trim(),
@@ -269,10 +270,11 @@
 
 	async function quickLogInteraction(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		if (!selected || !quickLogTypeId || !quickLogDate) return;
+		if (!selected) return;
+		if (!validateRequired({ 'Type': quickLogTypeId, 'Date': quickLogDate })) return;
 		await api.interactions.create({
 			person_ids: [selected.id],
-			interaction_type_id: quickLogTypeId,
+			interaction_type_id: quickLogTypeId!,
 			date: quickLogDate,
 			notes: quickLogNotes
 		});
