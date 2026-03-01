@@ -34,6 +34,7 @@
 			showMenu = false;
 		}
 	}
+
 </script>
 
 <svelte:window onclick={handleClickOutside} />

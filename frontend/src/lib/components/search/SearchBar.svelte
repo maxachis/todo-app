@@ -32,6 +32,7 @@
 			showResults = true;
 		}
 	}
+
 </script>
 
 <svelte:window onclick={handleClickOutside} />
