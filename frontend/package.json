@@ -22,6 +22,13 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"@codemirror/autocomplete": "^6.20.1",
+		"@codemirror/commands": "^6.10.2",
+		"@codemirror/lang-markdown": "^6.5.0",
+		"@codemirror/language": "^6.12.2",
+		"@codemirror/state": "^6.5.4",
+		"@codemirror/view": "^6.39.16",
+		"@lezer/highlight": "^1.2.3",
 		"@types/d3": "^7.4.3",
 		"chrono-node": "^2.9.0",
 		"d3": "^7.9.0",

@@ -26,7 +26,7 @@ The system SHALL include a `Page` model in a `notebook` Django app with the foll
 - **THEN** the system appends a numeric suffix to make the slug unique (e.g., `migration-runbook-2`)
 
 ### Requirement: Page CRUD API endpoints
-The system SHALL expose JSON API endpoints under `/api/notebook/` for page operations: `GET /api/notebook/pages/` (list all pages, ordered by `-updated_at`, with optional `search` query param filtering by title substring and optional `page_type` query param), `POST /api/notebook/pages/` (create), `GET /api/notebook/pages/{slug}/` (retrieve by slug), `PUT /api/notebook/pages/{slug}/` (update), `DELETE /api/notebook/pages/{slug}/` (delete). The create endpoint SHALL accept `title`, `content` (optional), `page_type` (optional, default `wiki`), and `date` (required if `page_type` is `daily`). The update endpoint SHALL accept `title` and `content`.
+The system SHALL expose JSON API endpoints under `/api/notebook/` for page operations: `GET /api/notebook/pages/` (list all pages, ordered by `-updated_at`, with optional `search` query param filtering by title substring and optional `page_type` query param), `POST /api/notebook/pages/` (create), `GET /api/notebook/pages/{slug}/` (retrieve by slug), `PUT /api/notebook/pages/{slug}/` (update), `DELETE /api/notebook/pages/{slug}/` (delete). The create endpoint SHALL accept `title`, `content` (optional), `page_type` (optional, default `wiki`), and `date` (required if `page_type` is `daily`). The update endpoint SHALL accept `title` and `content`. The update endpoint SHALL return the potentially-rewritten content (from server-side checkbox-to-task processing) in the response, and the frontend editor SHALL apply returned content differences via targeted CM6 transactions that preserve cursor position, rather than via textarea value binding.
 
 #### Scenario: List all pages
 - **WHEN** a client sends `GET /api/notebook/pages/`
@@ -56,9 +56,9 @@ The system SHALL expose JSON API endpoints under `/api/notebook/` for page opera
 - **WHEN** a client sends `GET /api/notebook/pages/migration-runbook/`
 - **THEN** the server responds with the full page object including `content`, `entity_mentions`, and `backlinks`
 
-#### Scenario: Update page content
+#### Scenario: Update page content with CM6 content sync
 - **WHEN** a client sends `PUT /api/notebook/pages/migration-runbook/` with `{"content": "Updated notes with @[person:7|John Smith]"}`
-- **THEN** the server updates the content, re-extracts entity mentions, reconciles the join tables, and responds with the updated page object
+- **THEN** the server updates the content, re-extracts entity mentions, reconciles the join tables, and responds with the updated page object including potentially-rewritten content, which the CM6 editor applies via targeted line-level transactions
 
 #### Scenario: Delete a page
 - **WHEN** a client sends `DELETE /api/notebook/pages/migration-runbook/`

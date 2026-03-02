@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { api } from '$lib/api';
-	import type { Page, PageListItem, PageBacklink, Person, Organization, Project } from '$lib/api/types';
+	import type { Page, PageListItem, Person, Organization, Project } from '$lib/api/types';
 	import type { Task } from '$lib/api/types';
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page as pageStore } from '$app/stores';
 	import { addToast } from '$lib/stores/toast';
+	import { createEditor, type NotebookEditor } from '$lib/components/notebook/createEditor';
 
 	let pages = $state<PageListItem[]>([]);
 	let currentPage = $state<Page | null>(null);
@@ -13,6 +14,12 @@
 	let contentDraft = $state('');
 	let saving = $state(false);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	// Snapshot of content at the time the save request was sent
+	let savedContentSnapshot = $state('');
+
+	// CM6 editor
+	let editorContainer: HTMLDivElement | undefined = $state();
+	let editor: NotebookEditor | null = null;
 
 	// Sidebar collapse state
 	let sidebarCollapsed = $state(
@@ -23,84 +30,11 @@
 		localStorage.setItem('notebook-sidebar-collapsed', String(sidebarCollapsed));
 	});
 
-	// Typeahead state
-	let textareaEl: HTMLTextAreaElement | undefined = $state();
-	let typeaheadOpen = $state(false);
-	let typeaheadType = $state<'person' | 'entity'>('person');
-	let typeaheadQuery = $state('');
-	let typeaheadStart = $state(0);
-	let typeaheadIndex = $state(0);
-	let typeaheadPosition = $state({ top: 0, left: 0 });
-
-	// Entity data for typeahead
+	// Entity data for autocomplete
 	let allPeople = $state<Person[]>([]);
 	let allOrgs = $state<Organization[]>([]);
 	let allProjects = $state<Project[]>([]);
 	let allTasks = $state<{ id: number; title: string }[]>([]);
-
-	interface TypeaheadItem {
-		type: string;
-		id: number;
-		label: string;
-	}
-
-	const filteredPeople = $derived<TypeaheadItem[]>(
-		typeaheadType === 'person'
-			? allPeople
-					.filter(
-						(p) =>
-							`${p.first_name} ${p.last_name}`
-								.toLowerCase()
-								.includes(typeaheadQuery.toLowerCase())
-					)
-					.slice(0, 8)
-					.map((p) => ({
-						type: 'person',
-						id: p.id,
-						label: `${p.first_name} ${p.last_name}`
-					}))
-			: []
-	);
-
-	const filteredEntities = $derived.by<TypeaheadItem[]>(() => {
-		if (typeaheadType !== 'entity') return [];
-		const q = typeaheadQuery.toLowerCase();
-		const results: TypeaheadItem[] = [];
-
-		for (const pg of pages) {
-			if (pg.title.toLowerCase().includes(q)) {
-				results.push({ type: 'page', id: pg.id, label: pg.title });
-			}
-		}
-		for (const t of allTasks) {
-			if (t.title.toLowerCase().includes(q)) {
-				results.push({ type: 'task', id: t.id, label: t.title });
-			}
-		}
-		for (const o of allOrgs) {
-			if (o.name.toLowerCase().includes(q)) {
-				results.push({ type: 'org', id: o.id, label: o.name });
-			}
-		}
-		for (const p of allProjects) {
-			if (p.name.toLowerCase().includes(q)) {
-				results.push({ type: 'project', id: p.id, label: p.name });
-			}
-		}
-		return results.slice(0, 12);
-	});
-
-	const typeaheadItems = $derived<TypeaheadItem[]>(
-		typeaheadType === 'person' ? filteredPeople : filteredEntities
-	);
-
-	const typeBadge: Record<string, string> = {
-		page: '\u{1F4C4}',
-		task: '\u2713',
-		org: '\u{1F3E2}',
-		project: '\u{1F4CB}',
-		person: '\u{1F464}'
-	};
 
 	const wikiPages = $derived(pages.filter((p) => p.page_type === 'wiki'));
 	const dailyPages = $derived(pages.filter((p) => p.page_type === 'daily'));
@@ -112,12 +46,19 @@
 		}
 	}
 
+	// Initialize CM6 editor when container becomes available
+	$effect(() => {
+		if (editorContainer && !editor) {
+			initEditor();
+		}
+	});
+
 	onMount(async () => {
 		document.addEventListener('keydown', handleSidebarShortcut);
 		await loadPages();
 		await loadEntityData();
 
-		// Check URL hash for slug
+		// Check URL for slug
 		const slug = $pageStore.url.searchParams.get('p');
 		if (slug) {
 			await openPage(slug);
@@ -126,7 +67,33 @@
 
 	onDestroy(() => {
 		document.removeEventListener('keydown', handleSidebarShortcut);
+		editor?.destroy();
+		editor = null;
 	});
+
+	function initEditor() {
+		if (!editorContainer || editor) return;
+		editor = createEditor(
+			editorContainer,
+			contentDraft,
+			{
+				onChange(content) {
+					contentDraft = content;
+					debouncedSave();
+				},
+				onBlur() {
+					handleContentBlur();
+				}
+			},
+			{
+				people: allPeople,
+				pages,
+				tasks: allTasks,
+				orgs: allOrgs,
+				projects: allProjects
+			}
+		);
+	}
 
 	async function loadPages() {
 		try {
@@ -171,6 +138,10 @@
 			currentPage = await api.notebook.pages.get(slug);
 			titleDraft = currentPage.title;
 			contentDraft = currentPage.content;
+			// Update CM6 editor content
+			if (editor) {
+				editor.setContent(currentPage.content);
+			}
 			goto(`/notebook?p=${slug}`, { replaceState: true, noScroll: true });
 		} catch (e) {
 			console.error('Failed to open page:', e);
@@ -207,6 +178,8 @@
 	async function savePage() {
 		if (!currentPage || saving) return;
 		saving = true;
+		// Snapshot the content being sent so we can diff later
+		savedContentSnapshot = contentDraft;
 		try {
 			const oldSlug = currentPage.slug;
 			const updated = await api.notebook.pages.update(currentPage.slug, {
@@ -214,9 +187,16 @@
 				content: contentDraft
 			});
 			currentPage = updated;
-			// Sync local content with server (checkbox-to-task rewrites)
-			if (updated.content !== contentDraft) {
-				contentDraft = updated.content;
+			// Content rewrite handling (checkbox-to-task links from server)
+			if (updated.content !== savedContentSnapshot) {
+				// Only patch if the editor still has the same content we sent
+				const currentEditorContent = editor?.getContent() ?? contentDraft;
+				if (currentEditorContent === savedContentSnapshot) {
+					contentDraft = updated.content;
+					editor?.setContent(updated.content);
+				}
+				// If editor has changed since save was sent, skip patch —
+				// next debounced save will reconcile
 			}
 			// Only update sidebar and URL when slug changed (title edits)
 			if (updated.slug !== oldSlug) {
@@ -254,127 +234,12 @@
 			currentPage = null;
 			titleDraft = '';
 			contentDraft = '';
+			editor?.setContent('');
 			goto('/notebook', { replaceState: true, noScroll: true });
 			await loadPages();
 		} catch (e) {
 			console.error('Failed to delete page:', e);
 			addToast({ message: 'Failed to delete page', type: 'error' });
-		}
-	}
-
-	// Typeahead logic
-	function getCaretCoords(textarea: HTMLTextAreaElement, position: number) {
-		const div = document.createElement('div');
-		const style = getComputedStyle(textarea);
-		for (const prop of ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight', 'padding', 'border', 'whiteSpace', 'wordWrap', 'width'] as const) {
-			(div.style as unknown as Record<string, string>)[prop] = style.getPropertyValue(
-				prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
-			);
-		}
-		div.style.position = 'absolute';
-		div.style.visibility = 'hidden';
-		div.style.overflow = 'hidden';
-		div.style.whiteSpace = 'pre-wrap';
-		div.style.wordWrap = 'break-word';
-
-		const text = textarea.value.substring(0, position);
-		div.textContent = text;
-
-		const span = document.createElement('span');
-		span.textContent = textarea.value.substring(position) || '.';
-		div.appendChild(span);
-
-		document.body.appendChild(div);
-		const rect = textarea.getBoundingClientRect();
-		const spanRect = span.getBoundingClientRect();
-		const divRect = div.getBoundingClientRect();
-
-		const top = rect.top + (spanRect.top - divRect.top) - textarea.scrollTop + 20;
-		const left = rect.left + (spanRect.left - divRect.left);
-		document.body.removeChild(div);
-		return { top, left };
-	}
-
-	function handleContentInput() {
-		debouncedSave();
-		checkTypeahead();
-	}
-
-	function checkTypeahead() {
-		if (!textareaEl) return;
-		const pos = textareaEl.selectionStart;
-		const text = contentDraft.substring(0, pos);
-
-		// Check for [[ trigger
-		const bracketMatch = text.match(/\[\[([^\]]*)$/);
-		if (bracketMatch) {
-			typeaheadType = 'entity';
-			typeaheadQuery = bracketMatch[1];
-			typeaheadStart = pos - bracketMatch[0].length;
-			typeaheadIndex = 0;
-			typeaheadPosition = getCaretCoords(textareaEl, pos);
-			typeaheadOpen = true;
-			return;
-		}
-
-		// Check for @ trigger (word boundary)
-		const atMatch = text.match(/(?:^|[\s(])@([a-zA-Z]*)$/);
-		if (atMatch) {
-			typeaheadType = 'person';
-			typeaheadQuery = atMatch[1];
-			typeaheadStart = pos - atMatch[0].length + (atMatch[0].startsWith('@') ? 0 : 1);
-			typeaheadIndex = 0;
-			typeaheadPosition = getCaretCoords(textareaEl, pos);
-			typeaheadOpen = true;
-			return;
-		}
-
-		typeaheadOpen = false;
-	}
-
-	function selectTypeaheadItem(item: TypeaheadItem) {
-		if (!textareaEl) return;
-		const pos = textareaEl.selectionStart;
-		const before = contentDraft.substring(0, typeaheadStart);
-		const after = contentDraft.substring(pos);
-
-		let insertion: string;
-		if (item.type === 'person') {
-			insertion = `@[person:${item.id}|${item.label}]`;
-		} else {
-			const typeKey = item.type === 'organization' ? 'org' : item.type;
-			insertion = `[[${typeKey}:${item.id}|${item.label}]]`;
-		}
-
-		contentDraft = before + insertion + after;
-		typeaheadOpen = false;
-
-		// Restore cursor position
-		const newPos = before.length + insertion.length;
-		requestAnimationFrame(() => {
-			if (textareaEl) {
-				textareaEl.focus();
-				textareaEl.setSelectionRange(newPos, newPos);
-			}
-		});
-		debouncedSave();
-	}
-
-	function handleTextareaKeydown(event: KeyboardEvent) {
-		if (!typeaheadOpen) return;
-
-		if (event.key === 'ArrowDown') {
-			event.preventDefault();
-			typeaheadIndex = Math.min(typeaheadIndex + 1, typeaheadItems.length - 1);
-		} else if (event.key === 'ArrowUp') {
-			event.preventDefault();
-			typeaheadIndex = Math.max(typeaheadIndex - 1, 0);
-		} else if (event.key === 'Enter' && typeaheadItems.length > 0) {
-			event.preventDefault();
-			selectTypeaheadItem(typeaheadItems[typeaheadIndex]);
-		} else if (event.key === 'Escape') {
-			event.preventDefault();
-			typeaheadOpen = false;
 		}
 	}
 </script>
@@ -457,35 +322,7 @@
 			</div>
 
 			<div class="editor-content-wrapper">
-				<textarea
-					class="editor-textarea"
-					bind:this={textareaEl}
-					bind:value={contentDraft}
-					oninput={handleContentInput}
-					onblur={handleContentBlur}
-					onkeydown={handleTextareaKeydown}
-					placeholder="Start writing... Use @ to mention people, [[ to link pages, tasks, orgs, or projects."
-				></textarea>
-
-				{#if typeaheadOpen && typeaheadItems.length > 0}
-					<div
-						class="typeahead-dropdown"
-						style="top: {typeaheadPosition.top}px; left: {typeaheadPosition.left}px;"
-					>
-						{#each typeaheadItems as item, i (item.type + item.id)}
-							<button
-								class="typeahead-item"
-								class:highlighted={i === typeaheadIndex}
-								onmousedown={(e: MouseEvent) => { e.preventDefault(); selectTypeaheadItem(item); }}
-								onmouseenter={() => (typeaheadIndex = i)}
-							>
-								<span class="type-badge">{typeBadge[item.type] || ''}</span>
-								<span class="item-label">{item.label}</span>
-								<span class="item-type">{item.type}</span>
-							</button>
-						{/each}
-					</div>
-				{/if}
+				<div class="editor-cm-container" bind:this={editorContainer}></div>
 			</div>
 
 			{#if currentPage.backlinks.length > 0}
@@ -738,82 +575,18 @@
 		min-height: 0;
 	}
 
-	.editor-textarea {
+	.editor-cm-container {
 		width: 100%;
 		min-height: 300px;
 		height: 100%;
 		border: 1px solid var(--border-light);
 		border-radius: var(--radius-sm);
-		padding: 0.75rem;
-		font-family: var(--font-body);
-		font-size: 0.9rem;
-		line-height: 1.7;
-		color: var(--text-primary);
 		background: var(--bg-input);
-		resize: vertical;
-	}
-
-	.editor-textarea:focus {
-		outline: none;
-		border-color: var(--border-focus);
-	}
-
-	.editor-textarea::placeholder {
-		color: var(--text-tertiary);
-	}
-
-	.typeahead-dropdown {
-		position: fixed;
-		z-index: 100;
-		background: var(--bg-surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-		box-shadow: var(--shadow-lg);
-		max-height: 260px;
-		overflow-y: auto;
-		min-width: 240px;
-		max-width: 360px;
-	}
-
-	.typeahead-item {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		width: 100%;
-		padding: 0.45rem 0.65rem;
-		border: none;
-		background: transparent;
-		cursor: pointer;
-		font-family: var(--font-body);
-		font-size: 0.85rem;
-		color: var(--text-primary);
-		text-align: left;
-	}
-
-	.typeahead-item.highlighted {
-		background: var(--accent-light);
-	}
-
-	.typeahead-item:hover {
-		background: var(--bg-surface-hover);
-	}
-
-	.type-badge {
-		font-size: 0.8rem;
-		flex-shrink: 0;
-	}
-
-	.item-label {
-		flex: 1;
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.item-type {
-		font-size: 0.7rem;
-		color: var(--text-tertiary);
-		text-transform: uppercase;
+	.editor-cm-container:focus-within {
+		border-color: var(--border-focus);
 	}
 
 	.backlinks-section {
