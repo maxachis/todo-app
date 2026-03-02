@@ -107,6 +107,18 @@ export const notebookTheme = EditorView.theme({
 		color: 'var(--accent)',
 		fontWeight: '500'
 	},
+	'.cm-mention-new': {
+		background: 'var(--warning-bg, #fef3c7)',
+		borderColor: 'var(--warning, #d97706)'
+	},
+	'.cm-mention-new .cm-mention-label': {
+		color: 'var(--warning, #d97706)'
+	},
+	'.cm-mention-notes': {
+		color: 'var(--text-tertiary)',
+		fontSize: '0.85em',
+		fontStyle: 'italic'
+	},
 
 	// Autocomplete dropdown
 	'.cm-tooltip-autocomplete': {

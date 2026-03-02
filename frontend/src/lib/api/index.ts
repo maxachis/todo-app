@@ -1,5 +1,7 @@
 import { apiRequest } from './client';
 import type {
+  ContactDraft,
+  ContactDraftMatches,
   CreateInteractionInput,
   CreateLeadInput,
   CreateListInput,
@@ -18,6 +20,7 @@ import type {
   InteractionType,
   Lead,
   LeadTaskLink,
+  LinkDraftInput,
   List,
   MoveInput,
   MoveTaskInput,
@@ -27,6 +30,8 @@ import type {
   Person,
   PersonPersonRelationshipType,
   PersonTag,
+  PromoteToOrgInput,
+  PromoteToPersonInput,
   Project,
   ProjectLink,
   RelationshipOrganizationPerson,
@@ -285,6 +290,30 @@ export const api = {
           body: JSON.stringify(payload)
         })
     }
+  },
+  contactDrafts: {
+    list: () => apiRequest<ContactDraft[]>('/contact-drafts/'),
+    get: (id: number) => apiRequest<ContactDraft>(`/contact-drafts/${id}/`),
+    dismiss: (id: number) =>
+      apiRequest<ContactDraft>(`/contact-drafts/${id}/dismiss/`, { method: 'POST' }),
+    remove: (id: number) => apiRequest<void>(`/contact-drafts/${id}/`, { method: 'DELETE' }),
+    promoteToPerson: (id: number, data: PromoteToPersonInput) =>
+      apiRequest<{ id: number; first_name: string; last_name: string }>(
+        `/contact-drafts/${id}/promote/person/`,
+        { method: 'POST', body: JSON.stringify(data) }
+      ),
+    promoteToOrg: (id: number, data: PromoteToOrgInput) =>
+      apiRequest<{ id: number; name: string }>(
+        `/contact-drafts/${id}/promote/org/`,
+        { method: 'POST', body: JSON.stringify(data) }
+      ),
+    link: (id: number, data: LinkDraftInput) =>
+      apiRequest<ContactDraft>(`/contact-drafts/${id}/link/`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    matches: (id: number) =>
+      apiRequest<ContactDraftMatches>(`/contact-drafts/${id}/matches/`)
   },
   leads: {
     getAll: () => apiRequest<Lead[]>('/leads/'),

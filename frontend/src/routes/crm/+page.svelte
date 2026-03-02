@@ -3,6 +3,6 @@
 	import { goto } from '$app/navigation';
 
 	onMount(() => {
-		goto('/crm/people', { replaceState: true });
+		goto('/crm/inbox', { replaceState: true });
 	});
 </script>

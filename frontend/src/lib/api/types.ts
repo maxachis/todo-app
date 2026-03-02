@@ -471,6 +471,45 @@ export interface CreateTimeEntryInput {
   task_ids?: number[];
 }
 
+// Contact Draft types
+
+export interface ContactDraft {
+  id: number;
+  name: string;
+  quick_notes: string;
+  source_page_id: number | null;
+  source_page_slug: string | null;
+  source_page_title: string | null;
+  dismissed: boolean;
+  created_at: string;
+}
+
+export interface ContactDraftMatches {
+  people: { id: number; first_name: string; last_name: string }[];
+  organizations: { id: number; name: string }[];
+}
+
+export interface PromoteToPersonInput {
+  first_name: string;
+  last_name: string;
+  middle_name?: string;
+  email?: string;
+  linkedin_url?: string;
+  notes?: string | null;
+  follow_up_cadence_days?: number | null;
+}
+
+export interface PromoteToOrgInput {
+  name: string;
+  org_type_id: number;
+  notes?: string | null;
+}
+
+export interface LinkDraftInput {
+  person_id?: number;
+  org_id?: number;
+}
+
 // Notebook types
 
 export interface PageMention {

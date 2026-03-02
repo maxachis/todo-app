@@ -1,21 +1,42 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { setContext } from 'svelte';
 	import '$lib/styles/crm.css';
+	import { api } from '$lib/api';
 
 	let { children } = $props();
 
+	let inboxCount = $state(0);
+
 	const tabs = [
+		{ href: '/crm/inbox', label: 'Inbox' },
 		{ href: '/crm/people', label: 'People' },
 		{ href: '/crm/orgs', label: 'Orgs' },
 		{ href: '/crm/interactions', label: 'Interactions' },
 		{ href: '/crm/leads', label: 'Leads' }
 	];
+
+	async function refreshInboxCount() {
+		try {
+			const drafts = await api.contactDrafts.list();
+			inboxCount = drafts.length;
+		} catch {
+			inboxCount = 0;
+		}
+	}
+
+	setContext('refreshInboxCount', refreshInboxCount);
+
+	$effect(() => {
+		$page.url.pathname;
+		refreshInboxCount();
+	});
 </script>
 
 <div class="crm-layout">
 	<nav class="sub-tabs">
 		{#each tabs as tab}
-			<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}</a>
+			<a href={tab.href} class:active={$page.url.pathname === tab.href}>{tab.label}{#if tab.href === '/crm/inbox' && inboxCount > 0} <span class="badge">{inboxCount}</span>{/if}</a>
 		{/each}
 	</nav>
 	{@render children()}
@@ -59,5 +80,20 @@
 		color: var(--text-primary);
 		font-weight: 600;
 		box-shadow: var(--shadow-sm);
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.1rem;
+		height: 1.1rem;
+		padding: 0 0.3rem;
+		font-size: 0.65rem;
+		font-weight: 600;
+		border-radius: 999px;
+		background: var(--accent);
+		color: white;
+		margin-left: 0.2rem;
 	}
 </style>

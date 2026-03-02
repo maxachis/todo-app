@@ -11,6 +11,9 @@ BRACKET_MENTION_RE = re.compile(r"\[\[(page|task|org|project):(\d+)\|[^\]]+\]\]"
 # - [ ] <text> where text does NOT already contain [[task:
 CHECKBOX_RE = re.compile(r"^(- \[ \] )(.+)$", re.MULTILINE)
 
+# @new[Name](optional notes)
+NEW_CONTACT_RE = re.compile(r"@new\[([^\]]+)\](?:\(([^)]*)\))?")
+
 # Normalize "org" to "organization" for storage
 ENTITY_TYPE_MAP = {
     "task": "task",
@@ -104,13 +107,72 @@ def create_tasks_from_checkboxes(page):
     return modified
 
 
+def create_drafts_from_new_contacts(page):
+    """Detect @new[Name](notes) patterns and create ContactDraft records.
+
+    Does NOT rewrite page content — that happens at promotion time.
+    """
+    from network.models import ContactDraft
+
+    for match in NEW_CONTACT_RE.finditer(page.content):
+        name = match.group(1).strip()
+        quick_notes = (match.group(2) or "").strip()
+        if not name:
+            continue
+        if ContactDraft.objects.filter(name=name, source_page=page).exists():
+            continue
+        ContactDraft.objects.create(
+            name=name,
+            quick_notes=quick_notes,
+            source_page=page,
+        )
+
+
+def rewrite_new_contact_mentions(name, entity_type, entity_id):
+    """Rewrite @new[Name](...) to proper mention syntax across all pages.
+
+    For person: @new[Name](...) → @[person:ID|Name]
+    For org: @new[Name](...) → [[org:ID|Name]]
+    """
+    from notebook.models import Page
+
+    escaped_name = re.escape(name)
+    pattern = re.compile(rf"@new\[{escaped_name}\](?:\([^)]*\))?")
+
+    if entity_type == "person":
+        replacement = f"@[person:{entity_id}|{name}]"
+    else:
+        replacement = f"[[org:{entity_id}|{name}]]"
+
+    for page in Page.objects.filter(content__contains=f"@new[{name}]"):
+        new_content = pattern.sub(replacement, page.content)
+        if new_content != page.content:
+            page.content = new_content
+            page.save(update_fields=["content"])
+
+
+def auto_dismiss_sibling_drafts(name, exclude_id):
+    """Dismiss other pending drafts with the same name after promotion."""
+    from network.models import ContactDraft
+
+    ContactDraft.objects.filter(
+        name__iexact=name,
+        promoted_to_person__isnull=True,
+        promoted_to_org__isnull=True,
+        dismissed=False,
+    ).exclude(pk=exclude_id).update(dismissed=True)
+
+
 def reconcile_mentions(page):
     """Parse page content and sync join tables to match.
 
-    Also creates tasks from checkbox syntax before reconciling.
+    Also creates tasks from checkbox syntax and contact drafts before reconciling.
     """
     # First, create tasks from any new checkboxes (modifies page.content)
     create_tasks_from_checkboxes(page)
+
+    # Create contact drafts from @new[...] patterns (does NOT modify content)
+    create_drafts_from_new_contacts(page)
 
     # Now reconcile mentions based on the (possibly updated) content
     entity_mentions, page_ids = parse_mentions(page.content)

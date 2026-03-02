@@ -10,6 +10,7 @@ import { RangeSetBuilder } from '@codemirror/state';
 
 const PERSON_RE = /@\[person:(\d+)\|([^\]]+)\]/g;
 const ENTITY_RE = /\[\[(page|task|org|project):(\d+)\|([^\]]+)\]\]/g;
+const NEW_CONTACT_RE = /@new\[([^\]]+)\](?:\(([^)]*)\))?/g;
 
 const TYPE_BADGES: Record<string, string> = {
 	person: '\u{1F464}',
@@ -18,6 +19,50 @@ const TYPE_BADGES: Record<string, string> = {
 	org: '\u{1F3E2}',
 	project: '\u{1F4CB}'
 };
+
+class NewContactWidget extends WidgetType {
+	readonly name: string;
+	readonly notes: string;
+
+	constructor(name: string, notes: string) {
+		super();
+		this.name = name;
+		this.notes = notes;
+	}
+
+	eq(other: NewContactWidget): boolean {
+		return this.name === other.name && this.notes === other.notes;
+	}
+
+	toDOM(): HTMLElement {
+		const span = document.createElement('span');
+		span.className = 'cm-mention-chip cm-mention-new';
+
+		const badge = document.createElement('span');
+		badge.className = 'cm-mention-badge';
+		badge.textContent = '\u2795'; // ➕
+
+		const label = document.createElement('span');
+		label.className = 'cm-mention-label';
+		label.textContent = this.name;
+
+		span.appendChild(badge);
+		span.appendChild(label);
+
+		if (this.notes) {
+			const notesEl = document.createElement('span');
+			notesEl.className = 'cm-mention-notes';
+			notesEl.textContent = ` (${this.notes})`;
+			span.appendChild(notesEl);
+		}
+
+		return span;
+	}
+
+	ignoreEvent(): boolean {
+		return false;
+	}
+}
 
 class MentionWidget extends WidgetType {
 	readonly type: string;
@@ -87,6 +132,20 @@ function buildDecorations(view: EditorView): DecorationSet {
 			to,
 			deco: Decoration.replace({
 				widget: new MentionWidget(match[1], match[3])
+			})
+		});
+	}
+
+	// New contact drafts: @new[Name](notes)
+	NEW_CONTACT_RE.lastIndex = 0;
+	while ((match = NEW_CONTACT_RE.exec(text)) !== null) {
+		const from = match.index;
+		const to = from + match[0].length;
+		decos.push({
+			from,
+			to,
+			deco: Decoration.replace({
+				widget: new NewContactWidget(match[1], match[2] || '')
 			})
 		});
 	}

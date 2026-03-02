@@ -12,3 +12,4 @@ from .interaction_medium import InteractionMedium
 from .task_links import InteractionTask, TaskOrganization, TaskPerson
 from .lead import Lead
 from .lead_task import LeadTask
+from .contact_draft import ContactDraft

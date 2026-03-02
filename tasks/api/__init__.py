@@ -1,6 +1,7 @@
 from ninja import NinjaAPI
 
 from network.api import (
+    contact_drafts,
     graph,
     interaction_mediums,
     interaction_types,
@@ -42,6 +43,7 @@ api.add_router("", relationship_types.router)
 api.add_router("", task_links.router)
 api.add_router("", graph.router)
 api.add_router("", leads.router)
+api.add_router("", contact_drafts.router)
 api.add_router("", notebook_pages.router)
 
 
