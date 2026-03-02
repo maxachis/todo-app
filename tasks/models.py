@@ -34,6 +34,7 @@ class List(models.Model):
     name = models.CharField(max_length=255)
     emoji = models.CharField(max_length=10, blank=True, default="")
     position = models.IntegerField(default=0)
+    is_system = models.BooleanField(default=False)
     project = models.ForeignKey(
         Project, on_delete=models.SET_NULL, null=True, blank=True, related_name="lists"
     )

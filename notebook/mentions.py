@@ -8,12 +8,22 @@ PERSON_MENTION_RE = re.compile(r"@\[person:(\d+)\|[^\]]+\]")
 # [[type:ID|Label]] where type is page, task, org, project
 BRACKET_MENTION_RE = re.compile(r"\[\[(page|task|org|project):(\d+)\|[^\]]+\]\]")
 
+# - [ ] <text> where text does NOT already contain [[task:
+CHECKBOX_RE = re.compile(r"^(- \[ \] )(.+)$", re.MULTILINE)
+
 # Normalize "org" to "organization" for storage
 ENTITY_TYPE_MAP = {
     "task": "task",
     "org": "organization",
     "project": "project",
 }
+
+
+def get_inbox_section():
+    """Return the Inbox list's section for task creation."""
+    from tasks.models import Section
+
+    return Section.objects.filter(list__is_system=True).first()
 
 
 def parse_mentions(content: str):
@@ -42,8 +52,67 @@ def parse_mentions(content: str):
     return entity_mentions, page_ids
 
 
+def create_tasks_from_checkboxes(page):
+    """Detect - [ ] lines and create tasks in the Inbox for new ones.
+
+    Rewrites page.content in place with [[task:ID|Title]] links.
+    Returns True if content was modified.
+    """
+    from tasks.models import Task
+
+    inbox_section = get_inbox_section()
+    if not inbox_section:
+        return False
+
+    modified = False
+    content = page.content
+
+    def replace_checkbox(match):
+        nonlocal modified
+        prefix = match.group(1)  # "- [ ] "
+        text = match.group(2)
+
+        # Skip if already linked to a task
+        if "[[task:" in text:
+            return match.group(0)
+
+        # Skip if text is whitespace-only
+        title = text.strip()
+        if not title:
+            return match.group(0)
+
+        # Create the task in the Inbox section
+        max_pos = (
+            Task.objects.filter(section=inbox_section, parent__isnull=True)
+            .order_by("-position")
+            .values_list("position", flat=True)
+            .first()
+        ) or 0
+        task = Task.objects.create(
+            section=inbox_section,
+            title=title,
+            position=max_pos + 10,
+        )
+        modified = True
+        return f"{prefix}[[task:{task.id}|{title}]]"
+
+    new_content = CHECKBOX_RE.sub(replace_checkbox, content)
+    if modified:
+        page.content = new_content
+        page.save(update_fields=["content"])
+
+    return modified
+
+
 def reconcile_mentions(page):
-    """Parse page content and sync join tables to match."""
+    """Parse page content and sync join tables to match.
+
+    Also creates tasks from checkbox syntax before reconciling.
+    """
+    # First, create tasks from any new checkboxes (modifies page.content)
+    create_tasks_from_checkboxes(page)
+
+    # Now reconcile mentions based on the (possibly updated) content
     entity_mentions, page_ids = parse_mentions(page.content)
 
     # Reconcile entity mentions

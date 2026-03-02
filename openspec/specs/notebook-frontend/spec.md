@@ -7,7 +7,7 @@ Svelte frontend UI for the notebook feature, including the two-panel layout, pag
 ## Requirements
 
 ### Requirement: Notebook route with two-panel layout
-The system SHALL provide a `/notebook` route with a two-panel layout: a page sidebar (left) and an editor area (right). The sidebar SHALL display a "New Page" button, a "Today" button, and a list of pages grouped into "Recent" (wiki pages, by updated_at) and "Daily" (daily pages, by date descending). Clicking a page in the sidebar SHALL load it in the editor. The URL SHALL update to `/notebook/{slug}` when a page is selected.
+The system SHALL provide a `/notebook` route with a two-panel layout: a page sidebar (left) and an editor area (right). The sidebar SHALL display a "New Page" button, a "Today" button, and a list of pages grouped into "Recent" (wiki pages, by updated_at) and "Daily" (daily pages, by date descending). Clicking a page in the sidebar SHALL load it in the editor. The URL SHALL update to `/notebook/{slug}` when a page is selected. The sidebar SHALL be collapsible via a toggle button or keyboard shortcut (`Cmd/Ctrl+\`). When collapsed, the sidebar SHALL reduce to a slim strip with an expand button, and the editor SHALL fill the full width. The collapsed state SHALL persist in localStorage.
 
 #### Scenario: Notebook route loads with empty state
 - **WHEN** the user navigates to `/notebook` with no pages
@@ -24,6 +24,10 @@ The system SHALL provide a `/notebook` route with a two-panel layout: a page sid
 #### Scenario: Direct URL navigation to a page
 - **WHEN** the user navigates to `/notebook/migration-runbook`
 - **THEN** the page with slug `migration-runbook` loads in the editor and is highlighted in the sidebar
+
+#### Scenario: Sidebar collapsed on load
+- **WHEN** the user navigates to `/notebook` and the sidebar was previously collapsed
+- **THEN** the layout shows the editor at full width with a slim sidebar strip containing the expand button
 
 ### Requirement: New Page creation
 The "New Page" button SHALL create a new wiki page. Clicking it SHALL immediately create a page via the API with a default title (e.g., "Untitled"), navigate to it, and place the cursor in the title field for immediate renaming.

@@ -65,11 +65,11 @@ The system SHALL render a three-panel layout: left sidebar (list navigation), ce
 - **THEN** the "Notebook" tab is highlighted in the navigation bar
 
 ### Requirement: List sidebar navigation
-The system SHALL display all lists in the sidebar, ordered by position. Selecting a list SHALL load its content in the center panel.
+The system SHALL display all lists in the sidebar, ordered by position, with system lists (Inbox) rendered first above a visual separator and excluded from drag-and-drop reordering. Selecting a list SHALL load its content in the center panel. System lists SHALL NOT display rename (double-click-to-edit) or delete controls.
 
-#### Scenario: Sidebar displays lists
+#### Scenario: Sidebar displays lists with Inbox first
 - **WHEN** the app loads
-- **THEN** the sidebar shows all lists with their emoji and name, ordered by position
+- **THEN** the sidebar shows the Inbox list at the top with a subtle separator below it, followed by user-created lists with their emoji and name, ordered by position
 
 #### Scenario: Selecting a list loads its content
 - **WHEN** the user clicks a list in the sidebar
@@ -84,7 +84,7 @@ The system SHALL display all lists in the sidebar, ordered by position. Selectin
 - **THEN** the center panel shows "Select or create a list"
 
 #### Scenario: Inline list editing
-- **WHEN** the user double-clicks a list in the sidebar
+- **WHEN** the user double-clicks a non-system list in the sidebar
 - **THEN** the list name and emoji become editable inline; Enter or emoji selection saves, Escape cancels
 
 #### Scenario: Inline editing is single-active
@@ -92,11 +92,11 @@ The system SHALL display all lists in the sidebar, ordered by position. Selectin
 - **THEN** the previous list is auto-saved and exits edit mode so only one inline editor remains active
 
 #### Scenario: Sidebar emoji double-click edits list emoji
-- **WHEN** the user double-clicks a list emoji in the sidebar
+- **WHEN** the user double-clicks a non-system list emoji in the sidebar
 - **THEN** an emoji picker opens for that list and selecting an emoji persists it
 
 #### Scenario: Content header supports emoji and title double-click edits
-- **WHEN** the user double-clicks the current list emoji or title in the center panel header
+- **WHEN** the user double-clicks the current list emoji or title in the center panel header for a non-system list
 - **THEN** the corresponding list field enters edit flow and persists changes on selection/commit
 
 #### Scenario: Header title edit exits on list change
@@ -104,8 +104,16 @@ The system SHALL display all lists in the sidebar, ordered by position. Selectin
 - **THEN** the prior title edit is committed and edit mode exits for the previous list
 
 #### Scenario: Drag to reorder lists
-- **WHEN** the user drags a list to a new position in the sidebar
-- **THEN** the list order updates immediately and persists via API
+- **WHEN** the user drags a non-system list in the sidebar
+- **THEN** the list is repositioned among other non-system lists via svelte-dnd-action and the server is updated
+
+#### Scenario: Inbox is not draggable
+- **WHEN** the user attempts to drag the Inbox list
+- **THEN** the drag does not initiate; the Inbox remains at the top of the sidebar
+
+#### Scenario: System list hides rename and delete controls
+- **WHEN** the Inbox list renders in the sidebar
+- **THEN** no double-click-to-edit or delete button is available
 
 ### Requirement: Section display and management
 The system SHALL display sections within a list, each collapsible, with tasks nested inside.
@@ -192,11 +200,23 @@ The system SHALL display tasks within sections, showing title, tags, due date, s
 - **AND** the click SHALL NOT propagate to the parent task row's click handler
 
 ### Requirement: Task detail panel
-The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. A recurrence editor SHALL be displayed below the due date field. A "Linked People & Orgs" section SHALL be displayed below the tags section. On phone viewports (640px and below), form elements and buttons SHALL be sized for touch interaction.
+The system SHALL display a task's full details in the right panel when selected. All detail fields SHALL auto-save on blur. The detail panel SHALL include a List selector and a Section selector that allow moving the task to a different list and section. Changing the list SHALL reload the section dropdown with sections from the selected list. Selecting a new section SHALL move the task via the existing move API. A recurrence editor SHALL be displayed below the due date field. A "Linked People & Orgs" section SHALL be displayed below the tags section. On phone viewports (640px and below), form elements and buttons SHALL be sized for touch interaction.
 
 #### Scenario: Selecting a task shows detail
 - **WHEN** the user clicks a task row
-- **THEN** the right panel displays the task's title, notes, due date, priority, tags, parent link, recurrence settings, and linked people & organizations
+- **THEN** the right panel displays the task's title, notes, due date, priority, tags, list, section, parent link, recurrence settings, and linked people & organizations
+
+#### Scenario: List and section selectors show current location
+- **WHEN** a task is selected
+- **THEN** the List dropdown shows the task's current list and the Section dropdown shows the task's current section
+
+#### Scenario: Change list loads target sections
+- **WHEN** the user changes the List dropdown to a different list
+- **THEN** the Section dropdown reloads with sections from the newly selected list and the first section is pre-selected
+
+#### Scenario: Change section moves task
+- **WHEN** the user selects a new section from the Section dropdown
+- **THEN** the task is moved to that section via the move API and the center panel updates reactively
 
 #### Scenario: Linked section appears in detail panel
 - **WHEN** a task is selected

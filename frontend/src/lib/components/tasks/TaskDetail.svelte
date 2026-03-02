@@ -1,7 +1,8 @@
 <script lang="ts">
-	import type { Tag, Task, Person, Organization, TaskPersonLink, TaskOrganizationLink } from '$lib';
+	import type { Tag, Task, Person, Organization, List, Section, TaskPersonLink, TaskOrganizationLink } from '$lib';
 	import { api } from '$lib';
-	import { updateTask, selectedTaskDetail, selectTask, refreshTask } from '$lib/stores/tasks';
+	import { updateTask, selectedTaskDetail, selectTask, refreshTask, moveTask } from '$lib/stores/tasks';
+	import { listsStore, loadListDetail } from '$lib/stores/lists';
 	import MarkdownEditor from '../shared/MarkdownEditor.svelte';
 	import LinkedEntities from '../shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '../shared/TypeaheadSelect.svelte';
@@ -22,6 +23,11 @@
 	let allPeople = $state<Person[]>([]);
 	let allOrgs = $state<Organization[]>([]);
 
+	// List/Section triage
+	let selectedListId = $state<number | null>(null);
+	let selectedSectionId = $state<number | null>(null);
+	let targetSections = $state<Section[]>([]);
+
 	$effect(() => {
 		if (task) {
 			titleValue = task.title;
@@ -30,8 +36,48 @@
 			notesValue = task.notes;
 			loadAvailableTags(task.id);
 			loadLinkedEntities(task.id);
+			initListSection(task);
 		}
 	});
+
+	function initListSection(t: Task): void {
+		// Find which list this task's section belongs to
+		const lists = $listsStore;
+		for (const list of lists) {
+			const section = list.sections.find((s) => s.id === t.section_id);
+			if (section) {
+				selectedListId = list.id;
+				selectedSectionId = section.id;
+				targetSections = list.sections;
+				return;
+			}
+		}
+	}
+
+	async function handleListChange(event: Event): Promise<void> {
+		const target = event.target as HTMLSelectElement;
+		const newListId = Number(target.value);
+		if (!task || Number.isNaN(newListId) || newListId === selectedListId) return;
+
+		// Load the target list's sections
+		const detail = await loadListDetail(newListId);
+		targetSections = detail.sections;
+		selectedListId = newListId;
+
+		// Pre-select first section and move
+		if (targetSections.length > 0) {
+			selectedSectionId = targetSections[0].id;
+			await moveTask(task.id, { section_id: targetSections[0].id });
+		}
+	}
+
+	async function handleSectionChange(event: Event): Promise<void> {
+		const target = event.target as HTMLSelectElement;
+		const newSectionId = Number(target.value);
+		if (!task || Number.isNaN(newSectionId) || newSectionId === task.section_id) return;
+		selectedSectionId = newSectionId;
+		await moveTask(task.id, { section_id: newSectionId });
+	}
 
 	async function loadLinkedEntities(taskId: number): Promise<void> {
 		const [personLinks, orgLinks, people, orgs] = await Promise.all([
@@ -202,6 +248,26 @@
 				{/each}
 			</select>
 		</div>
+
+		<div class="field location-field">
+			<label>List</label>
+			<select value={selectedListId} onchange={handleListChange}>
+				{#each $listsStore as list}
+					<option value={list.id}>{list.emoji || '\u{1F4DD}'} {list.name}</option>
+				{/each}
+			</select>
+		</div>
+
+		{#if targetSections.length > 1 || (targetSections.length === 1 && targetSections[0].name !== '')}
+			<div class="field location-field">
+				<label>Section</label>
+				<select value={selectedSectionId} onchange={handleSectionChange}>
+					{#each targetSections as section}
+						<option value={section.id}>{section.name || '(default)'}</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
 
 		<div class="field">
 			<label>Tags</label>

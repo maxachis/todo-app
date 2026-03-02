@@ -2,7 +2,7 @@
 	import { api } from '$lib/api';
 	import type { Page, PageListItem, PageBacklink, Person, Organization, Project } from '$lib/api/types';
 	import type { Task } from '$lib/api/types';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page as pageStore } from '$app/stores';
 	import { addToast } from '$lib/stores/toast';
@@ -13,6 +13,15 @@
 	let contentDraft = $state('');
 	let saving = $state(false);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Sidebar collapse state
+	let sidebarCollapsed = $state(
+		typeof localStorage !== 'undefined' && localStorage.getItem('notebook-sidebar-collapsed') === 'true'
+	);
+
+	$effect(() => {
+		localStorage.setItem('notebook-sidebar-collapsed', String(sidebarCollapsed));
+	});
 
 	// Typeahead state
 	let textareaEl: HTMLTextAreaElement | undefined = $state();
@@ -96,7 +105,15 @@
 	const wikiPages = $derived(pages.filter((p) => p.page_type === 'wiki'));
 	const dailyPages = $derived(pages.filter((p) => p.page_type === 'daily'));
 
+	function handleSidebarShortcut(e: KeyboardEvent) {
+		if (e.key === '\\' && (e.metaKey || e.ctrlKey)) {
+			e.preventDefault();
+			sidebarCollapsed = !sidebarCollapsed;
+		}
+	}
+
 	onMount(async () => {
+		document.addEventListener('keydown', handleSidebarShortcut);
 		await loadPages();
 		await loadEntityData();
 
@@ -105,6 +122,10 @@
 		if (slug) {
 			await openPage(slug);
 		}
+	});
+
+	onDestroy(() => {
+		document.removeEventListener('keydown', handleSidebarShortcut);
 	});
 
 	async function loadPages() {
@@ -193,6 +214,10 @@
 				content: contentDraft
 			});
 			currentPage = updated;
+			// Sync local content with server (checkbox-to-task rewrites)
+			if (updated.content !== contentDraft) {
+				contentDraft = updated.content;
+			}
 			// Only update sidebar and URL when slug changed (title edits)
 			if (updated.slug !== oldSlug) {
 				await loadPages();
@@ -354,12 +379,26 @@
 	}
 </script>
 
-<div class="notebook-layout">
-	<aside class="page-sidebar">
-		<div class="sidebar-actions">
-			<button class="btn-primary" onclick={createPage}>+ New Page</button>
-			<button class="btn-secondary" onclick={openToday}>Today</button>
-		</div>
+<div class="notebook-layout" class:collapsed={sidebarCollapsed}>
+	<aside class="page-sidebar" class:collapsed={sidebarCollapsed}>
+		{#if sidebarCollapsed}
+			<button
+				class="sidebar-toggle"
+				onclick={() => (sidebarCollapsed = false)}
+				title="Expand sidebar (Ctrl+\)"
+			>&#x25B6;</button>
+		{:else}
+			<div class="sidebar-header">
+				<div class="sidebar-actions">
+					<button class="btn-primary" onclick={createPage}>+ New Page</button>
+					<button class="btn-secondary" onclick={openToday}>Today</button>
+				</div>
+				<button
+					class="sidebar-toggle"
+					onclick={() => (sidebarCollapsed = true)}
+					title="Collapse sidebar (Ctrl+\)"
+				>&#x25C0;</button>
+			</div>
 
 		{#if wikiPages.length > 0}
 			<div class="sidebar-group">
@@ -393,6 +432,7 @@
 
 		{#if pages.length === 0}
 			<p class="empty-hint">No pages yet. Create one to get started.</p>
+		{/if}
 		{/if}
 	</aside>
 
@@ -475,19 +515,64 @@
 		gap: 0.75rem;
 		height: 100%;
 		min-height: 0;
+		transition: grid-template-columns 200ms ease;
+	}
+
+	.notebook-layout.collapsed {
+		grid-template-columns: 32px 1fr;
+		gap: 0;
 	}
 
 	.page-sidebar {
 		border-right: 1px solid var(--border-light);
 		padding-right: 0.75rem;
 		overflow-y: auto;
+		overflow-x: hidden;
 		min-height: 0;
+	}
+
+	.page-sidebar.collapsed {
+		padding-right: 0;
+		overflow: hidden;
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding-top: 0.35rem;
+	}
+
+	.sidebar-header {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
 	}
 
 	.sidebar-actions {
 		display: flex;
 		gap: 0.5rem;
-		margin-bottom: 1rem;
+	}
+
+	.sidebar-toggle {
+		background: transparent;
+		border: none;
+		color: var(--text-tertiary);
+		cursor: pointer;
+		padding: 0.2rem 0.4rem;
+		font-size: 0.7rem;
+		border-radius: var(--radius-sm);
+		transition: color var(--transition), background var(--transition);
+		align-self: flex-end;
+	}
+
+	.sidebar-toggle:hover {
+		color: var(--text-primary);
+		background: var(--bg-surface-hover);
+	}
+
+	.page-sidebar.collapsed .sidebar-toggle {
+		align-self: center;
+		font-size: 0.75rem;
+		padding: 0.3rem;
 	}
 
 	.btn-primary {

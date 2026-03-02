@@ -68,6 +68,7 @@ def _serialize_list(task_list: List, include_sections: bool = False) -> ListSche
         name=task_list.name,
         emoji=task_list.emoji,
         position=task_list.position,
+        is_system=task_list.is_system,
         project_id=task_list.project_id,
         sections=sections,
     )
@@ -109,6 +110,9 @@ def get_list_detail(request, list_id: int):
 def update_list(request, list_id: int, payload: ListUpdateInput):
     task_list = get_object_or_404(List, pk=list_id)
 
+    if task_list.is_system and payload.name is not None:
+        raise HttpError(409, "System lists cannot be renamed.")
+
     if payload.name is not None:
         cleaned_name = payload.name.strip()
         if not cleaned_name:
@@ -128,6 +132,8 @@ def update_list(request, list_id: int, payload: ListUpdateInput):
 @router.delete("/lists/{list_id}/", response={204: None})
 def delete_list(request, list_id: int):
     task_list = get_object_or_404(List, pk=list_id)
+    if task_list.is_system:
+        raise HttpError(409, "System lists cannot be deleted.")
     task_list.delete()
     return 204, None
 

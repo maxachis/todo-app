@@ -108,9 +108,11 @@
 
 <div class="app-shell">
 	<header class="top-nav">
-		<button class="icon-btn mobile-only" onclick={() => (sidebarOpen = !sidebarOpen)} aria-label="Toggle sidebar">
-			&#9776;
-		</button>
+		{#if isTasksRoute}
+			<button class="icon-btn mobile-only" onclick={() => (sidebarOpen = !sidebarOpen)} aria-label="Toggle sidebar">
+				&#9776;
+			</button>
+		{/if}
 		<nav>
 			{#each tabs as tab}
 				<a href={tab.href} class:active={$page.url.pathname === tab.href} onclick={(e) => navigate(e, tab.href)}>{tab.label}</a>

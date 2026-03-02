@@ -113,17 +113,19 @@
 	>
 		{#each sortableSections as section (section.id)}
 			<div class="section-block" animate:flip={{ duration: FLIP_DURATION }}>
-				<SectionHeader
-					{section}
-					collapsed={collapsedIds.has(section.id)}
-					{editingSectionId}
-					onStartEdit={handleStartEdit}
-					onStopEdit={handleStopEdit}
-					onToggleCollapse={() => toggleCollapse(section.id)}
-					onUpdate={(changes) => onUpdateSection(section.id, changes)}
-					onDelete={() => onDeleteSection(section.id)}
-				/>
-				{#if !collapsedIds.has(section.id)}
+				{#if section.name !== ''}
+					<SectionHeader
+						{section}
+						collapsed={collapsedIds.has(section.id)}
+						{editingSectionId}
+						onStartEdit={handleStartEdit}
+						onStopEdit={handleStopEdit}
+						onToggleCollapse={() => toggleCollapse(section.id)}
+						onUpdate={(changes) => onUpdateSection(section.id, changes)}
+						onDelete={() => onDeleteSection(section.id)}
+					/>
+				{/if}
+				{#if section.name === '' || !collapsedIds.has(section.id)}
 					<TaskList tasks={section.tasks} sectionId={section.id} />
 					<TaskCreateForm sectionId={section.id} />
 					{@const completedTasks = getCompletedTasks(section)}

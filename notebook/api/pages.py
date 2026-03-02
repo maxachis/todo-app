@@ -119,6 +119,7 @@ def update_page(request, slug: str, payload: PageUpdateInput):
         page.content = payload.content
     page.save()
     reconcile_mentions(page)
+    page.refresh_from_db()
     return _serialize_page(page)
 
 

@@ -231,6 +231,102 @@ class BacklinksAPITests(TestCase):
         self.assertEqual(resp.json(), [])
 
 
+class CheckboxToTaskTests(TestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.get("/api/health/")
+        self.csrf = self.client.cookies["csrftoken"].value
+        from tasks.models import List, Section
+        self.inbox = List.objects.get(is_system=True)
+        self.inbox_section = Section.objects.get(list=self.inbox)
+
+    def _headers(self):
+        return {"HTTP_X_CSRFTOKEN": self.csrf}
+
+    def _post(self, data):
+        return self.client.post(
+            "/api/notebook/pages/",
+            data=json.dumps(data),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+    def _put(self, slug, data):
+        return self.client.put(
+            f"/api/notebook/pages/{slug}/",
+            data=json.dumps(data),
+            content_type="application/json",
+            **self._headers(),
+        )
+
+    def test_single_checkbox_creates_task(self):
+        from tasks.models import Task
+        self._post({"title": "Test", "content": "- [ ] Call the dentist"})
+        page = Page.objects.get(slug="test")
+        self.assertIn("[[task:", page.content)
+        tasks = Task.objects.filter(section=self.inbox_section, title="Call the dentist")
+        self.assertEqual(tasks.count(), 1)
+
+    def test_multiple_checkboxes_create_multiple_tasks(self):
+        from tasks.models import Task
+        self._post({
+            "title": "Multi",
+            "content": "- [ ] Buy milk\n- [ ] Send invoice",
+        })
+        page = Page.objects.get(slug="multi")
+        self.assertEqual(page.content.count("[[task:"), 2)
+        self.assertTrue(Task.objects.filter(title="Buy milk").exists())
+        self.assertTrue(Task.objects.filter(title="Send invoice").exists())
+
+    def test_already_linked_checkbox_is_skipped(self):
+        from tasks.models import Task
+        initial_count = Task.objects.count()
+        self._post({
+            "title": "Linked",
+            "content": "- [ ] [[task:999|Existing task]]",
+        })
+        self.assertEqual(Task.objects.count(), initial_count)
+
+    def test_checked_checkbox_is_skipped(self):
+        from tasks.models import Task
+        initial_count = Task.objects.count()
+        self._post({
+            "title": "Checked",
+            "content": "- [x] Done item",
+        })
+        self.assertEqual(Task.objects.count(), initial_count)
+
+    def test_checkbox_creates_mention_record(self):
+        self._post({"title": "Mention", "content": "- [ ] New task here"})
+        page = Page.objects.get(slug="mention")
+        mentions = set(
+            PageEntityMention.objects.filter(page=page).values_list("entity_type", "entity_id")
+        )
+        # The task link should have created a task mention
+        from tasks.models import Task
+        task = Task.objects.get(title="New task here")
+        self.assertIn(("task", task.id), mentions)
+
+    def test_update_adds_new_checkbox_task(self):
+        from tasks.models import Task
+        self._post({"title": "Evolve", "content": "Some notes"})
+        self._put("evolve", {"content": "Some notes\n- [ ] New task"})
+        page = Page.objects.get(slug="evolve")
+        self.assertIn("[[task:", page.content)
+        self.assertTrue(Task.objects.filter(title="New task").exists())
+
+    def test_second_save_does_not_duplicate(self):
+        from tasks.models import Task
+        self._post({"title": "NoDup", "content": "- [ ] Single task"})
+        count_after_first = Task.objects.filter(title="Single task").count()
+        self.assertEqual(count_after_first, 1)
+        # Save again (simulating re-save of same content)
+        page = Page.objects.get(slug="nodup")
+        self._put("nodup", {"content": page.content})
+        count_after_second = Task.objects.filter(title="Single task").count()
+        self.assertEqual(count_after_second, 1)
+
+
 class PageListFilterTests(TestCase):
     def setUp(self):
         self.client = Client()

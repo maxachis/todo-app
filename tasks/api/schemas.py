@@ -126,6 +126,7 @@ class ListSchema(Schema):
     name: str
     emoji: str
     position: int
+    is_system: bool
     project_id: int | None
     sections: list[SectionSchema] = []
 

@@ -17,12 +17,15 @@
 	let sortableLists = $state<List[]>([]);
 	let editingListId = $state<number | null>(null);
 
+	const systemLists = $derived($listsStore.filter((l) => l.is_system));
+	const userLists = $derived($listsStore.filter((l) => !l.is_system));
+
 	$effect(() => {
 		loadLists();
 	});
 
 	$effect(() => {
-		sortableLists = [...$listsStore];
+		sortableLists = [...userLists];
 	});
 
 	async function submitCreate(event: SubmitEvent): Promise<void> {
@@ -43,16 +46,16 @@
 	}
 
 	async function handleReorder(event: CustomEvent<{ items: List[] }>): Promise<void> {
-		const previous = [...$listsStore];
+		const previous = [...userLists];
 		sortableLists = event.detail.items as List[];
-		listsStore.set(sortableLists);
+		listsStore.set([...systemLists, ...sortableLists]);
 		try {
 			for (let i = 0; i < sortableLists.length; i += 1) {
 				await api.lists.move(sortableLists[i].id, { position: i });
 			}
 			await loadLists();
 		} catch {
-			listsStore.set(previous);
+			listsStore.set([...systemLists, ...previous]);
 			sortableLists = previous;
 			addToast({ message: 'List reorder failed. Changes reverted.', type: 'error' });
 		}
@@ -100,6 +103,25 @@
 		<button type="submit">Add</button>
 	</form>
 
+	{#each systemLists as list (list.id)}
+		<ListItem
+			{list}
+			selected={$selectedListStore === list.id}
+			{editingListId}
+			onStartEdit={handleStartEdit}
+			onStopEdit={handleStopEdit}
+			onEditEmoji={handleEditEmoji}
+			onSelect={selectList}
+			onUpdate={(id, changes) => updateList(id, changes)}
+			onDelete={handleDelete}
+			onTaskDrop={handleTaskDrop}
+		/>
+	{/each}
+
+	{#if systemLists.length > 0}
+		<div class="system-separator"></div>
+	{/if}
+
 	<div class="list-dnd-zone" use:dndzone={{ items: sortableLists, flipDurationMs: 150, delayTouchStart: 200, dropTargetStyle: { outline: 'rgba(180, 88, 40, 0.7) solid 2px' } }} onconsider={handleConsider} onfinalize={handleReorder}>
 		{#each sortableLists as list (list.id)}
 			<ListItem
@@ -143,6 +165,11 @@
 		flex: 1;
 		overflow-y: auto;
 		min-height: 0;
+	}
+
+	.system-separator {
+		border-top: 1px solid var(--border-light);
+		margin: 0.15rem 0;
 	}
 
 	h2 {

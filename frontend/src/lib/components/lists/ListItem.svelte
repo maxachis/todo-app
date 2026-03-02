@@ -47,6 +47,7 @@
 	});
 
 	function startEdit(): void {
+		if (list.is_system) return;
 		onStartEdit(list.id);
 	}
 
@@ -85,6 +86,7 @@
 		type="button"
 		class="emoji-btn"
 		ondblclick={(event) => {
+			if (list.is_system) return;
 			event.preventDefault();
 			event.stopPropagation();
 			onEditEmoji(list.id);
@@ -109,7 +111,9 @@
 	{:else}
 		<span class="name">{list.name}</span>
 	{/if}
-	<button type="button" class="delete" onclick={(event) => { event.stopPropagation(); onDelete(list.id); }}>&#10005;</button>
+	{#if !list.is_system}
+		<button type="button" class="delete" onclick={(event) => { event.stopPropagation(); onDelete(list.id); }}>&#10005;</button>
+	{/if}
 </div>
 
 <style>

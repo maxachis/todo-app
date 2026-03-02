@@ -15,6 +15,7 @@ class ListAPITests(TestCase):
         return {"HTTP_X_CSRFTOKEN": self.csrf}
 
     def test_get_lists_returns_position_order(self):
+        inbox = List.objects.get(is_system=True)
         low = List.objects.create(name="Low", emoji="L", position=10)
         high = List.objects.create(name="High", emoji="H", position=20)
 
@@ -22,7 +23,7 @@ class ListAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual([item["id"] for item in data], [low.id, high.id])
+        self.assertEqual([item["id"] for item in data], [inbox.id, low.id, high.id])
 
     def test_create_list(self):
         response = self.client.post(
@@ -81,6 +82,7 @@ class ListAPITests(TestCase):
         self.assertFalse(List.objects.filter(pk=task_list.id).exists())
 
     def test_move_list_reorders_positions(self):
+        inbox = List.objects.get(is_system=True)
         first = List.objects.create(name="A", emoji="", position=10)
         middle = List.objects.create(name="B", emoji="", position=20)
         last = List.objects.create(name="C", emoji="", position=30)
@@ -94,4 +96,51 @@ class ListAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         ids = list(List.objects.order_by("position").values_list("id", flat=True))
-        self.assertEqual(ids, [last.id, first.id, middle.id])
+        self.assertEqual(ids, [last.id, inbox.id, first.id, middle.id])
+
+
+class SystemListAPITests(TestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.get("/api/health/")
+        self.csrf = self.client.cookies["csrftoken"].value
+        self.inbox = List.objects.get(is_system=True)
+
+    def _headers(self):
+        return {"HTTP_X_CSRFTOKEN": self.csrf}
+
+    def test_system_list_reject_rename(self):
+        response = self.client.put(
+            f"/api/lists/{self.inbox.id}/",
+            data=json.dumps({"name": "My Inbox"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+        self.assertEqual(response.status_code, 409)
+        self.inbox.refresh_from_db()
+        self.assertEqual(self.inbox.name, "Inbox")
+
+    def test_system_list_reject_delete(self):
+        response = self.client.delete(
+            f"/api/lists/{self.inbox.id}/",
+            **self._headers(),
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(List.objects.filter(pk=self.inbox.id).exists())
+
+    def test_system_list_allow_emoji_update(self):
+        response = self.client.put(
+            f"/api/lists/{self.inbox.id}/",
+            data=json.dumps({"emoji": "\U0001f4ec"}),
+            content_type="application/json",
+            **self._headers(),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.inbox.refresh_from_db()
+        self.assertEqual(self.inbox.emoji, "\U0001f4ec")
+
+    def test_system_list_has_is_system_in_response(self):
+        response = self.client.get("/api/lists/")
+        data = response.json()
+        inbox_data = next(item for item in data if item["id"] == self.inbox.id)
+        self.assertTrue(inbox_data["is_system"])

@@ -152,7 +152,7 @@
 	}
 
 	function startListNameEdit(): void {
-		if (!currentList) return;
+		if (!currentList || currentList.is_system) return;
 		listNameDraft = currentList.name;
 		listNameEditing = true;
 		listNameEditingListId = currentList.id;
@@ -237,7 +237,7 @@
 				<button
 					type="button"
 					class="list-emoji-btn"
-					ondblclick={() => (listEmojiPickerOpen = true)}
+					ondblclick={() => { if (!currentList?.is_system) listEmojiPickerOpen = true; }}
 					aria-label="Edit list emoji"
 				>
 					{currentList.emoji || '\u{1F4DD}'}
@@ -286,10 +286,12 @@
 			onMoveSection={handleMoveSection}
 		/>
 
-		<form class="section-create" onsubmit={(e) => { e.preventDefault(); handleCreateSection(); }}>
-			<input bind:value={creatingSectionName} placeholder="Add section..." />
-			<button type="submit">+ Section</button>
-		</form>
+		{#if !currentList.is_system}
+			<form class="section-create" onsubmit={(e) => { e.preventDefault(); handleCreateSection(); }}>
+				<input bind:value={creatingSectionName} placeholder="Add section..." />
+				<button type="submit">+ Section</button>
+			</form>
+		{/if}
 		</div>
 	</section>
 

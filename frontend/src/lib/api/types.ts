@@ -40,6 +40,7 @@ export interface List {
   name: string;
   emoji: string;
   position: number;
+  is_system: boolean;
   project_id: number | null;
   sections: Section[];
 }
