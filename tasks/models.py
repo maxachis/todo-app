@@ -71,17 +71,6 @@ class Tag(models.Model):
 
 
 class Task(models.Model):
-    PRIORITY_NONE = 0
-    PRIORITY_LOW = 1
-    PRIORITY_MEDIUM = 3
-    PRIORITY_HIGH = 5
-    PRIORITY_CHOICES = [
-        (PRIORITY_NONE, "None"),
-        (PRIORITY_LOW, "Low"),
-        (PRIORITY_MEDIUM, "Medium"),
-        (PRIORITY_HIGH, "High"),
-    ]
-
     RECURRENCE_NONE = "none"
     RECURRENCE_DAILY = "daily"
     RECURRENCE_WEEKLY = "weekly"
@@ -109,7 +98,6 @@ class Task(models.Model):
     )
     title = models.CharField(max_length=500)
     notes = models.TextField(blank=True, default="")
-    priority = models.IntegerField(choices=PRIORITY_CHOICES, default=PRIORITY_NONE)
     due_date = models.DateField(null=True, blank=True)
     due_time = models.TimeField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
@@ -159,7 +147,6 @@ class Task(models.Model):
                 parent=self.parent,
                 title=self.title,
                 notes=self.notes,
-                priority=self.priority,
                 due_date=next_due,
                 due_time=self.due_time,
                 position=self.position,

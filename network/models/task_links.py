@@ -65,3 +65,25 @@ class InteractionTask(models.Model):
                 name="unique_interaction_task_link",
             )
         ]
+
+
+class InteractionPageLink(models.Model):
+    interaction = models.ForeignKey(
+        "network.Interaction",
+        on_delete=models.CASCADE,
+        related_name="page_links",
+    )
+    page = models.ForeignKey(
+        "notebook.Page",
+        on_delete=models.CASCADE,
+        related_name="interaction_links",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["interaction", "page"],
+                name="unique_interaction_page_link",
+            )
+        ]

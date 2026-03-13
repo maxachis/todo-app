@@ -2,10 +2,11 @@ import type { CompletionContext, CompletionResult, CompletionSource } from '@cod
 
 export interface MentionData {
 	people: { id: number; first_name: string; last_name: string }[];
-	pages: { id: number; title: string }[];
+	pages: { id: number; title: string; slug: string }[];
 	tasks: { id: number; title: string }[];
 	orgs: { id: number; name: string }[];
 	projects: { id: number; name: string }[];
+	interactions: { id: number; label: string }[];
 }
 
 const TYPE_BADGES: Record<string, string> = {
@@ -13,7 +14,8 @@ const TYPE_BADGES: Record<string, string> = {
 	page: '\u{1F4C4}',
 	task: '\u2713',
 	org: '\u{1F3E2}',
-	project: '\u{1F4CB}'
+	project: '\u{1F4CB}',
+	interaction: '\u{1F91D}'
 };
 
 function personCompletion(data: MentionData): CompletionSource {
@@ -86,6 +88,11 @@ function entityCompletion(data: MentionData): CompletionSource {
 		for (const p of data.projects) {
 			if (p.name.toLowerCase().includes(query)) {
 				results.push({ type: 'project', id: p.id, label: p.name });
+			}
+		}
+		for (const i of data.interactions) {
+			if (i.label.toLowerCase().includes(query)) {
+				results.push({ type: 'interaction', id: i.id, label: i.label });
 			}
 		}
 

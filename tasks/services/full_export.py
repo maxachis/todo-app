@@ -91,7 +91,6 @@ def _serialize_task(task):
         "parent_id": task.parent_id,
         "title": task.title,
         "notes": task.notes,
-        "priority": task.priority,
         "due_date": _serialize_value(task.due_date),
         "due_time": _serialize_value(task.due_time),
         "is_completed": task.is_completed,

@@ -13,6 +13,8 @@
 	import { themePreference, cycleTheme, type ThemePreference } from '$lib/stores/theme';
 	import { completionSoundPreference, type CompletionSound } from '$lib/stores/completionSound';
 	import { playCompletionSound } from '$lib/audio/completionSounds';
+	import { dueTaskCount, loadUpcoming } from '$lib/stores/upcoming';
+	import { onMount } from 'svelte';
 
 	const themeIcons: Record<ThemePreference, string> = {
 		light: '\u2600\uFE0F',
@@ -92,6 +94,15 @@
 	$effect(() => {
 		$page.url.pathname;
 		settingsOpen = false;
+	});
+
+	onMount(() => {
+		loadUpcoming();
+	});
+
+	$effect(() => {
+		const count = $dueTaskCount;
+		document.title = count > 0 ? `(${count}) Nexus` : 'Nexus';
 	});
 
 	function navigate(event: MouseEvent, href: string): void {

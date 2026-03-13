@@ -13,7 +13,8 @@
 		{ href: '/crm/people', label: 'People' },
 		{ href: '/crm/orgs', label: 'Orgs' },
 		{ href: '/crm/interactions', label: 'Interactions' },
-		{ href: '/crm/leads', label: 'Leads' }
+		{ href: '/crm/leads', label: 'Leads' },
+		{ href: '/crm/relationships', label: 'Relationships' }
 	];
 
 	async function refreshInboxCount() {

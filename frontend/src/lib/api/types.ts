@@ -9,7 +9,6 @@ export interface Task {
   parent_id: number | null;
   title: string;
   notes: string;
-  priority: number;
   due_date: string | null;
   due_time: string | null;
   is_completed: boolean;
@@ -78,9 +77,8 @@ export interface TimeEntry {
 export interface UpcomingTask {
   id: number;
   title: string;
-  due_date: string;
+  due_date: string | null;
   due_time: string | null;
-  priority: number;
   is_pinned: boolean;
   list_id: number;
   list_name: string;
@@ -293,6 +291,22 @@ export interface RelationshipOrganizationPerson {
   updated_at: string;
 }
 
+export interface OrgOrgRelationshipType {
+	id: number;
+	name: string;
+}
+
+export interface RelationshipOrganizationOrganization {
+	id: number;
+	org_1_id: number;
+	org_2_id: number;
+	relationship_type_id: number | null;
+	relationship_type_name: string | null;
+	notes: string;
+	created_at: string;
+	updated_at: string;
+}
+
 export interface GraphNode {
   data: {
     id: string;
@@ -376,6 +390,22 @@ export interface LeadTaskLink {
   created_at: string;
 }
 
+export interface LinkedPage {
+  id: number;
+  title: string;
+  slug: string;
+  page_type: string;
+  date: string | null;
+}
+
+export interface LinkedInteraction {
+  id: number;
+  interaction_type_name: string;
+  date: string;
+  person_names: string[];
+  notes: string;
+}
+
 // Dashboard types
 
 export interface WeeklyCount {
@@ -441,7 +471,6 @@ export interface UpdateTaskInput {
   notes?: string;
   due_date?: string | null;
   due_time?: string | null;
-  priority?: number;
   recurrence_type?: string;
   recurrence_rule?: Record<string, unknown>;
 }
@@ -469,6 +498,10 @@ export interface CreateTimeEntryInput {
   date: string;
   description?: string;
   task_ids?: number[];
+}
+
+export interface UpdateTimeEntryInput {
+  description?: string;
 }
 
 // Contact Draft types
@@ -559,4 +592,5 @@ export interface PageCreateInput {
 export interface PageUpdateInput {
   title?: string;
   content?: string;
+  process_checkboxes?: boolean;
 }

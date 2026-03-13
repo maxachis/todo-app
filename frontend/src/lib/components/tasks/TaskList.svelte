@@ -128,4 +128,8 @@
 		gap: 0.1rem;
 	}
 
+	.task-list :global(.task-dnd-zone) {
+		min-height: 1.5rem;
+	}
+
 </style>

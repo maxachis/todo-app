@@ -3,6 +3,6 @@
 	import { goto } from '$app/navigation';
 
 	onMount(() => {
-		goto('/network/relationships', { replaceState: true });
+		goto('/network/graph', { replaceState: true });
 	});
 </script>

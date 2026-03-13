@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Person, type PersonTag, type InteractionType } from '$lib';
+	import { api, type Person, type PersonTag, type InteractionType, type InteractionMedium } from '$lib';
 	import { ApiError } from '$lib/api/client';
 	import { addToast } from '$lib/stores/toast';
 	import { validateRequired } from '$lib/utils/validation';
@@ -14,6 +14,7 @@
 	let people: Person[] = $state([]);
 	let selected: Person | null = $state(null);
 	let interactionTypes: InteractionType[] = $state([]);
+	let interactionMediums: InteractionMedium[] = $state([]);
 
 	let sortField: 'last_name' | 'first_name' | 'follow_up_cadence_days' | 'follow_up_status' = $state('last_name');
 	let sortDirection: 'asc' | 'desc' = $state('asc');
@@ -25,6 +26,7 @@
 	// Quick-log form state
 	let quickLogTypeId = $state<number | null>(null);
 	let quickLogDate = $state(todayStr());
+	let quickLogMediumId = $state<number | null>(null);
 	let quickLogNotes = $state('');
 
 	type FollowUpTier = 'overdue' | 'due-soon' | 'on-track' | 'no-cadence';
@@ -141,6 +143,7 @@
 		loadPeople();
 		loadAllPersonTags();
 		api.interactionTypes.getAll().then((types) => (interactionTypes = types));
+		api.interactionMediums.getAll().then((mediums) => (interactionMediums = mediums));
 	});
 
 	function selectPerson(person: Person): void {
@@ -153,6 +156,7 @@
 		editNotes = person.notes;
 		editCadence = person.follow_up_cadence_days?.toString() ?? '';
 		quickLogTypeId = null;
+		quickLogMediumId = null;
 		quickLogDate = todayStr();
 		quickLogNotes = '';
 		ltm.loadLinkedTasks(person.id);
@@ -275,13 +279,21 @@
 		await api.interactions.create({
 			person_ids: [selected.id],
 			interaction_type_id: quickLogTypeId!,
+			interaction_medium_id: quickLogMediumId,
 			date: quickLogDate,
 			notes: quickLogNotes
 		});
 		quickLogTypeId = null;
+		quickLogMediumId = null;
 		quickLogDate = todayStr();
 		quickLogNotes = '';
 		await loadPeople();
+	}
+
+	async function handleCreateInteractionMedium(name: string): Promise<{ id: number; label: string }> {
+		const created = await api.interactionMediums.create({ name });
+		interactionMediums = [...interactionMediums, created].sort((a, b) => a.name.localeCompare(b.name));
+		return { id: created.id, label: created.name };
 	}
 
 	function formatDate(dateStr: string): string {
@@ -477,6 +489,12 @@
 							options={interactionTypes.map((t) => ({ id: t.id, label: t.name }))}
 							placeholder="Interaction type"
 							bind:value={quickLogTypeId}
+						/>
+						<TypeaheadSelect
+							options={interactionMediums.map((m) => ({ id: m.id, label: m.name }))}
+							placeholder="Medium (optional)"
+							bind:value={quickLogMediumId}
+							onCreate={handleCreateInteractionMedium}
 						/>
 						<input type="date" bind:value={quickLogDate} />
 						<textarea bind:value={quickLogNotes} placeholder="Notes (optional)" rows="2"></textarea>

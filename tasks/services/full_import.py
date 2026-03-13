@@ -295,7 +295,6 @@ def import_full_database(data: dict) -> dict:
                     parent_id=new_parent_id,
                     title=item["title"],
                     notes=item.get("notes", ""),
-                    priority=item.get("priority", 0),
                     due_date=_parse_date_safe(item.get("due_date")),
                     due_time=_parse_time_safe(item.get("due_time")),
                     is_completed=item.get("is_completed", False),

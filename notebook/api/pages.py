@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 
 from notebook.api.schemas import (
+    LinkedInteractionOut,
     PageBacklink,
     PageCreateInput,
     PageListItem,
@@ -51,13 +52,29 @@ def _serialize_page(page: Page) -> PageOut:
     )
 
 
+ALLOWED_ORDERINGS = {"-updated_at", "-created_at", "title"}
+
+
 @router.get("/notebook/pages/", response=list[PageListItem])
-def list_pages(request, search: str | None = None, page_type: str | None = None):
-    qs = Page.objects.order_by("-updated_at")
+def list_pages(
+    request,
+    search: str | None = None,
+    page_type: str | None = None,
+    entity_type: str | None = None,
+    entity_id: int | None = None,
+    ordering: str | None = None,
+):
+    order = ordering if ordering in ALLOWED_ORDERINGS else "-updated_at"
+    qs = Page.objects.order_by(order)
     if search:
         qs = qs.filter(title__icontains=search)
     if page_type:
         qs = qs.filter(page_type=page_type)
+    if entity_type and entity_id is not None:
+        qs = qs.filter(
+            entity_mentions__entity_type=entity_type,
+            entity_mentions__entity_id=entity_id,
+        )
     return [
         PageListItem(
             id=p.id,
@@ -118,7 +135,7 @@ def update_page(request, slug: str, payload: PageUpdateInput):
     if payload.content is not None:
         page.content = payload.content
     page.save()
-    reconcile_mentions(page)
+    reconcile_mentions(page, process_checkboxes=payload.process_checkboxes)
     page.refresh_from_db()
     return _serialize_page(page)
 
@@ -128,6 +145,32 @@ def delete_page(request, slug: str):
     page = get_object_or_404(Page, slug=slug)
     page.delete()
     return 204, None
+
+
+@router.get("/notebook/pages/{slug}/interactions/", response=list[LinkedInteractionOut])
+def page_interactions(request, slug: str):
+    page = get_object_or_404(Page, slug=slug)
+    from network.models import InteractionPageLink
+
+    links = (
+        InteractionPageLink.objects.filter(page=page)
+        .select_related("interaction__interaction_type")
+        .prefetch_related("interaction__people")
+        .order_by("-interaction__date", "-interaction__id")
+    )
+    return [
+        LinkedInteractionOut(
+            id=link.interaction.id,
+            interaction_type_name=link.interaction.interaction_type.name,
+            date=link.interaction.date,
+            person_names=[
+                f"{p.first_name} {p.last_name}".strip()
+                for p in link.interaction.people.all()
+            ],
+            notes=link.interaction.notes[:100] if link.interaction.notes else "",
+        )
+        for link in links
+    ]
 
 
 @router.get(

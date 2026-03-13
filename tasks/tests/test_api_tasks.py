@@ -80,7 +80,6 @@ class TaskAPITests(TestCase):
                     "notes": "Updated",
                     "due_date": str(date(2026, 3, 15)),
                     "due_time": str(time(9, 30)),
-                    "priority": 3,
                 }
             ),
             content_type="application/json",
@@ -91,7 +90,6 @@ class TaskAPITests(TestCase):
         task.refresh_from_db()
         self.assertEqual(task.title, "New")
         self.assertEqual(task.notes, "Updated")
-        self.assertEqual(task.priority, 3)
 
     def test_delete_task_cascades(self):
         parent = Task.objects.create(section=self.section_a, title="Parent", position=10)

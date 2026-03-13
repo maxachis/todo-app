@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Tag, Task, Person, Organization, List, Section, TaskPersonLink, TaskOrganizationLink } from '$lib';
 	import { api } from '$lib';
-	import { updateTask, selectedTaskDetail, selectTask, refreshTask, moveTask } from '$lib/stores/tasks';
+	import { updateTask, selectedTaskDetail, selectTask, refreshTask, moveTask, deleteTask } from '$lib/stores/tasks';
 	import { listsStore, loadListDetail } from '$lib/stores/lists';
-	import MarkdownEditor from '../shared/MarkdownEditor.svelte';
+	import NotesEditor from '../shared/NotesEditor.svelte';
 	import LinkedEntities from '../shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '../shared/TypeaheadSelect.svelte';
 	import RecurrenceEditor from './RecurrenceEditor.svelte';
@@ -13,7 +13,6 @@
 
 	let titleValue = $state('');
 	let dueDateValue = $state('');
-	let priorityValue = $state(0);
 	let notesValue = $state('');
 
 	let availableTags = $state<Tag[]>([]);
@@ -28,15 +27,21 @@
 	let selectedSectionId = $state<number | null>(null);
 	let targetSections = $state<Section[]>([]);
 
+	let prevTaskId = $state<number | null>(null);
+
 	$effect(() => {
-		if (task) {
+		const currentId = task?.id ?? null;
+		if (task && currentId !== prevTaskId) {
+			prevTaskId = currentId;
 			titleValue = task.title;
 			dueDateValue = task.due_date ?? '';
-			priorityValue = task.priority;
 			notesValue = task.notes;
 			loadAvailableTags(task.id);
 			loadLinkedEntities(task.id);
 			initListSection(task);
+		}
+		if (!task) {
+			prevTaskId = null;
 		}
 	});
 
@@ -142,11 +147,6 @@
 		await updateTask(task.id, { due_date: value });
 	}
 
-	async function savePriority(): Promise<void> {
-		if (!task || priorityValue === task.priority) return;
-		await updateTask(task.id, { priority: priorityValue });
-	}
-
 	async function saveRecurrence(payload: import('$lib').UpdateTaskInput): Promise<void> {
 		if (!task) return;
 		await updateTask(task.id, payload);
@@ -186,6 +186,13 @@
 		await refreshTask(task.id);
 	}
 
+	async function handleDelete(): Promise<void> {
+		if (!task) return;
+		if (confirm('Delete this task?')) {
+			await deleteTask(task.id);
+		}
+	}
+
 	function jumpToParent(): void {
 		if (!task?.parent_id) return;
 		const el = document.querySelector(`[data-task-id="${task.parent_id}"]`);
@@ -197,12 +204,6 @@
 		selectTask(task.parent_id);
 	}
 
-	const priorityLabels: Record<number, string> = {
-		0: 'None',
-		1: 'Low',
-		3: 'Medium',
-		5: 'High'
-	};
 </script>
 
 {#if task}
@@ -234,19 +235,6 @@
 
 		<div class="field">
 			<RecurrenceEditor {task} onSave={saveRecurrence} />
-		</div>
-
-		<div class="field">
-			<label for="detail-priority">Priority</label>
-			<select
-				id="detail-priority"
-				bind:value={priorityValue}
-				onchange={savePriority}
-			>
-				{#each Object.entries(priorityLabels) as [val, label]}
-					<option value={Number(val)}>{label}</option>
-				{/each}
-			</select>
 		</div>
 
 		<div class="field location-field">
@@ -314,7 +302,7 @@
 		<div class="field">
 			<label for="detail-notes">Notes</label>
 			<div id="detail-notes">
-				<MarkdownEditor
+				<NotesEditor
 					value={notesValue}
 					onSave={saveNotes}
 				/>
@@ -322,6 +310,10 @@
 		</div>
 
 		<NotebookMentions entityType="task" entityId={task.id} />
+
+		<div class="field delete-section">
+			<button class="delete-btn" onclick={handleDelete}>Delete Task</button>
+		</div>
 	</div>
 {:else}
 	<p class="placeholder">Select a task to view details.</p>
@@ -422,6 +414,28 @@
 		font-size: 0.82rem;
 		font-style: italic;
 		margin: 0;
+	}
+
+	.delete-section {
+		border-top: 1px solid var(--border-light);
+		padding-top: 0.6rem;
+	}
+
+	.delete-btn {
+		background: transparent;
+		border: 1px solid var(--error, #dc3545);
+		color: var(--error, #dc3545);
+		border-radius: var(--radius-sm);
+		padding: 0.4rem 0.75rem;
+		font-size: 0.82rem;
+		font-family: var(--font-body);
+		cursor: pointer;
+		transition: all var(--transition);
+	}
+
+	.delete-btn:hover {
+		background: var(--error, #dc3545);
+		color: #fff;
 	}
 
 	.linked-section {

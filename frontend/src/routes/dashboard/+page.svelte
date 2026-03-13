@@ -4,21 +4,13 @@
 	import { goto } from '$app/navigation';
 	import * as d3 from 'd3';
 	import { api, type UpcomingTask, type TrendsData, type FollowUpDueItem } from '$lib';
-	import { upcomingStore, loadUpcoming } from '$lib/stores/upcoming';
+	import { upcomingStore, loadUpcoming, removeUpcomingTask } from '$lib/stores/upcoming';
+	import { completeTask, uncompleteTask } from '$lib/stores/tasks';
+	import { addToast } from '$lib/stores/toast';
+	import { completionSoundPreference } from '$lib/stores/completionSound';
+	import { playCompletionSound } from '$lib/audio/completionSounds';
 
-	const PRIORITY_LABELS: Record<number, string> = {
-		1: 'Low',
-		3: 'Med',
-		5: 'High'
-	};
-
-	const PRIORITY_CLASSES: Record<number, string> = {
-		1: 'priority-low',
-		3: 'priority-med',
-		5: 'priority-high'
-	};
-
-	type GroupKey = 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'later';
+	type GroupKey = 'pinned' | 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'later';
 
 	interface TaskGroup {
 		key: GroupKey;
@@ -93,6 +85,7 @@
 		endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
 
 		const buckets: Record<GroupKey, UpcomingTask[]> = {
+			pinned: [],
 			overdue: [],
 			today: [],
 			tomorrow: [],
@@ -101,21 +94,34 @@
 		};
 
 		for (const task of tasks) {
-			const d = parseLocalDate(task.due_date);
-			if (d < today) {
-				buckets.overdue.push(task);
-			} else if (d < tomorrow) {
-				buckets.today.push(task);
-			} else if (d < dayAfterTomorrow) {
-				buckets.tomorrow.push(task);
-			} else if (d < endOfWeek) {
-				buckets.thisWeek.push(task);
-			} else {
-				buckets.later.push(task);
+			if (task.is_pinned) {
+				buckets.pinned.push(task);
+			}
+			if (task.due_date) {
+				const d = parseLocalDate(task.due_date);
+				if (d < today) {
+					buckets.overdue.push(task);
+				} else if (d < tomorrow) {
+					buckets.today.push(task);
+				} else if (d < dayAfterTomorrow) {
+					buckets.tomorrow.push(task);
+				} else if (d < endOfWeek) {
+					buckets.thisWeek.push(task);
+				} else {
+					buckets.later.push(task);
+				}
 			}
 		}
 
+		// Sort pinned group: due date presence, then title
+		buckets.pinned.sort((a, b) => {
+			if (a.due_date && !b.due_date) return -1;
+			if (!a.due_date && b.due_date) return 1;
+			return a.title.localeCompare(b.title);
+		});
+
 		const labels: Record<GroupKey, string> = {
+			pinned: 'Pinned',
 			overdue: 'Overdue',
 			today: 'Today',
 			tomorrow: 'Tomorrow',
@@ -123,7 +129,7 @@
 			later: 'Later'
 		};
 
-		const order: GroupKey[] = ['overdue', 'today', 'tomorrow', 'thisWeek', 'later'];
+		const order: GroupKey[] = ['pinned', 'overdue', 'today', 'tomorrow', 'thisWeek', 'later'];
 		return order
 			.filter((key) => buckets[key].length > 0)
 			.map((key) => ({ key, label: labels[key], tasks: buckets[key] }));
@@ -132,6 +138,29 @@
 	function parseLocalDate(dateStr: string): Date {
 		const [y, m, d] = dateStr.split('-').map(Number);
 		return new Date(y, m - 1, d);
+	}
+
+	async function handleComplete(task: UpcomingTask, event: MouseEvent): Promise<void> {
+		event.preventDefault();
+		event.stopPropagation();
+		removeUpcomingTask(task.id);
+		try {
+			playCompletionSound($completionSoundPreference);
+			const result = await completeTask(task.id);
+			const nextOccurrenceId = result.next_occurrence_id ?? undefined;
+			addToast({
+				message: `"${task.title}" completed`,
+				type: 'success',
+				actionLabel: 'Undo',
+				onAction: async () => {
+					await uncompleteTask(task.id, nextOccurrenceId);
+					await loadUpcoming();
+				}
+			});
+		} catch {
+			await loadUpcoming();
+			addToast({ message: 'Failed to complete task', type: 'error' });
+		}
 	}
 
 	function formatDate(dateStr: string): string {
@@ -310,27 +339,38 @@
 
 		{#if grouped.length === 0 && followUpsDue.length === 0}
 			<div class="empty-state">
-				<p>No tasks with due dates and no follow-ups due.</p>
+				<p>No upcoming or pinned tasks, and no follow-ups due.</p>
 			</div>
 		{:else if grouped.length === 0}
 			<!-- Follow-ups shown above, no tasks -->
 		{:else}
 			{#each grouped as group (group.key)}
-				<div class="task-group" class:overdue={group.key === 'overdue'}>
+				<div class="task-group" class:overdue={group.key === 'overdue'} class:pinned-group={group.key === 'pinned'}>
 					<h2>{group.label}<span class="group-count">{group.tasks.length}</span></h2>
 					<div class="task-list">
 						{#each group.tasks as task (task.id)}
 							<a href="/?list={task.list_id}&task={task.id}" class="task-row">
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+								<label class="checkbox-wrap" onclick={(e) => handleComplete(task, e)}>
+									<span class="checkbox-custom">
+										<svg viewBox="0 0 14 14" fill="none" class="check-icon">
+											<path d="M3.5 7.2L6 9.7L10.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+										</svg>
+									</span>
+								</label>
 								<div class="task-main">
-									<span class="task-title">{task.title}</span>
-									{#if task.priority > 0}
-										<span class="priority-badge {PRIORITY_CLASSES[task.priority] ?? ''}">{PRIORITY_LABELS[task.priority] ?? ''}</span>
+									{#if task.is_pinned && group.key !== 'pinned'}
+										<span class="pin-icon" title="Pinned">&#128204;</span>
 									{/if}
+									<span class="task-title">{task.title}</span>
 								</div>
 								<div class="task-meta">
-									<span class="task-date">
-										{formatDate(task.due_date)}{#if task.due_time} at {formatTime(task.due_time)}{/if}
-									</span>
+									{#if task.due_date}
+										<span class="task-date">
+											{formatDate(task.due_date)}{#if task.due_time} at {formatTime(task.due_time)}{/if}
+										</span>
+									{/if}
 									<span class="task-location">{task.list_emoji ? task.list_emoji + ' ' : ''}{task.list_name} / {task.section_name}</span>
 								</div>
 							</a>
@@ -534,6 +574,20 @@
 		gap: 0.5rem;
 	}
 
+	.task-group.pinned-group h2 {
+		color: var(--pinned-text);
+	}
+
+	.task-group.pinned-group .group-count {
+		background: var(--pinned-bg);
+		color: var(--pinned-text);
+	}
+
+	.pin-icon {
+		font-size: 0.75rem;
+		flex-shrink: 0;
+	}
+
 	.task-group.overdue h2 {
 		color: var(--error);
 	}
@@ -550,7 +604,7 @@
 
 	.task-row {
 		display: grid;
-		grid-template-columns: 1fr auto;
+		grid-template-columns: auto 1fr auto;
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.6rem 0.75rem;
@@ -567,6 +621,43 @@
 		box-shadow: var(--shadow-sm);
 	}
 
+	.checkbox-wrap {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.checkbox-custom {
+		position: relative;
+		width: 1.15rem;
+		height: 1.15rem;
+		border-radius: 50%;
+		border: 1.5px solid var(--border);
+		background: transparent;
+		transition:
+			border-color 0.2s ease,
+			background-color 0.2s ease,
+			transform 0.15s ease,
+			box-shadow 0.2s ease;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.checkbox-custom:hover {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-light);
+	}
+
+	.check-icon {
+		width: 0.7rem;
+		height: 0.7rem;
+		color: transparent;
+	}
+
 	.task-main {
 		display: flex;
 		align-items: center;
@@ -581,34 +672,6 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-	}
-
-	.priority-badge {
-		flex-shrink: 0;
-		font-size: 0.68rem;
-		font-weight: 600;
-		padding: 0.1rem 0.35rem;
-		border-radius: var(--radius-sm);
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-	}
-
-	.priority-low {
-		background: var(--success-bg);
-		color: var(--success);
-		border: 1px solid var(--success-border);
-	}
-
-	.priority-med {
-		background: var(--pinned-bg);
-		color: var(--pinned-text);
-		border: 1px solid var(--pinned-border);
-	}
-
-	.priority-high {
-		background: var(--error-bg);
-		color: var(--error);
-		border: 1px solid var(--error-border);
 	}
 
 	.task-meta {
@@ -739,10 +802,19 @@
 			max-width: 160px;
 		}
 
-		.task-row,
+		.task-row {
+			grid-template-columns: auto 1fr;
+			gap: 0.25rem;
+		}
+
 		.follow-up-row {
 			grid-template-columns: 1fr;
 			gap: 0.25rem;
+		}
+
+		.checkbox-wrap {
+			min-height: 44px;
+			min-width: 44px;
 		}
 
 		.task-meta,

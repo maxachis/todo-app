@@ -1,3 +1,5 @@
+import { tick } from 'svelte';
+
 type Direction = 'prev' | 'next';
 
 export interface KeyboardOptions {
@@ -32,6 +34,20 @@ function isTextEntryTarget(target: EventTarget | null): boolean {
 	const el = target as HTMLElement | null;
 	if (!el) return false;
 	return !!el.closest('input, textarea, select, [contenteditable="true"]');
+}
+
+function restoreFocus(node: HTMLElement, taskId: number): void {
+	const tryFocus = () => {
+		const el = node.querySelector<HTMLElement>(`[data-task-id="${taskId}"]`);
+		if (el) {
+			el.focus();
+			return true;
+		}
+		return false;
+	};
+	if (!tryFocus()) {
+		requestAnimationFrame(tryFocus);
+	}
 }
 
 export function keyboard(node: HTMLElement, options: KeyboardOptions) {
@@ -122,6 +138,8 @@ export function keyboard(node: HTMLElement, options: KeyboardOptions) {
 			const currentParentId = toId(currentElement?.dataset.parentId ?? null);
 			if (event.shiftKey) {
 				await options.onOutdentTask(resolvedCurrentId, currentSectionId);
+				await tick();
+				restoreFocus(node, resolvedCurrentId);
 				return;
 			}
 			let prevSameLevelId: number | null = null;
@@ -137,6 +155,8 @@ export function keyboard(node: HTMLElement, options: KeyboardOptions) {
 			}
 			if (prevSameLevelId !== null) {
 				await options.onIndentTask(resolvedCurrentId, prevSameLevelId, currentSectionId);
+				await tick();
+				restoreFocus(node, resolvedCurrentId);
 			}
 			return;
 		}

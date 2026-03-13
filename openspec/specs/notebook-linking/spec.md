@@ -7,7 +7,7 @@ Models and API for linking notebook pages to entities (people, organizations, ta
 ## Requirements
 
 ### Requirement: PageEntityMention model for entity references
-The system SHALL include a `PageEntityMention` model with fields: `page` (ForeignKey to Page, on_delete CASCADE), `entity_type` (CharField, max 20, choices: `person`, `organization`, `task`, `project`), `entity_id` (PositiveIntegerField). The model SHALL have a unique constraint on `(page, entity_type, entity_id)`.
+The system SHALL include a `PageEntityMention` model with fields: `page` (ForeignKey to Page, on_delete CASCADE), `entity_type` (CharField, max 20, choices: `person`, `organization`, `task`, `project`, `interaction`), `entity_id` (PositiveIntegerField). The model SHALL have a unique constraint on `(page, entity_type, entity_id)`.
 
 #### Scenario: Store a person mention
 - **WHEN** a page's content includes `@[person:7|John Smith]`
@@ -17,6 +17,10 @@ The system SHALL include a `PageEntityMention` model with fields: `page` (Foreig
 - **WHEN** a page's content includes `[[task:189|Deploy fix]]`
 - **THEN** a `PageEntityMention` record exists with `entity_type="task"`, `entity_id=189`
 
+#### Scenario: Store an interaction mention
+- **WHEN** a page's content includes `[[interaction:42|Meeting with John (2026-03-13)]]`
+- **THEN** a `PageEntityMention` record exists with `entity_type="interaction"`, `entity_id=42`
+
 #### Scenario: Unique constraint prevents duplicates
 - **WHEN** a page mentions the same person twice in content
 - **THEN** only one `PageEntityMention` record exists for that (page, person, id) combination
@@ -24,6 +28,10 @@ The system SHALL include a `PageEntityMention` model with fields: `page` (Foreig
 #### Scenario: Cascade delete on page deletion
 - **WHEN** a page is deleted
 - **THEN** all associated `PageEntityMention` records are deleted
+
+#### Scenario: Query interaction backlinks
+- **WHEN** a client sends `GET /api/notebook/mentions/interaction/42/`
+- **THEN** the server responds with all pages that contain a mention of interaction 42
 
 ### Requirement: PageLink model for page-to-page references
 The system SHALL include a `PageLink` model with fields: `source_page` (ForeignKey to Page, on_delete CASCADE, related_name `outgoing_links`), `target_page` (ForeignKey to Page, on_delete CASCADE, related_name `incoming_links`). The model SHALL have a unique constraint on `(source_page, target_page)`.

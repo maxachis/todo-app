@@ -9,9 +9,13 @@ The interaction create form's notes textarea SHALL submit the form when the user
 - **WHEN** the user presses Enter in the notes textarea but required fields (Person, Interaction type, or Date) are not filled
 - **THEN** the form SHALL not submit and no interaction SHALL be created
 
+#### Scenario: Date defaults to today on page load
+- **WHEN** the user navigates to the interactions page
+- **THEN** the date field in the create form SHALL be pre-filled with today's date
+
 #### Scenario: Enter key clears form after submission
 - **WHEN** the user presses Enter in the notes textarea and the form submits successfully
-- **THEN** all form fields (Person, Interaction type, Date, Notes) SHALL be reset to empty/default values
+- **THEN** all form fields (Person, Interaction type, Medium, Notes) SHALL be reset to empty/default values and the Date field SHALL be reset to today's date
 
 ### Requirement: Shift+Enter inserts newline in notes
 The notes textarea SHALL allow multi-line input via the Shift+Enter key combination.

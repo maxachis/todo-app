@@ -23,6 +23,76 @@
 	let filterPersonPerson: HTMLInputElement | null = $state(null);
 	let filterOrgPerson: HTMLInputElement | null = $state(null);
 
+	const LAYOUT_SETTINGS_KEY = 'graph-layout-settings';
+
+	interface GraphSettings {
+		spacing: number;
+		repulsion: number;
+		centering: number;
+		labelSize: number;
+		filterPeople: boolean;
+		filterOrganizations: boolean;
+		filterPersonPerson: boolean;
+		filterOrgPerson: boolean;
+		hideIsolated: boolean;
+		showEdgeNotes: boolean;
+		scaleByConnections: boolean;
+		showOrgClusters: boolean;
+	}
+
+	const DEFAULT_SETTINGS: GraphSettings = {
+		spacing: 140,
+		repulsion: 500,
+		centering: 60,
+		labelSize: 11,
+		filterPeople: true,
+		filterOrganizations: true,
+		filterPersonPerson: true,
+		filterOrgPerson: true,
+		hideIsolated: false,
+		showEdgeNotes: false,
+		scaleByConnections: false,
+		showOrgClusters: true
+	};
+
+	function loadGraphSettings(): GraphSettings {
+		if (typeof localStorage === 'undefined') return { ...DEFAULT_SETTINGS };
+		try {
+			const raw = localStorage.getItem(LAYOUT_SETTINGS_KEY);
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (parsed && typeof parsed === 'object') {
+					return { ...DEFAULT_SETTINGS, ...parsed };
+				}
+			}
+		} catch {
+			// ignore
+		}
+		return { ...DEFAULT_SETTINGS };
+	}
+
+	function saveGraphSettings(): void {
+		try {
+			const settings: GraphSettings = {
+				spacing: Number(spacingInput?.value ?? DEFAULT_SETTINGS.spacing),
+				repulsion: Number(repulsionInput?.value ?? DEFAULT_SETTINGS.repulsion),
+				centering: Number(centeringInput?.value ?? DEFAULT_SETTINGS.centering),
+				labelSize: Number(labelSizeInput?.value ?? DEFAULT_SETTINGS.labelSize),
+				filterPeople: filterPeople?.checked ?? DEFAULT_SETTINGS.filterPeople,
+				filterOrganizations: filterOrganizations?.checked ?? DEFAULT_SETTINGS.filterOrganizations,
+				filterPersonPerson: filterPersonPerson?.checked ?? DEFAULT_SETTINGS.filterPersonPerson,
+				filterOrgPerson: filterOrgPerson?.checked ?? DEFAULT_SETTINGS.filterOrgPerson,
+				hideIsolated: hideIsolatedInput?.checked ?? DEFAULT_SETTINGS.hideIsolated,
+				showEdgeNotes: showEdgeNotesInput?.checked ?? DEFAULT_SETTINGS.showEdgeNotes,
+				scaleByConnections: scaleByConnectionsInput?.checked ?? DEFAULT_SETTINGS.scaleByConnections,
+				showOrgClusters: showOrgClustersInput?.checked ?? DEFAULT_SETTINGS.showOrgClusters
+			};
+			localStorage.setItem(LAYOUT_SETTINGS_KEY, JSON.stringify(settings));
+		} catch {
+			// ignore
+		}
+	}
+
 	const CLUSTER_COLORS_KEY = 'graph-cluster-colors';
 	const DEFAULT_CLUSTER_PALETTE = [
 		'#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
@@ -107,6 +177,22 @@
 
 	onMount(async () => {
 		if (!graphEl || !detailsEl) return;
+
+		// Restore persisted layout settings before graph init
+		const savedSettings = loadGraphSettings();
+		if (spacingInput) spacingInput.value = String(savedSettings.spacing);
+		if (repulsionInput) repulsionInput.value = String(savedSettings.repulsion);
+		if (centeringInput) centeringInput.value = String(savedSettings.centering);
+		if (labelSizeInput) labelSizeInput.value = String(savedSettings.labelSize);
+		if (filterPeople) filterPeople.checked = savedSettings.filterPeople;
+		if (filterOrganizations) filterOrganizations.checked = savedSettings.filterOrganizations;
+		if (filterPersonPerson) filterPersonPerson.checked = savedSettings.filterPersonPerson;
+		if (filterOrgPerson) filterOrgPerson.checked = savedSettings.filterOrgPerson;
+		if (hideIsolatedInput) hideIsolatedInput.checked = savedSettings.hideIsolated;
+		if (showEdgeNotesInput) showEdgeNotesInput.checked = savedSettings.showEdgeNotes;
+		if (scaleByConnectionsInput) scaleByConnectionsInput.checked = savedSettings.scaleByConnections;
+		if (showOrgClustersInput) showOrgClustersInput.checked = savedSettings.showOrgClusters;
+
 		const raw = await api.graph.get();
 
 		// Focus mode state
@@ -583,12 +669,14 @@
 					updateLabelSize();
 					updateForces();
 					search();
+					saveGraphSettings();
 				});
 				el?.addEventListener('change', () => {
 					refreshVisibility();
 					updateLabelSize();
 					updateForces();
 					search();
+					saveGraphSettings();
 				});
 			};
 

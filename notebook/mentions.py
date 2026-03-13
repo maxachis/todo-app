@@ -5,8 +5,8 @@ from notebook.models import PageEntityMention, PageLink
 # @[person:7|John Smith]
 PERSON_MENTION_RE = re.compile(r"@\[person:(\d+)\|[^\]]+\]")
 
-# [[type:ID|Label]] where type is page, task, org, project
-BRACKET_MENTION_RE = re.compile(r"\[\[(page|task|org|project):(\d+)\|[^\]]+\]\]")
+# [[type:ID|Label]] where type is page, task, org, project, interaction
+BRACKET_MENTION_RE = re.compile(r"\[\[(page|task|org|project|interaction):(\d+)\|[^\]]+\]\]")
 
 # - [ ] <text> where text does NOT already contain [[task:
 CHECKBOX_RE = re.compile(r"^(- \[ \] )(.+)$", re.MULTILINE)
@@ -19,6 +19,7 @@ ENTITY_TYPE_MAP = {
     "task": "task",
     "org": "organization",
     "project": "project",
+    "interaction": "interaction",
 }
 
 
@@ -163,13 +164,16 @@ def auto_dismiss_sibling_drafts(name, exclude_id):
     ).exclude(pk=exclude_id).update(dismissed=True)
 
 
-def reconcile_mentions(page):
+def reconcile_mentions(page, process_checkboxes=True):
     """Parse page content and sync join tables to match.
 
     Also creates tasks from checkbox syntax and contact drafts before reconciling.
+    When process_checkboxes is False, skip checkbox-to-task creation (used during
+    debounced auto-saves while the user is still typing).
     """
     # First, create tasks from any new checkboxes (modifies page.content)
-    create_tasks_from_checkboxes(page)
+    if process_checkboxes:
+        create_tasks_from_checkboxes(page)
 
     # Create contact drafts from @new[...] patterns (does NOT modify content)
     create_drafts_from_new_contacts(page)

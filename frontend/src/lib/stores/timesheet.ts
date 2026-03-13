@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-import { api, type CreateTimeEntryInput, type TimeEntry, type TimesheetResponse } from '$lib';
+import { api, type CreateTimeEntryInput, type TimeEntry, type TimesheetResponse, type UpdateTimeEntryInput } from '$lib';
 
 export const timesheetStore = writable<TimesheetResponse | null>(null);
 
@@ -14,6 +14,11 @@ export async function createTimeEntry(payload: CreateTimeEntryInput): Promise<Ti
   const entry = await api.timesheet.create(payload);
   await loadTimesheet(payload.date);
   return entry;
+}
+
+export async function updateTimeEntry(entryId: number, payload: UpdateTimeEntryInput, week?: string): Promise<void> {
+  await api.timesheet.update(entryId, payload);
+  await loadTimesheet(week);
 }
 
 export async function deleteTimeEntry(entryId: number, week?: string): Promise<void> {

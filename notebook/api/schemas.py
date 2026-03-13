@@ -41,6 +41,14 @@ class PageListItem(Schema):
     updated_at: _dt.datetime
 
 
+class LinkedInteractionOut(Schema):
+    id: int
+    interaction_type_name: str
+    date: _dt.date
+    person_names: list[str]
+    notes: str
+
+
 class PageCreateInput(Schema):
     title: str = "Untitled"
     content: str = ""
@@ -51,3 +59,4 @@ class PageCreateInput(Schema):
 class PageUpdateInput(Schema):
     title: Optional[str] = None
     content: Optional[str] = None
+    process_checkboxes: bool = True

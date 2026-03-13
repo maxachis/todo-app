@@ -66,21 +66,30 @@ class NewContactWidget extends WidgetType {
 
 class MentionWidget extends WidgetType {
 	readonly type: string;
+	readonly id: string;
 	readonly label: string;
+	readonly slug: string | undefined;
 
-	constructor(type: string, label: string) {
+	constructor(type: string, id: string, label: string, slug?: string) {
 		super();
 		this.type = type;
+		this.id = id;
 		this.label = label;
+		this.slug = slug;
 	}
 
 	eq(other: MentionWidget): boolean {
-		return this.type === other.type && this.label === other.label;
+		return this.type === other.type && this.id === other.id && this.label === other.label;
 	}
 
 	toDOM(): HTMLElement {
 		const span = document.createElement('span');
 		span.className = 'cm-mention-chip';
+		span.dataset.entityType = this.type;
+		span.dataset.entityId = this.id;
+		if (this.slug) {
+			span.dataset.entitySlug = this.slug;
+		}
 
 		const badge = document.createElement('span');
 		badge.className = 'cm-mention-badge';
@@ -100,7 +109,7 @@ class MentionWidget extends WidgetType {
 	}
 }
 
-function buildDecorations(view: EditorView): DecorationSet {
+function buildDecorations(view: EditorView, pagesById: Map<number, string>): DecorationSet {
 	const builder = new RangeSetBuilder<Decoration>();
 	const doc = view.state.doc;
 	const text = doc.toString();
@@ -117,7 +126,7 @@ function buildDecorations(view: EditorView): DecorationSet {
 			from,
 			to,
 			deco: Decoration.replace({
-				widget: new MentionWidget('person', match[2])
+				widget: new MentionWidget('person', match[1], match[2])
 			})
 		});
 	}
@@ -127,11 +136,14 @@ function buildDecorations(view: EditorView): DecorationSet {
 	while ((match = ENTITY_RE.exec(text)) !== null) {
 		const from = match.index;
 		const to = from + match[0].length;
+		const entityType = match[1];
+		const entityId = match[2];
+		const slug = entityType === 'page' ? pagesById.get(Number(entityId)) : undefined;
 		decos.push({
 			from,
 			to,
 			deco: Decoration.replace({
-				widget: new MentionWidget(match[1], match[3])
+				widget: new MentionWidget(entityType, entityId, match[3], slug)
 			})
 		});
 	}
@@ -161,19 +173,22 @@ function buildDecorations(view: EditorView): DecorationSet {
 	return builder.finish();
 }
 
-export const mentionWidgets = ViewPlugin.fromClass(
-	class {
-		decorations: DecorationSet;
-		constructor(view: EditorView) {
-			this.decorations = buildDecorations(view);
-		}
-		update(update: ViewUpdate) {
-			if (update.docChanged || update.viewportChanged) {
-				this.decorations = buildDecorations(update.view);
+export function createMentionWidgets(pages: { id: number; slug: string }[]) {
+	const pagesById = new Map(pages.map((p) => [p.id, p.slug]));
+	return ViewPlugin.fromClass(
+		class {
+			decorations: DecorationSet;
+			constructor(view: EditorView) {
+				this.decorations = buildDecorations(view, pagesById);
 			}
+			update(update: ViewUpdate) {
+				if (update.docChanged || update.viewportChanged) {
+					this.decorations = buildDecorations(update.view, pagesById);
+				}
+			}
+		},
+		{
+			decorations: (v) => v.decorations
 		}
-	},
-	{
-		decorations: (v) => v.decorations
-	}
-);
+	);
+}

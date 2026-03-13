@@ -5,7 +5,7 @@ Defines the CRM route group structure, sub-tab navigation, shared linked-tasks l
 ## Requirements
 
 ### Requirement: CRM route group with nested sub-routes
-The system SHALL provide a `/crm` route group using SvelteKit nested routes. The group SHALL contain sub-routes at `/crm/people`, `/crm/orgs`, `/crm/interactions`, and `/crm/leads`. Navigating to `/crm` SHALL redirect to `/crm/people` via client-side `goto()`.
+The system SHALL provide a `/crm` route group using SvelteKit nested routes. The group SHALL contain sub-routes at `/crm/people`, `/crm/orgs`, `/crm/interactions`, `/crm/leads`, and `/crm/relationships`. Navigating to `/crm` SHALL redirect to `/crm/people` via client-side `goto()`. The `/crm/relationships` page SHALL display three relationship views (Person ↔ Person, Org → Person, Org ↔ Org) as internal sub-tabs, with Person ↔ Person as the default active tab.
 
 #### Scenario: Navigate to /crm redirects to /crm/people
 - **WHEN** a user navigates to `/crm`
@@ -27,16 +27,28 @@ The system SHALL provide a `/crm` route group using SvelteKit nested routes. The
 - **WHEN** a user navigates to `/crm/leads`
 - **THEN** the Leads list and detail view loads within the CRM layout
 
+#### Scenario: Navigate to /crm/relationships
+- **WHEN** a user navigates to `/crm/relationships`
+- **THEN** the Relationships page loads within the CRM layout showing three sub-tabs for Person ↔ Person, Org → Person, and Org ↔ Org relationship management
+
+#### Scenario: Relationships page defaults to Person ↔ Person tab
+- **WHEN** the user first navigates to `/crm/relationships`
+- **THEN** the Person ↔ Person tab is active and its content is displayed
+
+#### Scenario: Switch between relationship sub-tabs
+- **WHEN** the user clicks the Org ↔ Org sub-tab on the Relationships page
+- **THEN** the Org ↔ Org relationship view is displayed without a page navigation
+
 ### Requirement: CRM sub-tab navigation bar
-The CRM layout SHALL render a sub-tab navigation bar with links to People, Orgs, Interactions, and Leads. The active sub-tab SHALL be highlighted based on the current route path using exact path matching. The sub-tab bar SHALL be visible on all CRM sub-routes.
+The CRM layout SHALL render a sub-tab navigation bar with links to Inbox, People, Orgs, Interactions, Leads, and Relationships. The active sub-tab SHALL be highlighted based on the current route path using exact path matching. The sub-tab bar SHALL be visible on all CRM sub-routes.
 
 #### Scenario: Sub-tab bar displays on all CRM pages
 - **WHEN** the user is on any `/crm/*` route
-- **THEN** a sub-tab bar is visible with links to People, Orgs, Interactions, and Leads
+- **THEN** a sub-tab bar is visible with links to Inbox, People, Orgs, Interactions, Leads, and Relationships
 
 #### Scenario: Active sub-tab is highlighted
-- **WHEN** the user is on `/crm/interactions`
-- **THEN** the Interactions sub-tab is visually highlighted as active
+- **WHEN** the user is on `/crm/relationships`
+- **THEN** the "Relationships" sub-tab is visually highlighted as active
 
 #### Scenario: Clicking a sub-tab navigates without full reload
 - **WHEN** the user clicks a sub-tab link

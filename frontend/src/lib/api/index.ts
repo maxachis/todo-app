@@ -20,11 +20,14 @@ import type {
   InteractionType,
   Lead,
   LeadTaskLink,
+  LinkedInteraction,
+  LinkedPage,
   LinkDraftInput,
   List,
   MoveInput,
   MoveTaskInput,
   Organization,
+  OrgOrgRelationshipType,
   OrgPersonRelationshipType,
   OrgType,
   Person,
@@ -34,6 +37,7 @@ import type {
   PromoteToPersonInput,
   Project,
   ProjectLink,
+  RelationshipOrganizationOrganization,
   RelationshipOrganizationPerson,
   RelationshipPersonPerson,
   SearchResponse,
@@ -54,6 +58,7 @@ import type {
   UpdateProjectInput,
   UpdateSectionInput,
   UpdateTaskInput,
+  UpdateTimeEntryInput,
   Page,
   PageBacklink,
   PageCreateInput,
@@ -181,6 +186,8 @@ export const api = {
       apiRequest<TimesheetResponse>(week ? `/timesheet/?week=${week}` : '/timesheet/'),
     create: (payload: CreateTimeEntryInput) =>
       apiRequest<TimeEntry>('/timesheet/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: UpdateTimeEntryInput) =>
+      apiRequest<TimeEntry>(`/timesheet/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }),
     remove: (id: number) => apiRequest<void>(`/timesheet/${id}/`, { method: 'DELETE' })
   },
   people: {
@@ -271,6 +278,21 @@ export const api = {
         }),
       remove: (id: number) =>
         apiRequest<void>(`/relationships/organizations/${id}/`, { method: 'DELETE' })
+    },
+    orgOrg: {
+      getAll: () => apiRequest<RelationshipOrganizationOrganization[]>('/relationships/org-org/'),
+      create: (payload: { org_1_id: number; org_2_id: number; relationship_type_id?: number | null; notes?: string }) =>
+        apiRequest<RelationshipOrganizationOrganization>('/relationships/org-org/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }),
+      update: (id: number, payload: { relationship_type_id?: number | null; notes?: string }) =>
+        apiRequest<RelationshipOrganizationOrganization>(`/relationships/org-org/${id}/`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        }),
+      remove: (id: number) =>
+        apiRequest<void>(`/relationships/org-org/${id}/`, { method: 'DELETE' })
     }
   },
   relationshipTypes: {
@@ -286,6 +308,14 @@ export const api = {
       getAll: () => apiRequest<OrgPersonRelationshipType[]>('/relationship-types/organizations/'),
       create: (payload: { name: string }) =>
         apiRequest<OrgPersonRelationshipType>('/relationship-types/organizations/', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        })
+    },
+    orgOrg: {
+      getAll: () => apiRequest<OrgOrgRelationshipType[]>('/relationship-types/org-org/'),
+      create: (payload: { name: string }) =>
+        apiRequest<OrgOrgRelationshipType>('/relationship-types/org-org/', {
           method: 'POST',
           body: JSON.stringify(payload)
         })
@@ -326,10 +356,15 @@ export const api = {
   },
   notebook: {
     pages: {
-      list: (params?: { search?: string; page_type?: string }) => {
+      list: (params?: { search?: string; page_type?: string; entity_type?: string; entity_id?: number; ordering?: string }) => {
         const query = new URLSearchParams();
         if (params?.search) query.set('search', params.search);
         if (params?.page_type) query.set('page_type', params.page_type);
+        if (params?.entity_type && params?.entity_id != null) {
+          query.set('entity_type', params.entity_type);
+          query.set('entity_id', String(params.entity_id));
+        }
+        if (params?.ordering) query.set('ordering', params.ordering);
         const qs = query.toString();
         return apiRequest<PageListItem[]>(`/notebook/pages/${qs ? `?${qs}` : ''}`);
       },
@@ -338,7 +373,9 @@ export const api = {
       get: (slug: string) => apiRequest<Page>(`/notebook/pages/${slug}/`),
       update: (slug: string, payload: PageUpdateInput) =>
         apiRequest<Page>(`/notebook/pages/${slug}/`, { method: 'PUT', body: JSON.stringify(payload) }),
-      remove: (slug: string) => apiRequest<void>(`/notebook/pages/${slug}/`, { method: 'DELETE' })
+      remove: (slug: string) => apiRequest<void>(`/notebook/pages/${slug}/`, { method: 'DELETE' }),
+      interactions: (slug: string) =>
+        apiRequest<LinkedInteraction[]>(`/notebook/pages/${slug}/interactions/`)
     },
     mentions: (entityType: string, entityId: number) =>
       apiRequest<PageBacklink[]>(`/notebook/mentions/${entityType}/${entityId}/`)
@@ -393,6 +430,17 @@ export const api = {
         }),
       remove: (leadId: number, taskId: number) =>
         apiRequest<void>(`/leads/${leadId}/tasks/${taskId}/`, { method: 'DELETE' })
+    },
+    interactionPages: {
+      list: (interactionId: number) =>
+        apiRequest<LinkedPage[]>(`/interactions/${interactionId}/pages/`),
+      add: (interactionId: number, pageId: number) =>
+        apiRequest<LinkedPage>(`/interactions/${interactionId}/pages/`, {
+          method: 'POST',
+          body: JSON.stringify({ id: pageId })
+        }),
+      remove: (interactionId: number, pageId: number) =>
+        apiRequest<void>(`/interactions/${interactionId}/pages/${pageId}/`, { method: 'DELETE' })
     }
   }
 };

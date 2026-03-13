@@ -3,11 +3,13 @@ from ninja import Router
 
 from network.api.schemas import (
     InteractionTaskLinkSchema,
+    LinkedPageOut,
     LinkByIdInput,
     TaskOrganizationLinkSchema,
     TaskPersonLinkSchema,
 )
-from network.models import Interaction, InteractionTask, Organization, Person, TaskOrganization, TaskPerson
+from network.models import Interaction, InteractionPageLink, InteractionTask, Organization, Person, TaskOrganization, TaskPerson
+from notebook.models import Page
 from tasks.models import Task
 
 router = Router(tags=["network-task-links"])
@@ -116,5 +118,46 @@ def link_interaction_task(request, interaction_id: int, payload: LinkByIdInput):
 @router.delete("/interactions/{interaction_id}/tasks/{task_id}/", response={204: None})
 def unlink_interaction_task(request, interaction_id: int, task_id: int):
     link = get_object_or_404(InteractionTask, interaction_id=interaction_id, task_id=task_id)
+    link.delete()
+    return 204, None
+
+
+# --- Interaction-Page links ---
+
+
+@router.get("/interactions/{interaction_id}/pages/", response=list[LinkedPageOut])
+def list_interaction_pages(request, interaction_id: int):
+    Interaction.objects.only("id").get(pk=interaction_id)
+    links = InteractionPageLink.objects.filter(interaction_id=interaction_id).select_related("page").order_by("id")
+    return [
+        LinkedPageOut(
+            id=link.page.id,
+            title=link.page.title,
+            slug=link.page.slug,
+            page_type=link.page.page_type,
+            date=link.page.date,
+        )
+        for link in links
+    ]
+
+
+@router.post("/interactions/{interaction_id}/pages/", response={200: LinkedPageOut, 201: LinkedPageOut})
+def link_interaction_page(request, interaction_id: int, payload: LinkByIdInput):
+    interaction = get_object_or_404(Interaction, pk=interaction_id)
+    page = get_object_or_404(Page, pk=payload.id)
+    link, created = InteractionPageLink.objects.get_or_create(interaction=interaction, page=page)
+    result = LinkedPageOut(
+        id=page.id,
+        title=page.title,
+        slug=page.slug,
+        page_type=page.page_type,
+        date=page.date,
+    )
+    return (201 if created else 200), result
+
+
+@router.delete("/interactions/{interaction_id}/pages/{page_id}/", response={204: None})
+def unlink_interaction_page(request, interaction_id: int, page_id: int):
+    link = get_object_or_404(InteractionPageLink, interaction_id=interaction_id, page_id=page_id)
     link.delete()
     return 204, None

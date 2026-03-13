@@ -5,6 +5,7 @@
 		timesheetStore,
 		loadTimesheet,
 		createTimeEntry,
+		updateTimeEntry,
 		deleteTimeEntry
 	} from '$lib/stores/timesheet';
 	import { projectsStore, loadProjects } from '$lib/stores/projects';
@@ -60,6 +61,20 @@
 		});
 		newDescription = '';
 		newTaskIds = [];
+	}
+
+	let editingEntryId = $state<number | null>(null);
+	let editingDescription = $state('');
+
+	function startEditDescription(entryId: number, description: string): void {
+		editingEntryId = entryId;
+		editingDescription = description;
+	}
+
+	async function saveDescription(entryId: number): Promise<void> {
+		const desc = editingDescription.trim();
+		editingEntryId = null;
+		await updateTimeEntry(entryId, { description: desc }, weekStartDate(weekOffset));
 	}
 
 	async function handleDelete(entryId: number): Promise<void> {
@@ -190,8 +205,23 @@
 						<div class="entry-row">
 							<span class="entry-project">{entry.project_name}</span>
 							<span class="entry-time">{formatTimeLocal(entry.created_at)}</span>
-							{#if entry.description}
-								<span class="entry-desc">{entry.description}</span>
+							{#if editingEntryId === entry.id}
+								<input
+									class="entry-desc-input"
+									bind:value={editingDescription}
+									onblur={() => saveDescription(entry.id)}
+									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+									autofocus
+								/>
+							{:else}
+								<span
+									class="entry-desc"
+									class:entry-desc-empty={!entry.description}
+									role="button"
+									tabindex="0"
+									onclick={() => startEditDescription(entry.id, entry.description)}
+									onkeydown={(e) => { if (e.key === 'Enter') startEditDescription(entry.id, entry.description); }}
+								>{entry.description || 'Add description...'}</span>
 							{/if}
 							{#if entry.task_details?.length}
 								<span class="entry-tasks">{formatEntryTasks(entry.task_details)}</span>
@@ -395,6 +425,23 @@
 		color: var(--text-secondary);
 		font-size: 0.85rem;
 		flex: 1;
+		cursor: pointer;
+	}
+
+	.entry-desc-empty {
+		color: var(--text-tertiary);
+		font-style: italic;
+	}
+
+	.entry-desc-input {
+		flex: 1;
+		border: 1px solid var(--border-focus);
+		border-radius: var(--radius-sm);
+		padding: 0.15rem 0.35rem;
+		font-size: 0.85rem;
+		font-family: var(--font-body);
+		color: var(--text-primary);
+		background: var(--bg-input);
 	}
 
 	.entry-tasks {

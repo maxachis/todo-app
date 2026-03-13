@@ -119,6 +119,13 @@ export const notebookTheme = EditorView.theme({
 		fontSize: '0.85em',
 		fontStyle: 'italic'
 	},
+	// Ctrl+hover affordance for clickable mention chips
+	'&.cm-ctrl-held .cm-mention-chip': {
+		cursor: 'pointer'
+	},
+	'&.cm-ctrl-held .cm-mention-chip .cm-mention-label': {
+		textDecoration: 'underline'
+	},
 
 	// Autocomplete dropdown
 	'.cm-tooltip-autocomplete': {

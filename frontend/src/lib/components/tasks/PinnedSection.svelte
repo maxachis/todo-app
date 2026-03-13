@@ -1,20 +1,22 @@
 <script lang="ts">
 	import { dndzone } from 'svelte-dnd-action';
 	import type { Task } from '$lib';
-	import { selectTask } from '$lib/stores/tasks';
+	import { completeTask, selectTask } from '$lib/stores/tasks';
+
+	interface PinnedEntry { task: Task; parentTitle: string }
 
 	let {
-		tasks,
+		entries,
 		onReorder = (_taskIds: number[]) => {}
 	}: {
-		tasks: Task[];
+		entries: PinnedEntry[];
 		onReorder?: (taskIds: number[]) => void;
 	} = $props();
 
-	let sortablePinned = $state<Task[]>([]);
+	let sortablePinned = $state<(PinnedEntry & { id: number })[]>([]);
 
 	$effect(() => {
-		sortablePinned = [...tasks];
+		sortablePinned = entries.map((e) => ({ ...e, id: e.task.id }));
 	});
 
 	function jumpToTask(taskId: number): void {
@@ -27,13 +29,13 @@
 		selectTask(taskId);
 	}
 
-	function handleConsider(event: CustomEvent<{ items: Task[] }>): void {
-		sortablePinned = event.detail.items as Task[];
+	function handleConsider(event: CustomEvent<{ items: (PinnedEntry & { id: number })[] }>): void {
+		sortablePinned = event.detail.items;
 	}
 
-	function handleFinalize(event: CustomEvent<{ items: Task[] }>): void {
-		sortablePinned = event.detail.items as Task[];
-		onReorder(sortablePinned.map((task) => task.id));
+	function handleFinalize(event: CustomEvent<{ items: (PinnedEntry & { id: number })[] }>): void {
+		sortablePinned = event.detail.items;
+		onReorder(sortablePinned.map((e) => e.id));
 	}
 </script>
 
@@ -46,12 +48,29 @@
 			onconsider={handleConsider}
 			onfinalize={handleFinalize}
 		>
-			{#each sortablePinned as task (task.id)}
-				<button class="pinned-task" onclick={() => jumpToTask(task.id)}>
-					<span class="pinned-title">{task.title}</span>
-					{#if task.tags.length > 0}
+			{#each sortablePinned as entry (entry.id)}
+				<button class="pinned-task" onclick={() => jumpToTask(entry.task.id)}>
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+					<label class="checkbox-wrap" onclick={(e) => e.stopPropagation()}>
+						<input
+							type="checkbox"
+							checked={false}
+							onchange={() => completeTask(entry.task.id)}
+							class="checkbox-native"
+						/>
+						<span class="checkbox-custom">
+							<svg viewBox="0 0 14 14" fill="none" class="check-icon">
+								<path d="M3.5 7.2L6 9.7L10.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</span>
+					</label>
+					<span class="pinned-title">
+						{#if entry.parentTitle}<span class="parent-prefix">{entry.parentTitle} &rsaquo;</span> {/if}{entry.task.title}
+					</span>
+					{#if entry.task.tags.length > 0}
 						<span class="pinned-tags">
-							{#each task.tags.slice(0, 2) as tag}
+							{#each entry.task.tags.slice(0, 2) as tag}
 								<span class="tag">{tag.name}</span>
 							{/each}
 						</span>
@@ -102,6 +121,59 @@
 		background: var(--pinned-tag-bg);
 	}
 
+	.checkbox-wrap {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.checkbox-native {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.checkbox-custom {
+		position: relative;
+		width: 1.15rem;
+		height: 1.15rem;
+		border-radius: 50%;
+		border: 1.5px solid var(--border);
+		background: transparent;
+		transition:
+			border-color 0.2s ease,
+			background-color 0.2s ease,
+			transform 0.15s ease,
+			box-shadow 0.2s ease;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.checkbox-custom:hover {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-light);
+	}
+
+	.checkbox-native:focus-visible + .checkbox-custom {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-medium);
+	}
+
+	.check-icon {
+		width: 0.7rem;
+		height: 0.7rem;
+		color: transparent;
+		transition: color 0.15s ease 0.05s;
+	}
+
 	.pinned-title {
 		font-size: 0.85rem;
 		overflow: hidden;
@@ -109,6 +181,11 @@
 		white-space: nowrap;
 		flex: 1;
 		color: var(--text-primary);
+	}
+
+	.parent-prefix {
+		color: var(--text-tertiary);
+		font-size: 0.8rem;
 	}
 
 	.pinned-tags {

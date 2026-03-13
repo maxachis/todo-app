@@ -46,6 +46,7 @@ class PageEntityMention(models.Model):
         ("organization", "Organization"),
         ("task", "Task"),
         ("project", "Project"),
+        ("interaction", "Interaction"),
     ]
 
     page = models.ForeignKey(Page, on_delete=models.CASCADE, related_name="entity_mentions")

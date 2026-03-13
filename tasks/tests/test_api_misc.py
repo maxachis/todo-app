@@ -78,3 +78,37 @@ class MiscAPITests(TestCase):
         second_response = self.client.post("/api/import/", {"csv_file": upload_again}, **self._headers())
         self.assertEqual(second_response.status_code, 200)
         self.assertGreaterEqual(second_response.json()["tasks_skipped"], 1)
+
+    def test_upcoming_includes_pinned_without_due_date(self):
+        pinned_no_date = Task.objects.create(
+            section=self.section, title="Pinned no date", position=20, is_pinned=True
+        )
+        pinned_with_date = Task.objects.create(
+            section=self.section, title="Pinned with date", position=30, is_pinned=True, due_date="2026-03-10"
+        )
+        unpinned_no_date = Task.objects.create(
+            section=self.section, title="Not pinned no date", position=40
+        )
+
+        response = self.client.get("/api/upcoming/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        ids = [t["id"] for t in data]
+
+        self.assertIn(pinned_no_date.id, ids)
+        self.assertIn(pinned_with_date.id, ids)
+        self.assertNotIn(unpinned_no_date.id, ids)
+
+        # Pinned task without due date should have null due_date
+        pinned_item = next(t for t in data if t["id"] == pinned_no_date.id)
+        self.assertIsNone(pinned_item["due_date"])
+
+    def test_upcoming_excludes_completed_pinned(self):
+        completed_pinned = Task.objects.create(
+            section=self.section, title="Done pinned", position=50, is_pinned=True, is_completed=True
+        )
+
+        response = self.client.get("/api/upcoming/")
+        self.assertEqual(response.status_code, 200)
+        ids = [t["id"] for t in response.json()]
+        self.assertNotIn(completed_pinned.id, ids)

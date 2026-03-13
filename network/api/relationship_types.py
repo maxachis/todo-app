@@ -9,8 +9,11 @@ from network.api.schemas import (
     OrgPersonRelationshipTypeCreateInput,
     OrgPersonRelationshipTypeSchema,
     OrgPersonRelationshipTypeUpdateInput,
+    OrgOrgRelationshipTypeCreateInput,
+    OrgOrgRelationshipTypeSchema,
+    OrgOrgRelationshipTypeUpdateInput,
 )
-from network.models import PersonPersonRelationshipType, OrgPersonRelationshipType
+from network.models import PersonPersonRelationshipType, OrgPersonRelationshipType, OrgOrgRelationshipType
 
 router = Router(tags=["network-relationship-types"])
 
@@ -85,5 +88,42 @@ def update_org_person_type(request, type_id: int, payload: OrgPersonRelationship
 @router.delete("/relationship-types/organizations/{type_id}/", response={204: None})
 def delete_org_person_type(request, type_id: int):
     t = get_object_or_404(OrgPersonRelationshipType, pk=type_id)
+    t.delete()
+    return 204, None
+
+
+# --- Org-Org Relationship Types ---
+
+
+@router.get("/relationship-types/org-org/", response=list[OrgOrgRelationshipTypeSchema])
+def list_org_org_types(request):
+    types = OrgOrgRelationshipType.objects.order_by("name", "id")
+    return [OrgOrgRelationshipTypeSchema(id=t.id, name=t.name) for t in types]
+
+
+@router.post("/relationship-types/org-org/", response={201: OrgOrgRelationshipTypeSchema})
+def create_org_org_type(request, payload: OrgOrgRelationshipTypeCreateInput):
+    name = payload.name.strip()
+    if not name:
+        raise HttpError(422, {"name": ["This field may not be blank."]})
+    t = OrgOrgRelationshipType.objects.create(name=name)
+    return 201, OrgOrgRelationshipTypeSchema(id=t.id, name=t.name)
+
+
+@router.put("/relationship-types/org-org/{type_id}/", response=OrgOrgRelationshipTypeSchema)
+def update_org_org_type(request, type_id: int, payload: OrgOrgRelationshipTypeUpdateInput):
+    t = get_object_or_404(OrgOrgRelationshipType, pk=type_id)
+    if payload.name is not None:
+        cleaned = payload.name.strip()
+        if not cleaned:
+            raise HttpError(422, {"name": ["This field may not be blank."]})
+        t.name = cleaned
+    t.save()
+    return OrgOrgRelationshipTypeSchema(id=t.id, name=t.name)
+
+
+@router.delete("/relationship-types/org-org/{type_id}/", response={204: None})
+def delete_org_org_type(request, type_id: int):
+    t = get_object_or_404(OrgOrgRelationshipType, pk=type_id)
     t.delete()
     return 204, None

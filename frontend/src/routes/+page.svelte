@@ -16,6 +16,7 @@
 	import PinnedSection from '$lib/components/tasks/PinnedSection.svelte';
 	import EmojiPicker from '$lib/components/lists/EmojiPicker.svelte';
 	import ExportButton from '$lib/components/shared/ExportButton.svelte';
+	import ShortcutHints from '$lib/components/shared/ShortcutHints.svelte';
 	import { completeTask, deleteTask, moveTask, selectTask, selectedTaskStore } from '$lib/stores/tasks';
 	import { page } from '$app/stores';
 	import type { Task } from '$lib';
@@ -31,21 +32,35 @@
 
 	const currentList = $derived($selectedListDetail);
 
+	interface PinnedEntry { task: Task; parentTitle: string }
+
+	function collectPinnedTasks(tasks: Task[], parentTitle: string = ''): PinnedEntry[] {
+		const result: PinnedEntry[] = [];
+		for (const task of tasks) {
+			if (task.is_pinned && !task.is_completed) {
+				result.push({ task, parentTitle });
+			}
+			if (task.subtasks.length > 0) {
+				result.push(...collectPinnedTasks(task.subtasks, task.title));
+			}
+		}
+		return result;
+	}
+
 	const pinnedTasks = $derived(
 		(() => {
-			if (!currentList) return [];
-			const pinned = currentList.sections
-				.flatMap((s) => s.tasks)
-				.filter((t) => t.is_pinned && !t.is_completed);
+			if (!currentList) return [] as PinnedEntry[];
+			const allTasks = currentList.sections.flatMap((s) => s.tasks);
+			const pinned = collectPinnedTasks(allTasks);
 			const pinnedOrder = pinnedOrderByList[currentList.id] ?? [];
 			return pinned.sort((a, b) => {
-				const aIndex = pinnedOrder.indexOf(a.id);
-				const bIndex = pinnedOrder.indexOf(b.id);
+				const aIndex = pinnedOrder.indexOf(a.task.id);
+				const bIndex = pinnedOrder.indexOf(b.task.id);
 				if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
 				if (aIndex >= 0) return -1;
 				if (bIndex >= 0) return 1;
-				const dateCmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-				return dateCmp !== 0 ? dateCmp : a.id - b.id;
+				const dateCmp = new Date(a.task.created_at).getTime() - new Date(b.task.created_at).getTime();
+				return dateCmp !== 0 ? dateCmp : a.task.id - b.task.id;
 			});
 		})()
 	);
@@ -276,7 +291,7 @@
 			</div>
 		</header>
 
-		<PinnedSection tasks={pinnedTasks} onReorder={handlePinnedReorder} />
+		<PinnedSection entries={pinnedTasks} onReorder={handlePinnedReorder} />
 
 		<SectionList
 			sections={currentList.sections}
@@ -300,6 +315,18 @@
 		onClose={() => (listEmojiPickerOpen = false)}
 		onSelect={handleListEmojiSelect}
 	/>
+
+	<ShortcutHints shortcuts={[
+		{ key: '↑ / k', description: 'Previous task' },
+		{ key: '↓ / j', description: 'Next task' },
+		{ key: 'x', description: 'Complete task' },
+		{ key: 'Delete', description: 'Delete task' },
+		{ key: 'Tab', description: 'Indent task' },
+		{ key: 'Shift+Tab', description: 'Outdent task' },
+		{ key: 'Escape', description: 'Deselect' },
+		{ key: 'Ctrl+↑/↓', description: 'Jump section' },
+		{ key: 'Ctrl+←/→', description: 'Cycle lists' },
+	]} />
 {:else}
 	<section class="task-view">
 		<div class="empty-state">

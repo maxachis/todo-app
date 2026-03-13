@@ -165,10 +165,6 @@ def import_ticktick_csv(csv_file):
 
             # Parse fields
             notes = row.get("Content", "").strip()
-            priority = int(row.get("Priority", "0") or "0")
-            if priority not in (0, 1, 3, 5):
-                priority = 0
-
             status = int(row.get("Status", "0") or "0")
             is_completed = status in (1, 2)  # 0=Normal, 1=Completed, 2=Archived
 
@@ -182,7 +178,6 @@ def import_ticktick_csv(csv_file):
                 section=section,
                 title=title,
                 notes=notes,
-                priority=priority,
                 due_date=due_d,
                 due_time=due_t,
                 is_completed=is_completed,

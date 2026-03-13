@@ -66,6 +66,7 @@ def get_task_detail(request, task_id: int):
 @router.put("/tasks/{task_id}/", response=TaskSchema)
 def update_task(request, task_id: int, payload: TaskUpdateInput):
     task = get_object_or_404(Task, pk=task_id)
+    fields_set = payload.model_fields_set
 
     if payload.title is not None:
         cleaned_title = payload.title.strip()
@@ -74,12 +75,10 @@ def update_task(request, task_id: int, payload: TaskUpdateInput):
         task.title = cleaned_title
     if payload.notes is not None:
         task.notes = payload.notes
-    if payload.due_date is not None:
+    if "due_date" in fields_set:
         task.due_date = payload.due_date
-    if payload.due_time is not None:
+    if "due_time" in fields_set:
         task.due_time = payload.due_time
-    if payload.priority is not None:
-        task.priority = payload.priority
 
     if payload.recurrence_type is not None:
         from tasks.services.recurrence import RecurrenceValidationError, validate_recurrence_rule

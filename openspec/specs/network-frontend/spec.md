@@ -1,5 +1,5 @@
 ### Requirement: Network navigation in Svelte UI
-The system SHALL provide Svelte routes and navigation entries for CRM (People, Organizations, Interactions, Leads) and Network (Relationships, Graph) as nested route groups under `/crm` and `/network` respectively. The former standalone routes (`/people`, `/organizations`, `/interactions`, `/relationships`, `/graph`, `/leads`) SHALL be removed.
+The system SHALL provide Svelte routes and navigation entries for CRM (People, Organizations, Interactions, Leads, Relationships) and Network (Graph) as nested route groups under `/crm` and `/network` respectively. The former standalone routes (`/people`, `/organizations`, `/interactions`, `/relationships`, `/graph`, `/leads`) SHALL be removed. The `/network/relationships` route SHALL be removed; relationships are managed at `/crm/relationships`.
 
 #### Scenario: Navigate to People view
 - **WHEN** a user selects CRM from the main navigation and then the People sub-tab
@@ -18,19 +18,23 @@ The system SHALL provide Svelte routes and navigation entries for CRM (People, O
 - **THEN** the Leads view loads at `/crm/leads` without full-page reload
 
 #### Scenario: Navigate to Relationships view
-- **WHEN** a user selects Network from the main navigation and then the Relationships sub-tab
-- **THEN** the Relationships view loads at `/network/relationships` without full-page reload
+- **WHEN** a user selects CRM from the main navigation and then the Relationships sub-tab
+- **THEN** the Relationships view loads at `/crm/relationships` without full-page reload
 
 #### Scenario: Navigate to Graph view
-- **WHEN** a user selects Network from the main navigation and then the Graph sub-tab
+- **WHEN** a user selects Network from the main navigation
 - **THEN** the Graph view loads at `/network/graph` without full-page reload
 
 #### Scenario: Old standalone routes are removed
 - **WHEN** a user attempts to navigate to `/people`, `/organizations`, `/interactions`, `/relationships`, `/graph`, or `/leads`
 - **THEN** the route does not resolve (SvelteKit 404 or equivalent)
 
+#### Scenario: Network relationships route is removed
+- **WHEN** a user attempts to navigate to `/network/relationships`
+- **THEN** the route does not resolve (SvelteKit 404 or equivalent)
+
 ### Requirement: Network list and detail views
-The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback. The People list view SHALL include a sort control bar between the create form and the list, allowing the user to choose a sort field and toggle sort direction. The People list sort bar SHALL include a "Follow-up status" sort option in addition to the existing name and cadence sort fields. Each person in the People list SHALL display a follow-up status indicator when the person has a follow-up cadence set, showing the days since last interaction and cadence value with color-coded urgency (overdue, due soon, on track). The People detail panel SHALL display the most recent interaction date and type when available. The People detail panel SHALL display an overdue warning when the person is past their follow-up cadence. The People detail panel SHALL include a quick-log interaction form below the last-interaction summary.
+The system SHALL provide list and detail views for people, organizations, and interactions in the Svelte UI. Each detail view SHALL include a "Linked Tasks" section showing tasks associated with the entity. Entity selection fields in create and edit forms SHALL use typeahead inputs instead of native dropdown selects. Type typeaheads on Organizations and Interactions pages SHALL support inline creation of new types via the TypeaheadSelect `onCreate` callback. The People list view SHALL include a sort control bar between the create form and the list, allowing the user to choose a sort field and toggle sort direction. The People list sort bar SHALL include a "Follow-up status" sort option in addition to the existing name and cadence sort fields. Each person in the People list SHALL display a follow-up status indicator when the person has a follow-up cadence set, showing the days since last interaction and cadence value with color-coded urgency (overdue, due soon, on track). The People detail panel SHALL display the most recent interaction date and type when available. The People detail panel SHALL display an overdue warning when the person is past their follow-up cadence. The People detail panel SHALL include a quick-log interaction form below the last-interaction summary. The quick-log interaction form SHALL include a TypeaheadSelect for interaction medium, placed after the interaction type selector and before the date input. The medium selector SHALL support inline creation of new mediums via the `onCreate` callback. The medium field SHALL be optional; when unset, the interaction SHALL be created with `interaction_medium_id: null`.
 
 Each person row in the people list SHALL display the person's tags inline. The people list SHALL include a tag filter control that allows the user to filter displayed people by tag. The person detail view SHALL display tags near the top of the panel (after contact fields, before notes) and provide a TypeaheadSelect for adding tags with inline creation support via `onCreate` callback. Each displayed tag SHALL have a remove control to unlink it from the person.
 
@@ -96,8 +100,28 @@ The Relationships page create forms SHALL include a TypeaheadSelect for relation
 - **WHEN** a user types a name into the interaction type typeahead (in the create or edit form) that does not match any existing interaction type
 - **THEN** a "Create [typed name]" option appears, and selecting it creates the interaction type via the API, adds it to the local type list, and selects it in the typeahead
 
+#### Scenario: Quick log form includes medium selector
+- **WHEN** the user views a person's detail panel and sees the Quick Log Interaction form
+- **THEN** a TypeaheadSelect for interaction medium SHALL be displayed after the interaction type selector and before the date input
+
+#### Scenario: Quick log with medium selected
+- **WHEN** the user selects an interaction type, medium, date, and submits the quick log form
+- **THEN** the interaction is created with the selected `interaction_medium_id` via the API
+
+#### Scenario: Quick log without medium
+- **WHEN** the user submits the quick log form without selecting a medium
+- **THEN** the interaction is created with `interaction_medium_id: null`
+
+#### Scenario: Create medium inline from quick log form
+- **WHEN** the user types a name into the medium typeahead that does not match any existing medium
+- **THEN** a "Create [typed name]" option appears, and selecting it creates the medium via the API, adds it to the local medium list, and selects it in the typeahead
+
+#### Scenario: Medium resets after successful quick log
+- **WHEN** the user successfully submits a quick log interaction
+- **THEN** the medium selector SHALL reset to unset along with the other form fields
+
 ### Requirement: Editable relationship notes on the Relationships page
-The system SHALL allow users to edit the notes field on existing person-to-person and organization-to-person relationships directly from the Relationships page.
+The system SHALL allow users to edit the notes field on existing person-to-person, organization-to-person, and organization-to-organization relationships directly from the Relationships page at `/crm/relationships`.
 
 #### Scenario: Edit person-to-person relationship notes via inline edit
 - **WHEN** the user clicks on a person-to-person relationship's notes area (or edit button)
@@ -105,7 +129,7 @@ The system SHALL allow users to edit the notes field on existing person-to-perso
 
 #### Scenario: Save edited notes on blur
 - **WHEN** the user edits relationship notes and blurs the textarea
-- **THEN** the updated notes are saved via PUT to `/relationships/people/{id}/` (or `/relationships/organizations/{id}/`) and the display updates immediately
+- **THEN** the updated notes are saved via PUT to the appropriate relationship endpoint and the display updates immediately
 
 #### Scenario: Cancel edit with Escape
 - **WHEN** the user presses Escape while editing relationship notes
@@ -114,6 +138,10 @@ The system SHALL allow users to edit the notes field on existing person-to-perso
 #### Scenario: Edit organization-to-person relationship notes
 - **WHEN** the user clicks on an organization-to-person relationship's notes area (or edit button)
 - **THEN** the notes area switches to an editable textarea, and saving works the same as for person-to-person relationships
+
+#### Scenario: Edit organization-to-organization relationship notes
+- **WHEN** the user clicks on an organization-to-organization relationship's notes area (or edit button)
+- **THEN** the notes area switches to an editable textarea, and saving works the same as for other relationship types
 
 #### Scenario: Add notes to a relationship with no existing notes
 - **WHEN** a relationship has no notes and the user clicks the edit affordance

@@ -5,15 +5,20 @@ from network.api.schemas import (
     RelationshipOrganizationPersonCreateInput,
     RelationshipOrganizationPersonSchema,
     RelationshipOrganizationPersonUpdateInput,
+    RelationshipOrganizationOrganizationCreateInput,
+    RelationshipOrganizationOrganizationSchema,
+    RelationshipOrganizationOrganizationUpdateInput,
     RelationshipPersonPersonCreateInput,
     RelationshipPersonPersonSchema,
     RelationshipPersonPersonUpdateInput,
 )
 from network.models import (
     Organization,
+    OrgOrgRelationshipType,
     OrgPersonRelationshipType,
     Person,
     PersonPersonRelationshipType,
+    RelationshipOrganizationOrganization,
     RelationshipOrganizationPerson,
     RelationshipPersonPerson,
 )
@@ -127,5 +132,63 @@ def update_org_relationship(
 @router.delete("/relationships/organizations/{relationship_id}/", response={204: None})
 def delete_org_relationship(request, relationship_id: int):
     relationship = get_object_or_404(RelationshipOrganizationPerson, pk=relationship_id)
+    relationship.delete()
+    return 204, None
+
+
+# --- Org-Org Relationships ---
+
+
+def _serialize_org_org_relationship(rel: RelationshipOrganizationOrganization) -> RelationshipOrganizationOrganizationSchema:
+    return RelationshipOrganizationOrganizationSchema(
+        id=rel.id,
+        org_1_id=rel.org_1_id,
+        org_2_id=rel.org_2_id,
+        relationship_type_id=rel.relationship_type_id,
+        relationship_type_name=rel.relationship_type.name if rel.relationship_type else None,
+        notes=rel.notes,
+        created_at=rel.created_at,
+        updated_at=rel.updated_at,
+    )
+
+
+@router.get("/relationships/org-org/", response=list[RelationshipOrganizationOrganizationSchema])
+def list_org_org_relationships(request):
+    relationships = RelationshipOrganizationOrganization.objects.select_related("relationship_type").order_by("id")
+    return [_serialize_org_org_relationship(rel) for rel in relationships]
+
+
+@router.post("/relationships/org-org/", response={201: RelationshipOrganizationOrganizationSchema})
+def create_org_org_relationship(request, payload: RelationshipOrganizationOrganizationCreateInput):
+    org_1 = get_object_or_404(Organization, pk=payload.org_1_id)
+    org_2 = get_object_or_404(Organization, pk=payload.org_2_id)
+    rel_type = None
+    if payload.relationship_type_id is not None:
+        rel_type = get_object_or_404(OrgOrgRelationshipType, pk=payload.relationship_type_id)
+    relationship = RelationshipOrganizationOrganization.objects.create(
+        org_1=org_1,
+        org_2=org_2,
+        relationship_type=rel_type,
+        notes=payload.notes,
+    )
+    return 201, _serialize_org_org_relationship(relationship)
+
+
+@router.put("/relationships/org-org/{relationship_id}/", response=RelationshipOrganizationOrganizationSchema)
+def update_org_org_relationship(
+    request, relationship_id: int, payload: RelationshipOrganizationOrganizationUpdateInput
+):
+    relationship = get_object_or_404(RelationshipOrganizationOrganization, pk=relationship_id)
+    if payload.notes is not None:
+        relationship.notes = payload.notes
+    if payload.relationship_type_id is not None:
+        relationship.relationship_type = get_object_or_404(OrgOrgRelationshipType, pk=payload.relationship_type_id)
+    relationship.save()
+    return _serialize_org_org_relationship(relationship)
+
+
+@router.delete("/relationships/org-org/{relationship_id}/", response={204: None})
+def delete_org_org_relationship(request, relationship_id: int):
+    relationship = get_object_or_404(RelationshipOrganizationOrganization, pk=relationship_id)
     relationship.delete()
     return 204, None

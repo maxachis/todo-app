@@ -17,7 +17,7 @@ The system SHALL expose a GET endpoint at `/api/export/full/` that returns a JSO
 The system SHALL serialize each entity with its database `id` and all model fields, so that foreign-key references between collections resolve correctly.
 
 #### Scenario: Task serialization includes all fields
-- **WHEN** a task exists with title, notes, due_date, due_time, priority, is_completed, completed_at, created_at, position, external_id, is_pinned, recurrence_type, recurrence_rule, section FK, and parent FK
+- **WHEN** a task exists with title, notes, due_date, due_time, is_completed, completed_at, created_at, position, external_id, is_pinned, recurrence_type, recurrence_rule, section FK, and parent FK
 - **THEN** the exported task object SHALL include all of those fields, with `section_id`, `parent_id`, and a `tag_ids` array
 
 #### Scenario: Person serialization includes all fields

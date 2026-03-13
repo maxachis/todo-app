@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, type Interaction, type InteractionMedium, type InteractionType, type Person, type Organization } from '$lib';
+	import { page as pageStore } from '$app/stores';
+	import { api, type Interaction, type InteractionMedium, type InteractionType, type LinkedPage, type PageListItem, type Person, type Organization } from '$lib';
 	import LinkedEntities from '$lib/components/shared/LinkedEntities.svelte';
 	import TypeaheadSelect from '$lib/components/shared/TypeaheadSelect.svelte';
 	import { createLinkedTasksManager } from '$lib/components/shared/linkedTasks.svelte';
@@ -14,12 +15,18 @@
 	let interactionTypes: InteractionType[] = $state([]);
 	let interactionMediums: InteractionMedium[] = $state([]);
 	let selected: Interaction | null = $state(null);
+	let allPages: PageListItem[] = $state([]);
+	let linkedPageIds: number[] = $state([]);
 
 	let newPersonIds = $state<number[]>([]);
 	let newOrgIds = $state<number[]>([]);
 	let newTypeId = $state<number | null>(null);
 	let newMediumId = $state<number | null>(null);
-	let newDate = $state('');
+	function todayStr(): string {
+		return new Date().toISOString().slice(0, 10);
+	}
+
+	let newDate = $state(todayStr());
 	let newNotes = $state('');
 
 	let editPersonIds = $state<number[]>([]);
@@ -30,18 +37,43 @@
 	let editNotes = $state('');
 
 	async function loadData(): Promise<void> {
-		people = await api.people.getAll();
-		organizations = await api.organizations.getAll();
-		interactionTypes = await api.interactionTypes.getAll();
-		interactionMediums = await api.interactionMediums.getAll();
-		interactions = await api.interactions.getAll();
+		[people, organizations, interactionTypes, interactionMediums, interactions, allPages] = await Promise.all([
+			api.people.getAll(),
+			api.organizations.getAll(),
+			api.interactionTypes.getAll(),
+			api.interactionMediums.getAll(),
+			api.interactions.getAll(),
+			api.notebook.pages.list()
+		]);
 		if (selected) {
 			selected = interactions.find((item) => item.id === selected?.id) ?? null;
 		}
 	}
 
-	onMount(() => {
-		loadData();
+	async function loadLinkedPages(interactionId: number): Promise<void> {
+		const pages = await api.taskLinks.interactionPages.list(interactionId);
+		linkedPageIds = pages.map((p) => p.id);
+	}
+
+	async function addPageLink(pageId: number): Promise<void> {
+		if (!selected) return;
+		await api.taskLinks.interactionPages.add(selected.id, pageId);
+		linkedPageIds = [...linkedPageIds, pageId];
+	}
+
+	async function removePageLink(pageId: number): Promise<void> {
+		if (!selected) return;
+		await api.taskLinks.interactionPages.remove(selected.id, pageId);
+		linkedPageIds = linkedPageIds.filter((id) => id !== pageId);
+	}
+
+	onMount(async () => {
+		await loadData();
+		const selectedId = $pageStore.url.searchParams.get('selected');
+		if (selectedId) {
+			const item = interactions.find((i) => i.id === Number(selectedId));
+			if (item) selectInteraction(item);
+		}
 	});
 
 	function findPerson(id: number): Person | undefined {
@@ -89,6 +121,7 @@
 		editDate = item.date;
 		editNotes = item.notes;
 		ltm.loadLinkedTasks(item.id);
+		loadLinkedPages(item.id);
 	}
 
 	function addTaskLink(taskId: number): void {
@@ -167,7 +200,7 @@
 		newOrgIds = [];
 		newTypeId = null;
 		newMediumId = null;
-		newDate = '';
+		newDate = todayStr();
 		newNotes = '';
 	}
 
@@ -350,6 +383,19 @@
 						getDisplayName={ltm.taskName}
 						onAdd={addTaskLink}
 						onRemove={removeTaskLink}
+					/>
+				</div>
+				<div class="linked-tasks-section">
+					<LinkedEntities
+						label="Linked Notes"
+						entities={allPages}
+						linkedIds={linkedPageIds}
+						getDisplayName={(p) => {
+							const page = allPages.find((pg) => pg.id === p.id);
+							return page?.title ?? `Page #${p.id}`;
+						}}
+						onAdd={addPageLink}
+						onRemove={removePageLink}
 					/>
 				</div>
 			{:else}

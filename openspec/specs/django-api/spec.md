@@ -80,10 +80,10 @@ The system SHALL provide endpoints for task creation, reading, updating, and del
 
 #### Scenario: Get task detail
 - **WHEN** a client sends GET to `/api/tasks/:id/`
-- **THEN** the server responds with the full task object including `title`, `notes`, `priority`, `due_date`, `due_time`, `is_completed`, `completed_at`, `is_pinned`, `tags`, `parent`, `section`, nested `subtasks`, `recurrence_type`, and `recurrence_rule`
+- **THEN** the server responds with the full task object including `title`, `notes`, `due_date`, `due_time`, `is_completed`, `completed_at`, `is_pinned`, `tags`, `parent`, `section`, nested `subtasks`, `recurrence_type`, and `recurrence_rule`
 
 #### Scenario: Update task fields
-- **WHEN** a client sends PUT to `/api/tasks/:id/` with `{"title": "Updated", "notes": "# Heading", "due_date": "2026-03-15", "priority": 3}`
+- **WHEN** a client sends PUT to `/api/tasks/:id/` with `{"title": "Updated", "notes": "# Heading", "due_date": "2026-03-15"}`
 - **THEN** the server updates the specified fields and responds with the updated task
 
 #### Scenario: Update task recurrence

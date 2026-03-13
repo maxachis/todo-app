@@ -6,7 +6,7 @@ from django.db import models
 from django.shortcuts import get_object_or_404
 from ninja import Router
 
-from tasks.api.schemas import TimeEntryCreateInput, TimeEntrySchema
+from tasks.api.schemas import TimeEntryCreateInput, TimeEntrySchema, TimeEntryUpdateInput
 from tasks.models import Project, Task, TimeEntry
 
 router = Router(tags=["timesheet"])
@@ -165,6 +165,15 @@ def create_time_entry(request, payload: TimeEntryCreateInput):
         entry.tasks.set(payload.task_ids)
     entry.refresh_from_db()
     return 201, _serialize_entry(entry)
+
+
+@router.put("/timesheet/{entry_id}/", response=TimeEntrySchema)
+def update_time_entry(request, entry_id: int, payload: TimeEntryUpdateInput):
+    entry = get_object_or_404(TimeEntry, pk=entry_id)
+    if payload.description is not None:
+        entry.description = payload.description
+    entry.save()
+    return _serialize_entry(entry)
 
 
 @router.delete("/timesheet/{entry_id}/", response={204: None})

@@ -33,7 +33,7 @@ class FullBackupExportTests(TestCase):
         self.section = Section.objects.create(list=self.lst, name="Todo", position=0)
         self.task = Task.objects.create(
             section=self.section, title="Write report", notes="quarterly",
-            position=0, priority=1, is_pinned=True,
+            position=0, is_pinned=True,
         )
         self.task.tags.add(self.tag)
         self.subtask = Task.objects.create(
@@ -96,7 +96,6 @@ class FullBackupExportTests(TestCase):
         parent_task = next(t for t in tasks if t["title"] == "Write report")
         self.assertEqual(parent_task["section_id"], self.section.id)
         self.assertIsNone(parent_task["parent_id"])
-        self.assertEqual(parent_task["priority"], 1)
         self.assertTrue(parent_task["is_pinned"])
         self.assertIn(self.tag.id, parent_task["tag_ids"])
 

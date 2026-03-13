@@ -9,6 +9,12 @@ Personal operations hub (tasks, CRM, projects, timesheets, network graph), built
 - Database: SQLite
 - Production routing: Nginx serves `frontend/build`, proxies `/api/*` and `/admin/*` to Django
 
+## Production Server
+
+- **Tailscale hostname**: `ubuntu-2gb-ash-1.tail865b93.ts.net`
+- **SSH**: `ssh root@178.156.197.32`
+- **App location on server**: `/opt/nexus`
+
 ### Key Features
 
 - **Task management**: Lists, sections, tasks with arbitrary subtask nesting, drag-and-drop (svelte-dnd-action), keyboard navigation, pinning, search, export (JSON/CSV/Markdown)

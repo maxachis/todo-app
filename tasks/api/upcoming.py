@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.db.models import F
+from django.db.models import F, Q
 from ninja import Router
 
 from tasks.api.schemas import UpcomingTaskSchema
@@ -12,10 +12,13 @@ router = Router(tags=["upcoming"])
 @router.get("/upcoming/", response=list[UpcomingTaskSchema])
 def upcoming_tasks(request):
     tasks = (
-        Task.objects.filter(is_completed=False, due_date__isnull=False)
+        Task.objects.filter(
+            Q(due_date__isnull=False) | Q(is_pinned=True),
+            is_completed=False,
+        )
         .select_related("section__list")
         .prefetch_related("tags")
-        .order_by("due_date", F("due_time").asc(nulls_last=True))
+        .order_by(F("due_date").asc(nulls_last=True), F("due_time").asc(nulls_last=True))
     )
 
     return [
@@ -24,7 +27,6 @@ def upcoming_tasks(request):
             "title": t.title,
             "due_date": t.due_date,
             "due_time": t.due_time,
-            "priority": t.priority,
             "is_pinned": t.is_pinned,
             "list_id": t.section.list.id,
             "list_name": t.section.list.name,

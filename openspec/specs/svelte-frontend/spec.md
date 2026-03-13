@@ -204,7 +204,7 @@ The system SHALL display a task's full details in the right panel when selected.
 
 #### Scenario: Selecting a task shows detail
 - **WHEN** the user clicks a task row
-- **THEN** the right panel displays the task's title, notes, due date, priority, tags, list, section, parent link, recurrence settings, and linked people & organizations
+- **THEN** the right panel displays the task's title, notes, due date, tags, list, section, parent link, recurrence settings, and linked people & organizations
 
 #### Scenario: List and section selectors show current location
 - **WHEN** a task is selected
@@ -381,7 +381,15 @@ The system SHALL support full keyboard navigation for tasks. Navigation state SH
 
 #### Scenario: Tab indent / Shift+Tab outdent
 - **WHEN** the user presses Tab on a focused task
-- **THEN** the task becomes a subtask of the previous sibling; Shift+Tab promotes it
+- **THEN** the task becomes a subtask of the previous sibling AND the task's row element receives focus AND arrow key / j/k navigation continues working immediately; Shift+Tab promotes it with the same focus restoration
+
+#### Scenario: Keyboard navigation continues after indent
+- **WHEN** the user presses Tab to indent a task, then presses ArrowDown
+- **THEN** the next task in the section is selected (focus was not lost)
+
+#### Scenario: No-op indent preserves focus
+- **WHEN** the user presses Tab on a task with no valid previous sibling (cannot indent)
+- **THEN** the task's row element retains focus and keyboard navigation continues
 
 #### Scenario: Tab indent is section-bounded
 - **WHEN** the user presses Tab and the previous visible task is in a different section
@@ -478,7 +486,7 @@ The system SHALL provide a global search bar that queries the API with debounced
 - **THEN** the search input uses fluid width (not fixed 220px) to fit within the available navbar space
 
 ### Requirement: Task pinning UI
-The system SHALL display a "Pinned" section at the top of the list when any tasks are pinned, and provide a pin toggle button on task rows.
+The system SHALL display a "Pinned" section at the top of the list when any tasks are pinned, and provide a pin toggle button on task rows. The pinned section SHALL collect pinned tasks from the entire task tree, including subtasks at any nesting depth — not only top-level tasks. When a pinned subtask appears in the pinned section, it SHALL display with parent context showing the immediate parent task's title as a prefix (e.g. "Parent > Subtask").
 
 #### Scenario: Pinned section displays
 - **WHEN** a list has pinned tasks
@@ -490,7 +498,7 @@ The system SHALL display a "Pinned" section at the top of the list when any task
 
 #### Scenario: Click pinned task jumps to location
 - **WHEN** the user clicks a task in the pinned section
-- **THEN** the view scrolls to the task's actual location in the list with a flash animation
+- **THEN** the center panel scrolls to the source task and highlights it briefly
 
 #### Scenario: Pin button hidden on completed tasks
 - **WHEN** a task is completed
@@ -503,6 +511,23 @@ The system SHALL display a "Pinned" section at the top of the list when any task
 #### Scenario: Reorder pinned tasks inside pinned section
 - **WHEN** the user drags pinned tasks within the pinned section
 - **THEN** the pinned section order updates to the new arrangement
+
+#### Scenario: Pinned subtask appears in pinned section
+- **WHEN** a subtask is pinned and its parent task is not pinned
+- **THEN** the subtask SHALL appear in the pinned section
+
+#### Scenario: Pinned subtask shows parent context
+- **WHEN** a pinned subtask appears in the pinned section
+- **THEN** the pinned entry SHALL display the immediate parent's title as a prefix (e.g. "Parent > Subtask")
+
+#### Scenario: Both parent and subtask pinned
+- **WHEN** both a parent task and its subtask are pinned
+- **THEN** both SHALL appear as separate entries in the pinned section
+- **AND** the subtask entry SHALL show parent context while the parent entry SHALL not
+
+#### Scenario: Deeply nested pinned subtask
+- **WHEN** a pinned task is nested two or more levels deep (e.g. grandchild)
+- **THEN** only the immediate parent's title SHALL be shown as the prefix, not the full ancestor chain
 
 ### Requirement: Export UI
 The system SHALL provide export buttons that trigger file downloads from the API.

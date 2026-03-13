@@ -211,6 +211,42 @@ class RelationshipOrganizationPersonUpdateInput(Schema):
     notes: Optional[str] = None
 
 
+class OrgOrgRelationshipTypeSchema(Schema):
+    id: int
+    name: str
+
+
+class OrgOrgRelationshipTypeCreateInput(Schema):
+    name: str
+
+
+class OrgOrgRelationshipTypeUpdateInput(Schema):
+    name: Optional[str] = None
+
+
+class RelationshipOrganizationOrganizationSchema(Schema):
+    id: int
+    org_1_id: int
+    org_2_id: int
+    relationship_type_id: Optional[int] = None
+    relationship_type_name: Optional[str] = None
+    notes: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class RelationshipOrganizationOrganizationCreateInput(Schema):
+    org_1_id: int
+    org_2_id: int
+    relationship_type_id: Optional[int] = None
+    notes: str = ""
+
+
+class RelationshipOrganizationOrganizationUpdateInput(Schema):
+    relationship_type_id: Optional[int] = None
+    notes: Optional[str] = None
+
+
 class TaskPersonLinkSchema(Schema):
     id: int
     task_id: int
@@ -266,6 +302,21 @@ class LeadTaskLinkSchema(Schema):
     lead_id: int
     task_id: int
     created_at: datetime
+
+
+class InteractionPageLinkSchema(Schema):
+    id: int
+    interaction_id: int
+    page_id: int
+    created_at: datetime
+
+
+class LinkedPageOut(Schema):
+    id: int
+    title: str
+    slug: str
+    page_type: str
+    date: Optional[date] = None
 
 
 class LinkByIdInput(Schema):

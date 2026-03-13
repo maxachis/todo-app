@@ -62,7 +62,6 @@ class TaskSchema(Schema):
     parent_id: int | None
     title: str
     notes: str
-    priority: int
     due_date: date | None
     due_time: time | None
     is_completed: bool
@@ -90,7 +89,6 @@ class TaskUpdateInput(Schema):
     notes: str | None = None
     due_date: date | None = None
     due_time: time | None = None
-    priority: int | None = None
     recurrence_type: str | None = None
     recurrence_rule: dict | None = None
 
@@ -150,9 +148,8 @@ class MoveInput(Schema):
 class UpcomingTaskSchema(Schema):
     id: int
     title: str
-    due_date: date
+    due_date: date | None
     due_time: time | None
-    priority: int
     is_pinned: bool
     list_id: int
     list_name: str
@@ -176,6 +173,10 @@ class TimeEntryCreateInput(Schema):
     date: date
     description: str = ""
     task_ids: list[int] = []
+
+
+class TimeEntryUpdateInput(Schema):
+    description: str | None = None
 
 
 class WeeklyCount(Schema):

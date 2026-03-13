@@ -31,7 +31,6 @@ def _serialize_task(task: Task) -> TaskSchema:
         parent_id=task.parent_id,
         title=task.title,
         notes=task.notes,
-        priority=task.priority,
         due_date=task.due_date,
         due_time=task.due_time,
         is_completed=task.is_completed,

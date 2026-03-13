@@ -3,6 +3,7 @@ from ninja import Router
 from network.models import (
     Organization,
     Person,
+    RelationshipOrganizationOrganization,
     RelationshipOrganizationPerson,
     RelationshipPersonPerson,
 )
@@ -74,6 +75,23 @@ def graph_data(request):
                     "source": f"organization-{relationship.organization_id}",
                     "target": f"person-{relationship.person_id}",
                     "type": "organization-person",
+                    "notes": relationship.notes,
+                    "relationship_type_id": relationship.relationship_type_id,
+                    "relationship_type_name": relationship.relationship_type.name if relationship.relationship_type else None,
+                }
+            }
+        )
+
+    org_org = RelationshipOrganizationOrganization.objects.select_related("org_1", "org_2", "relationship_type")
+
+    for relationship in org_org:
+        edges.append(
+            {
+                "data": {
+                    "id": f"organization-organization-{relationship.id}",
+                    "source": f"organization-{relationship.org_1_id}",
+                    "target": f"organization-{relationship.org_2_id}",
+                    "type": "organization-organization",
                     "notes": relationship.notes,
                     "relationship_type_id": relationship.relationship_type_id,
                     "relationship_type_name": relationship.relationship_type.name if relationship.relationship_type else None,

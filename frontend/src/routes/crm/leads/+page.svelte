@@ -24,6 +24,7 @@
 
 	// Create form state
 	let newTitle = $state('');
+	let newNotes = $state('');
 	let newPersonId = $state<number | null>(null);
 	let newOrgId = $state<number | null>(null);
 
@@ -81,11 +82,13 @@
 		}
 		const lead = await api.leads.create({
 			title: newTitle.trim(),
+			notes: newNotes,
 			person_id: newPersonId,
 			organization_id: newOrgId
 		});
 		leads = [lead, ...leads];
 		newTitle = '';
+		newNotes = '';
 		newPersonId = null;
 		newOrgId = null;
 	}
@@ -142,6 +145,7 @@
 					placeholder="Organization (optional)"
 					bind:value={newOrgId}
 				/>
+				<textarea rows="2" bind:value={newNotes} placeholder="Notes (optional)"></textarea>
 				<button type="submit">+ Lead</button>
 			</form>
 

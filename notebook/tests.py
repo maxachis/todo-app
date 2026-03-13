@@ -80,6 +80,27 @@ class PageCRUDTests(TestCase):
         self.assertIn("duplicate", slugs)
         self.assertIn("duplicate-2", slugs)
 
+    def test_list_ordering_by_created_at(self):
+        self._post({"title": "Alpha"})
+        self._post({"title": "Beta"})
+        resp = self.client.get("/api/notebook/pages/?ordering=-created_at")
+        titles = [p["title"] for p in resp.json()]
+        self.assertEqual(titles, ["Beta", "Alpha"])
+
+    def test_list_ordering_by_title(self):
+        self._post({"title": "Zebra"})
+        self._post({"title": "Apple"})
+        resp = self.client.get("/api/notebook/pages/?ordering=title")
+        titles = [p["title"] for p in resp.json()]
+        self.assertEqual(titles, ["Apple", "Zebra"])
+
+    def test_list_ordering_invalid_falls_back(self):
+        self._post({"title": "Page A"})
+        resp = self.client.get("/api/notebook/pages/?ordering=invalid")
+        self.assertEqual(resp.status_code, 200)
+        # Should not error — falls back to -updated_at
+        self.assertTrue(len(resp.json()) >= 1)
+
 
 class MentionParsingTests(TestCase):
     def test_parse_person_mention(self):
@@ -350,4 +371,44 @@ class PageListFilterTests(TestCase):
 
     def test_list_all(self):
         resp = self.client.get("/api/notebook/pages/")
+        self.assertEqual(len(resp.json()), 3)
+
+
+class EntityFilterTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.p1 = Page.objects.create(title="Meeting Notes", slug="meeting-notes", page_type="wiki", content="@[person:7|John]")
+        self.p2 = Page.objects.create(title="Acme Deal", slug="acme-deal", page_type="wiki", content="[[org:3|Acme Corp]]")
+        self.p3 = Page.objects.create(title="General", slug="general", page_type="wiki", content="No mentions")
+        # Create mention records directly (normally done by reconcile_mentions)
+        PageEntityMention.objects.create(page=self.p1, entity_type="person", entity_id=7)
+        PageEntityMention.objects.create(page=self.p2, entity_type="organization", entity_id=3)
+
+    def test_filter_by_person(self):
+        resp = self.client.get("/api/notebook/pages/?entity_type=person&entity_id=7")
+        data = resp.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["title"], "Meeting Notes")
+
+    def test_filter_by_organization(self):
+        resp = self.client.get("/api/notebook/pages/?entity_type=organization&entity_id=3")
+        data = resp.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["title"], "Acme Deal")
+
+    def test_filter_combined_with_search(self):
+        # Add a second page mentioning person 7
+        p4 = Page.objects.create(title="Follow-up Meeting", slug="follow-up-meeting", page_type="wiki")
+        PageEntityMention.objects.create(page=p4, entity_type="person", entity_id=7)
+        resp = self.client.get("/api/notebook/pages/?entity_type=person&entity_id=7&search=follow")
+        data = resp.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["title"], "Follow-up Meeting")
+
+    def test_filter_no_matches(self):
+        resp = self.client.get("/api/notebook/pages/?entity_type=person&entity_id=999")
+        self.assertEqual(resp.json(), [])
+
+    def test_missing_entity_id_ignores_filter(self):
+        resp = self.client.get("/api/notebook/pages/?entity_type=person")
         self.assertEqual(len(resp.json()), 3)
