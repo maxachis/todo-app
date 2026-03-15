@@ -22,7 +22,7 @@ def list_org_types(request):
 def create_org_type(request, payload: OrgTypeCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
     org_type = OrgType.objects.create(name=name)
     return 201, _serialize_org_type(org_type)
 
@@ -33,7 +33,7 @@ def update_org_type(request, org_type_id: int, payload: OrgTypeUpdateInput):
     if payload.name is not None:
         cleaned = payload.name.strip()
         if not cleaned:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         org_type.name = cleaned
     org_type.save()
     return _serialize_org_type(org_type)

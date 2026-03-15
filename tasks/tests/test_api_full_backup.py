@@ -184,8 +184,10 @@ class FullBackupRoundTripTests(TestCase):
         InteractionTask.objects.create(interaction=interaction, task=task)
 
         return {
-            "tags": 1, "projects": 1, "project_links": 1, "lists": 1,
-            "sections": 1, "tasks": 2, "time_entries": 1, "org_types": 1,
+            "tags": 1, "projects": 1, "project_links": 1,
+            "lists": List.objects.count(),  # includes system Inbox
+            "sections": Section.objects.count(),  # includes Inbox default section
+            "tasks": 2, "time_entries": 1, "org_types": 1,
             "interaction_types": 1, "people": 1, "organizations": 1,
             "interactions": 1, "leads": 1, "lead_tasks": 1,
             "relationships_op": 1, "task_persons": 1,

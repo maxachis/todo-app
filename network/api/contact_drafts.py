@@ -131,9 +131,9 @@ def promote_to_person(request, draft_id: int, payload: PromoteToPersonInput):
     first_name = payload.first_name.strip()
     last_name = payload.last_name.strip()
     if not first_name:
-        raise HttpError(422, {"first_name": ["This field may not be blank."]})
+        raise HttpError(422, "First name may not be blank.")
     if not last_name:
-        raise HttpError(422, {"last_name": ["This field may not be blank."]})
+        raise HttpError(422, "Last name may not be blank.")
 
     if Person.objects.filter(
         first_name__iexact=first_name, last_name__iexact=last_name
@@ -173,7 +173,7 @@ def promote_to_org(request, draft_id: int, payload: PromoteToOrgInput):
 
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
 
     if Organization.objects.filter(name__iexact=name).exists():
         raise HttpError(409, f"An organization named {name} already exists.")

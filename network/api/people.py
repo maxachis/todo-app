@@ -62,9 +62,9 @@ def create_person(request, payload: PersonCreateInput):
     first_name = payload.first_name.strip()
     last_name = payload.last_name.strip()
     if not first_name:
-        raise HttpError(422, {"first_name": ["This field may not be blank."]})
+        raise HttpError(422, "First name may not be blank.")
     if not last_name:
-        raise HttpError(422, {"last_name": ["This field may not be blank."]})
+        raise HttpError(422, "Last name may not be blank.")
 
     if Person.objects.filter(
         first_name__iexact=first_name, last_name__iexact=last_name
@@ -87,7 +87,10 @@ def create_person(request, payload: PersonCreateInput):
 
 @router.get("/people/{person_id}/", response=PersonSchema)
 def get_person(request, person_id: int):
-    person = _annotate_people(Person.objects.all()).prefetch_related("tags").get(pk=person_id)
+    try:
+        person = _annotate_people(Person.objects.all()).prefetch_related("tags").get(pk=person_id)
+    except Person.DoesNotExist:
+        raise HttpError(404, "Person not found")
     return _serialize_person(person)
 
 
@@ -98,7 +101,7 @@ def update_person(request, person_id: int, payload: PersonUpdateInput):
     if payload.first_name is not None:
         cleaned = payload.first_name.strip()
         if not cleaned:
-            raise HttpError(422, {"first_name": ["This field may not be blank."]})
+            raise HttpError(422, "First name may not be blank.")
         person.first_name = cleaned
 
     if payload.middle_name is not None:
@@ -107,7 +110,7 @@ def update_person(request, person_id: int, payload: PersonUpdateInput):
     if payload.last_name is not None:
         cleaned = payload.last_name.strip()
         if not cleaned:
-            raise HttpError(422, {"last_name": ["This field may not be blank."]})
+            raise HttpError(422, "Last name may not be blank.")
         person.last_name = cleaned
 
     if payload.email is not None:

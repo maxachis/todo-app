@@ -83,7 +83,7 @@ def get_lists(request):
 def create_list(request, payload: ListCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
 
     project = None
     if payload.project_id is not None:
@@ -115,7 +115,7 @@ def update_list(request, list_id: int, payload: ListUpdateInput):
     if payload.name is not None:
         cleaned_name = payload.name.strip()
         if not cleaned_name:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         task_list.name = cleaned_name
 
     if payload.emoji is not None:

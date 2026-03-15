@@ -31,7 +31,7 @@ def list_person_person_types(request):
 def create_person_person_type(request, payload: PersonPersonRelationshipTypeCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
     t = PersonPersonRelationshipType.objects.create(name=name)
     return 201, PersonPersonRelationshipTypeSchema(id=t.id, name=t.name)
 
@@ -42,7 +42,7 @@ def update_person_person_type(request, type_id: int, payload: PersonPersonRelati
     if payload.name is not None:
         cleaned = payload.name.strip()
         if not cleaned:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         t.name = cleaned
     t.save()
     return PersonPersonRelationshipTypeSchema(id=t.id, name=t.name)
@@ -68,7 +68,7 @@ def list_org_person_types(request):
 def create_org_person_type(request, payload: OrgPersonRelationshipTypeCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
     t = OrgPersonRelationshipType.objects.create(name=name)
     return 201, OrgPersonRelationshipTypeSchema(id=t.id, name=t.name)
 
@@ -79,7 +79,7 @@ def update_org_person_type(request, type_id: int, payload: OrgPersonRelationship
     if payload.name is not None:
         cleaned = payload.name.strip()
         if not cleaned:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         t.name = cleaned
     t.save()
     return OrgPersonRelationshipTypeSchema(id=t.id, name=t.name)
@@ -105,7 +105,7 @@ def list_org_org_types(request):
 def create_org_org_type(request, payload: OrgOrgRelationshipTypeCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
     t = OrgOrgRelationshipType.objects.create(name=name)
     return 201, OrgOrgRelationshipTypeSchema(id=t.id, name=t.name)
 
@@ -116,7 +116,7 @@ def update_org_org_type(request, type_id: int, payload: OrgOrgRelationshipTypeUp
     if payload.name is not None:
         cleaned = payload.name.strip()
         if not cleaned:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         t.name = cleaned
     t.save()
     return OrgOrgRelationshipTypeSchema(id=t.id, name=t.name)

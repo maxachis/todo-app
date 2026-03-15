@@ -18,7 +18,7 @@ def create_section(request, list_id: int, payload: SectionCreateInput):
     task_list = get_object_or_404(List, pk=list_id)
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
 
     max_position = task_list.sections.aggregate(max_position=models.Max("position"))["max_position"] or 0
     section = Section.objects.create(
@@ -37,7 +37,7 @@ def update_section(request, section_id: int, payload: SectionUpdateInput):
     if payload.name is not None:
         cleaned_name = payload.name.strip()
         if not cleaned_name:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         section.name = cleaned_name
     if payload.emoji is not None:
         section.emoji = payload.emoji.strip()

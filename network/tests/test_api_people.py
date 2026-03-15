@@ -33,26 +33,26 @@ class PeopleLastInteractionTests(TestCase):
         self.assertIsNone(data["last_interaction_type"])
 
     def test_person_with_interactions_returns_most_recent(self):
-        Interaction.objects.create(
-            person=self.person,
+        i1 = Interaction.objects.create(
             interaction_type=self.email_type,
             date=date(2026, 1, 10),
         )
-        Interaction.objects.create(
-            person=self.person,
+        i1.people.add(self.person)
+        i2 = Interaction.objects.create(
             interaction_type=self.dm_type,
             date=date(2026, 1, 20),
         )
+        i2.people.add(self.person)
         data = self._get_person(self.person.id)
         self.assertEqual(data["last_interaction_date"], "2026-01-20")
         self.assertEqual(data["last_interaction_type"], "DM")
 
     def test_list_includes_last_interaction_fields(self):
-        Interaction.objects.create(
-            person=self.person,
+        i = Interaction.objects.create(
             interaction_type=self.dm_type,
             date=date(2026, 1, 15),
         )
+        i.people.add(self.person)
         people = self._list_people()
         alice = next(p for p in people if p["id"] == self.person.id)
         self.assertEqual(alice["last_interaction_date"], "2026-01-15")
@@ -104,11 +104,11 @@ class PeopleLastInteractionTests(TestCase):
         self.assertEqual(resp.status_code, 201)
 
     def test_update_person_returns_interaction_fields(self):
-        Interaction.objects.create(
-            person=self.person,
+        i = Interaction.objects.create(
             interaction_type=self.dm_type,
             date=date(2026, 2, 1),
         )
+        i.people.add(self.person)
         resp = self.client.get("/api/health/")
         token = resp.cookies["csrftoken"].value
         resp = self.client.put(

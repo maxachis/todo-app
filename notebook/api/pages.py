@@ -16,10 +16,17 @@ from notebook.models import Page, PageEntityMention
 router = Router(tags=["notebook"])
 
 
+import re
+
+_MENTION_RE = re.compile(r"@\[\w+:\d+\|([^\]]+)\]|\[\[\w+:\d+\|([^\]]+)\]\]")
+
+
 def _snippet(content: str, length: int = 150) -> str:
-    if len(content) <= length:
-        return content
-    return content[:length] + "..."
+    # Replace mention syntax with just the display name
+    cleaned = _MENTION_RE.sub(lambda m: m.group(1) or m.group(2), content)
+    if len(cleaned) <= length:
+        return cleaned
+    return cleaned[:length] + "..."
 
 
 def _serialize_page(page: Page) -> PageOut:

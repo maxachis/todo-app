@@ -33,7 +33,7 @@ def list_organizations(request):
 def create_organization(request, payload: OrganizationCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
 
     if Organization.objects.filter(name__iexact=name).exists():
         raise HttpError(
@@ -62,7 +62,7 @@ def update_organization(request, organization_id: int, payload: OrganizationUpda
     if payload.name is not None:
         cleaned = payload.name.strip()
         if not cleaned:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         organization.name = cleaned
 
     if payload.org_type_id is not None:

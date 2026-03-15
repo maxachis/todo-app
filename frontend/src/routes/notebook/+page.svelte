@@ -146,7 +146,9 @@
 	});
 
 	onDestroy(() => {
-		document.removeEventListener('keydown', handleSidebarShortcut);
+		if (typeof document !== 'undefined') {
+			document.removeEventListener('keydown', handleSidebarShortcut);
+		}
 		editor?.destroy();
 		editor = null;
 	});

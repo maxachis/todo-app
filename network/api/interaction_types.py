@@ -26,7 +26,7 @@ def list_interaction_types(request):
 def create_interaction_type(request, payload: InteractionTypeCreateInput):
     name = payload.name.strip()
     if not name:
-        raise HttpError(422, {"name": ["This field may not be blank."]})
+        raise HttpError(422, "Name may not be blank.")
     interaction_type = InteractionType.objects.create(name=name)
     return 201, _serialize_interaction_type(interaction_type)
 
@@ -37,7 +37,7 @@ def update_interaction_type(request, interaction_type_id: int, payload: Interact
     if payload.name is not None:
         cleaned = payload.name.strip()
         if not cleaned:
-            raise HttpError(422, {"name": ["This field may not be blank."]})
+            raise HttpError(422, "Name may not be blank.")
         interaction_type.name = cleaned
     interaction_type.save()
     return _serialize_interaction_type(interaction_type)

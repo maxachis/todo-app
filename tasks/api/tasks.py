@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from html import escape
+
 from django.db import models
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -31,9 +33,9 @@ def _update_subtask_sections(task: Task, section: Section):
 @router.post("/sections/{section_id}/tasks/", response={201: TaskSchema})
 def create_task(request, section_id: int, payload: TaskCreateInput):
     section = get_object_or_404(Section, pk=section_id)
-    title = payload.title.strip()
+    title = escape(payload.title.strip())
     if not title:
-        raise HttpError(422, {"title": ["This field may not be blank."]})
+        raise HttpError(422, "Title may not be blank.")
 
     parent = None
     if payload.parent_id is not None:
@@ -69,9 +71,9 @@ def update_task(request, task_id: int, payload: TaskUpdateInput):
     fields_set = payload.model_fields_set
 
     if payload.title is not None:
-        cleaned_title = payload.title.strip()
+        cleaned_title = escape(payload.title.strip())
         if not cleaned_title:
-            raise HttpError(422, {"title": ["This field may not be blank."]})
+            raise HttpError(422, "Title may not be blank.")
         task.title = cleaned_title
     if payload.notes is not None:
         task.notes = payload.notes
